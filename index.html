@@ -108,6 +108,7 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .opt{border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--panel2);text-align:left}
 .opt b{display:block;font-size:14px}
 .opt span{font-size:12px;color:var(--muted)}
+.opt:disabled{opacity:.45;cursor:not-allowed}
 .opt.on{border-color:var(--gold);background:var(--gold-soft)}
 .news{list-style:none;margin:0;padding:0;font-size:13.5px}
 .news li{padding:6px 0;border-bottom:1px dashed var(--line)}
@@ -306,7 +307,7 @@ function newGame(clubName){
     formation:'4-4-2', tactic:'balance', training:'normal', ticket:'mid', pr:'none',
     market:[], news:[], history:[], results:[], youthBonus:0,
     fin:{income:0,expense:0}, target:8, sponsor:0, over:false, champion:0,
-    staff:{}, staffMarket:[], inbox:[], prospects:[], companies:[], visitsLeft:1, watchLeft:1, mentor:0, cfSeason:0,
+    staff:{}, staffMarket:[], inbox:[], prospects:[], companies:[], visitsLeft:1, watchLeft:1, mentor:0, cfSeason:0, foreignCands:[], fscoutTrip:null,
   };
   const comp = {GK:2,DF:6,MF:6,FW:4};
   for(const pos in comp) for(let i=0;i<comp[pos];i++){
@@ -536,16 +537,20 @@ function refreshMarket(n){
   for(let i=0;i<n;i++) S.market.push(genCandidate());
   S.market = S.market.slice(-8);
 }
-function genCandidate(){
+function genCandidate(kind){
+  const r = Math.random();
+  kind = kind || (r<0.17 ? 'free' : r<0.32 && S.div<4 ? 'loan' : 'normal');
+  if(kind==='loan') return genLoanee();
   const b = DIVS[S.div].base; const mid=(b[0]+b[1])/2;
   const sc = S.fac.scout;
   const foreign = Math.random()<0.12;
-  const age = RI(18,33);
+  const age = kind==='free' ? RI(25,34) : RI(18,33);
   let ovr = mid + (sc-1)*3 + R(-13,7) + (foreign?4:0);
   if(Math.random()<0.08) ovr += R(5,10); // 掘り出し物
   const pot = age<=21 ? ovr+R(4,16+sc*2) : age<=25 ? ovr+R(1,8+sc) : age<=28 ? ovr+R(0,3) : ovr;
   const p = makePlayer(randPos(), ovr, age, pot, foreign);
   p.fee = Math.round(playerValue(p) * (foreign?1.15:1));
+  if(kind==='free'){ p.fee = 0; p.free = true; p.salary = Math.round(p.salary*1.35); p.bio = pick(FREE_BIOS); }
   return p;
 }
 
@@ -590,6 +595,7 @@ function advance(){
   if(S.round%4===3) refreshStaffMarket(3);
   S.companies.forEach(c=>{ if(c.cool>0) c.cool--; });
   S.round++;
+  checkTrip();
   S.visitsLeft = salesTeam().length; S.watchLeft = watchPerWeek();
   if(S.trust<=0){ S.over='fired'; }
   save();
@@ -633,6 +639,7 @@ function endSeason(){
   if(champion) fd += changeFans(0.25,0);
   report.fans = fd;
   S.history.push({season:S.season, div:d, rank, pts:st[rank-1].pts, moved, champion});
+  loansSeasonEnd(report.lines);
   // 期限付き移籍から復帰
   for(const p of S.players.filter(x=>x.loan)){
     const g = Math.max(0,p.pot-p.ovr)*R(0.2,0.35); p.ovr += g; p.loan=false; p.mor=clamp((p.mor??60)+5,0,100);
@@ -664,7 +671,8 @@ function endSeason(){
   report.joined = prospectsSeasonEnd(report.lines);
   staffSeasonEnd(report.lines);
   companiesSeasonEnd(rank, report.lines);
-  S.inbox = S.inbox.filter(r=>r.kind!=='ama');
+  S.inbox = S.inbox.filter(r=>r.kind!=='ama'&&r.kind!=='fscout');
+  S.foreignCands = [];
   // リーグ再編
   const me = S.teams[0];
   if(moved!==0){
@@ -683,6 +691,7 @@ function endSeason(){
   S.season++;
   startSeason();
   refreshMarket(6);
+  for(let i=0;i<3;i++) S.market.push(genCandidate('free')); // オフの契約満了組
   addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
   if(S.trust<=0) S.over='fired';
   save();
@@ -693,17 +702,21 @@ function endSeason(){
 function signPlayer(id){
   const p = S.market.find(x=>x.id===id); if(!p) return;
   if(S.players.length>=26) return toast('選手登録は26人までです。');
+  if(p.foreign && foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
   if(S.money < p.fee) return toast('資金が足りません。');
   spend(p.fee);
   S.market = S.market.filter(x=>x!==p);
   delete p.fee; delete p.age2;
   p.cond = 90;
   S.players.push(p);
-  addNews(`${p.name}（${p.pos}・${p.age}歳）を獲得！`);
+  if(p.loanFrom) addNews(`${p.loanFrom}（${p.loanDiv}）の若手 ${p.name}（${p.pos}・${p.age}歳）を期限付き移籍で獲得！ 買取オプションは${yen(p.buyFee)}。`);
+  else if(p.free) addNews(`${p.name}（${p.pos}・${p.age}歳）をフリー移籍で獲得！`);
+  else addNews(`${p.name}（${p.pos}・${p.age}歳）を獲得！`);
   save(); render();
 }
 function sellPlayer(id){
   const p = S.players.find(x=>x.id===id); if(!p) return;
+  if(p.loanFrom) return toast('期限付き移籍中の選手は売却できません。');
   if(S.players.length<=14) return toast('選手は最低14人必要です。');
   const v = Math.round(playerValue(p)*0.7);
   confirmBox(`${p.name} を ${yen(v)} で売却しますか？`, ()=>{
@@ -731,12 +744,14 @@ const STAFF_ROLES = {
   gk:      {name:'GKコーチ', base:250, desc:'GKの成長を早める'},
   youth:   {name:'育成コーチ', base:300, desc:'若手の成長とユース昇格選手の質を高める'},
   scout:   {name:'チーフスカウト', base:280, desc:'高校・大学選手の見極め精度と視察回数を上げる'},
+  fscout:  {name:'海外スカウト', base:300, desc:'海外に派遣して、無名の外国人選手を連れてくる'},
   sales:   {name:'営業担当', base:220, desc:'地元企業を訪問してスポンサーを獲得（最大3人・1人1社/週）'},
 };
 const MAX_SALES = 3;
 const BIOS = {
   manager:['元{city}FC監督。堅守速攻のチームづくりに定評','地元・{school}を全国ベスト4に導いた高校サッカー界の名将','元日本代表DF。引退後に指導者の道へ','ブラジル出身の戦術家。J2での指揮経験あり','{uni}を率いてインカレを制した大学サッカー界の名伯楽','J1クラブのアカデミー出身指導者。若手起用に積極的','J1クラブのヘッドコーチを長く務め、満を持して監督に','スペインで指導を学んだ若手戦術家','{city}FCを昇格に導いた叩き上げ','元{city}FCのレジェンドMF。情熱的な指導が持ち味'],
   coach:['元{city}FCの{role}','{school}サッカー部OB。指導歴15年','J2クラブで長年{role}を務めた','元プロ選手。現役時代は{city}FCでプレー','海外クラブで学んだ若手指導者','{uni}出身の理論派','日本サッカー協会の地域トレセンで指導','選手からの信頼が厚い兄貴分'],
+  fscout:['元商社マン。南米に太い人脈を持つ','ブラジル在住20年の元プロ選手','欧州の代理人事務所出身','アジア各国のリーグを渡り歩いた元通訳','自称「どんな選手でも見つける男」','アフリカでサッカー教室を開いていた元JICA隊員'],
   sales:['地元信金出身。経営者との人脈が広い','元旅行代理店の営業マン','{city}出身の熱血営業','広告代理店から転職してきたやり手','商工会議所に顔が利くベテラン','元テレビ局の営業。メディアに強い','クラブのボランティア出身。誰より熱いサポーター'],
 };
 function genStaff(role, center){
@@ -750,7 +765,7 @@ function genStaff(role, center){
     st.lic = Math.random() < clamp((abil-28)/40,0.05,0.97) ? 'S級' : 'A級';
   }
   st.salary = Math.round(STAFF_ROLES[role].base * Math.pow(abil/40,2) * (st.lic==='S級'?1.2:1) + 5);
-  const tpl = pick(role==='manager'?BIOS.manager:role==='sales'?BIOS.sales:BIOS.coach);
+  const tpl = pick(BIOS[role==='manager'||role==='sales'||role==='fscout'?role:'coach']);
   st.bio = tpl.replace('{city}',pick(CITY_NATION.concat(CITY_LOCAL))).replace('{school}',pick(SCHOOLS)).replace('{uni}',pick(UNIS)).replace('{role}',STAFF_ROLES[role].name);
   return st;
 }
@@ -930,13 +945,14 @@ const REPORTS = {
       if(s.role==='sales') S.staff.sales=S.staff.sales.filter(x=>x!==s); else S.staff[s.role]=null;
       return `${s.name}は新天地へ旅立った。${STAFF_ROLES[s.role].name}の後任を探そう。`; }
   },
+  fscout:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='foreign'; } return '海外スカウトの報告を確認した。'; } },
   ama:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='ama'; } return 'スカウトの報告を確認した。'; } },
 };
 function generateReports(){
   if(S.inbox.length>=4) return;
   const c = ctxNow();
   const chance = 0.4 + staffAb('hc')/220;
-  const kinds = Object.keys(REPORTS).filter(k=>k!=='ama').sort(()=>Math.random()-0.5);
+  const kinds = Object.keys(REPORTS).filter(k=>k!=='ama'&&k!=='fscout').sort(()=>Math.random()-0.5);
   let made = 0, max = staffAb('hc')>=55 ? 2 : 1;
   for(const k of kinds){
     if(made>=max || Math.random()>chance) continue;
@@ -951,7 +967,7 @@ function resolveReport(id, key, auto){
   const p = rep.pid ? S.players.find(x=>x.id===rep.pid) : null;
   if(rep.pid && !p){ return; }
   const msg = REPORTS[rep.kind].resolve(key, p, rep);
-  if(rep.kind!=='ama' && rep.kind!=='mood') addNews(`【${auto?'未対応→自動処理':'報告'}】${msg}`);
+  if(!['ama','fscout','mood'].includes(rep.kind)) addNews(`【${auto?'未対応→自動処理':'報告'}】${msg}`);
   return msg;
 }
 function expireReports(){
@@ -1173,6 +1189,133 @@ function companiesSeasonEnd(rank, lines){
   }
 }
 
+// ===================== フリー移籍・レンタル移籍・海外スカウト =====================
+const FOREIGN_MAX = 5;
+function foreignCount(){ return S.players.filter(p=>p.foreign).length; }
+const FREE_BIOS = ['前所属クラブとの契約が満了','クラブの経営難で退団','出場機会を求めて契約更新を断った','監督交代で構想外に','海外挑戦から帰国し、所属先を探している'];
+function genLoanee(){
+  const pd = Math.min(4, S.div+RI(1,2));
+  const b = DIVS[S.div].base;
+  const age = RI(18,21);
+  const ovr = (b[0]+b[1])/2 + R(-4,8);
+  const p = makePlayer(randPos(), ovr, age, ovr + R(12,28));
+  p.loanFrom = `${pick(CITY_NATION)} ${pick(SUFFIX)}`; p.loanDiv = DIVS[pd].short;
+  p.buyFee = Math.round(playerValue(p)*1.15);
+  p.fee = Math.round(playerValue(p)*0.08);
+  p.salary = Math.round(p.salary*0.5); // 年俸の半分は親クラブが負担
+  return p;
+}
+function buyoutPlayer(id){
+  const p = S.players.find(x=>x.id===id); if(!p||!p.loanFrom) return;
+  if(S.money < p.buyFee) return toast(`資金が足りません（買取額 ${yen(p.buyFee)}）。`);
+  confirmBox(`${p.loanFrom}に買取オプション ${yen(p.buyFee)} を支払い、${p.name}を完全移籍で獲得しますか？（年俸は全額クラブ負担になります）`, ()=>{
+    spend(p.buyFee); p.salary = Math.max(p.salary*2, calcSalary(p.ovr));
+    addNews(`${p.name}の買取オプションを行使！ ${p.loanFrom}から完全移籍で獲得した。`);
+    delete p.loanFrom; delete p.loanDiv; delete p.buyFee; p.mor = clamp(p.mor+10,0,100);
+    save(); render();
+  });
+}
+function loansSeasonEnd(lines){
+  const back = S.players.filter(p=>p.loanFrom);
+  back.forEach(p=>lines.push(`期限付き移籍の${p.name}が期限満了で${p.loanFrom}へ戻った。`));
+  S.players = S.players.filter(p=>!p.loanFrom);
+}
+
+const REGIONS = {
+  sa:{name:'南米', cost:300, var:16, bonus:3, pos:['FW','FW','MF','MF','DF'], desc:'技術のある点取り屋が多い。当たり外れも大きい',
+      names:['マテウス','ウェリントン','カイオ','ブルーノ','ジエゴ','エメルソン','フェリペ','アンデルソン','ロドリゴ','ホセ','マルティン','ニコラス','セバスティアン','レナト','ヴィニシウス']},
+  eu:{name:'東欧', cost:350, var:10, bonus:2, pos:['DF','DF','GK','MF','FW'], desc:'長身の守備陣が狙い目。比較的計算できる',
+      names:['ミロシュ','ニコラ','ステファン','ルカ','ヤクブ','トマシュ','アンドレイ','ボグダン','ペトル','イヴァン','ドラガン','ゾラン']},
+  as:{name:'東南アジア・韓国', cost:150, var:8, bonus:-1, pos:['MF','MF','FW','DF','GK'], desc:'安価で真面目。母国のファンが付くことも', fans:true,
+      names:['ソムチャイ','ウィラット','タナワット','グエン・ヴァン・ナム','チャン・ミン・ドゥク','パク・ソンホ','イ・ドンギュ','キム・テヒョン','アリフ','ファイサル']},
+  af:{name:'アフリカ', cost:250, var:14, bonus:0, pos:['FW','DF','MF','FW'], desc:'若く身体能力が高い原石。素質は未知数', young:true,
+      names:['ムサ','イブラヒム','ウスマン','ママドゥ','コフィ','エマニュエル','オビナ','セイドゥ','バカリ','ヤヤ','アブドゥル']},
+};
+const MYSTERY = ['母国の2部リーグで得点王になった（らしい）','代表歴あり（本人談）','動画サイトのプレー集で話題になっていた','欧州クラブの下部組織出身','前所属クラブとの契約が謎のまま終わっている','現地のトライアウトで目を引いた','知人の代理人が「間違いない」と推薦','試合映像は1本しか見つからなかった','練習試合でハットトリック。ただし相手は草サッカーチーム','日本のアニメが好きで来日を熱望'];
+function tripCost(r){ return Math.round(REGIONS[r].cost*Math.sqrt(DIV_MULT[S.div])); }
+function dispatchScout(r){
+  const fs = S.staff.fscout;
+  if(!fs) return toast('海外スカウトがいません。スタッフタブで採用しましょう。');
+  if(S.fscoutTrip) return toast(`${fs.name}は${REGIONS[S.fscoutTrip.region].name}に出張中です。`);
+  if(S.money < tripCost(r)) return toast('資金が足りません。');
+  spend(tripCost(r));
+  S.fscoutTrip = {region:r, back:tick()+RI(2,3)};
+  addNews(`✈ 海外スカウトの${fs.name}が${REGIONS[r].name}へ出発。掘り出し物を探しに行った。`);
+  save(); render();
+}
+function genForeign(r){
+  const G = REGIONS[r], ab = staffAb('fscout');
+  const b = DIVS[S.div].base, mid = (b[0]+b[1])/2;
+  const age = G.young ? RI(18,22) : RI(21,31);
+  let ovr = mid + G.bonus + R(-G.var, G.var) + (ab-50)/10;
+  if(Math.random() < 0.1 + ab/1000) ovr += R(8,14); // 大当たり
+  const pot = age<=22 ? ovr+R(5,22) : age<=26 ? ovr+R(0,8) : ovr;
+  const p = makePlayer(pick(G.pos), ovr, age, pot, true);
+  p.name = pick(G.names); p.region = r;
+  const n = clamp(22 - ab/5, 4, 20);
+  p.lo = Math.round(p.ovr - R(0.3,1)*n); p.hi = Math.round(p.ovr + R(0.3,1)*n);
+  p.bio = pick(MYSTERY);
+  p.fee = Math.round(playerValue(p)*R(0.35,0.7));
+  p.salary = Math.round(calcSalary((p.lo+p.hi)/2)*R(0.8,1.2));
+  return p;
+}
+function checkTrip(){
+  const t = S.fscoutTrip; if(!t || tick()<t.back) return;
+  S.fscoutTrip = null;
+  const found = [], used = new Set([...S.players, ...S.foreignCands].map(p=>p.name));
+  for(let i=0, n=RI(2,3); i<n; i++){
+    const p = genForeign(t.region);
+    for(let k=0; k<10 && used.has(p.name); k++) p.name = pick(REGIONS[t.region].names);
+    used.add(p.name); found.push(p);
+  }
+  S.foreignCands.push(...found); S.foreignCands = S.foreignCands.slice(-9);
+  const fs = S.staff.fscout;
+  addNews(`✈ 海外スカウトの${fs?fs.name:''}が${REGIONS[t.region].name}から帰国。${found.length}人の候補を連れてきた。`);
+  S.inbox.push(mkRep('fscout', fs?`海外スカウト ${fs.name}`:'海外スカウト', `${REGIONS[t.region].name}で${found.length}人の選手を見つけてきました`,
+    `${found.map(p=>`・${p.name}（${p.pos}・${p.age}歳）— ${p.bio}`).join('\n')}\n実力は正直、見てみないと分かりません。獲得するかはGMの判断にお任せします。`,
+    [['view','候補を見る'],['ok','了解']]));
+}
+function signForeign(id){
+  const p = S.foreignCands.find(x=>x.id===id); if(!p) return;
+  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  if(foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
+  if(S.money < p.fee) return toast('資金が足りません。');
+  spend(p.fee);
+  S.foreignCands = S.foreignCands.filter(x=>x!==p);
+  const est = (p.lo+p.hi)/2;
+  ['lo','hi','fee'].forEach(k=>delete p[k]);
+  p.cond = 85; p.mor = 60;
+  S.players.push(p);
+  const d = p.ovr - est;
+  const verdict = d>=6 ? '大当たり！ 想像以上の逸材だ' : d>=-2 ? 'ほぼ期待通りの実力' : d>=-8 ? 'やや期待外れ…' : '完全にハズレだった…';
+  let msg = `${p.name}が加入。練習で見た実際の能力は${Math.round(p.ovr)}。${verdict}。`;
+  if(REGIONS[p.region]?.fans){ const f = changeFans(0.03, 30); msg += ` 母国メディアも報じ、ファン +${f}人。`; }
+  addNews(`🌏 ${msg}`);
+  save(); render(); toast(msg);
+}
+function dropForeign(id){ S.foreignCands = S.foreignCands.filter(x=>x.id!==id); save(); render(); }
+
+function renderForeign(){
+  const fs = S.staff.fscout, t = S.fscoutTrip;
+  const head = !fs ? `<div class="card" style="margin-top:12px"><h3>海外スカウト</h3>
+      <p class="small" style="margin:0 0 8px">海外スカウトを雇うと、南米・東欧・アジア・アフリカに派遣して、無名の外国人選手を連れてきてくれます。実力は未知数。大当たりもハズレもあります。</p>
+      <button class="btn primary" data-act="staffRole" data-arg="fscout">海外スカウトを探す</button></div>`
+    : `<div class="card" style="margin-top:12px"><h3>海外スカウト：${esc(fs.name)}（能力${fs.abil}）</h3>
+      <p class="small muted" style="margin:0 0 8px">${t?`✈ ${REGIONS[t.region].name}に出張中。第${t.back%100}節の後に帰国予定。`:'派遣先を選んでください。能力が高いほど見積もりが正確で、当たりを引きやすくなります。'} 外国籍 ${foreignCount()}/${FOREIGN_MAX}人</p>
+      <div class="opts">${Object.entries(REGIONS).map(([k,g])=>`<button class="opt" data-act="dispatch" data-arg="${k}" ${t||S.money<tripCost(k)?'disabled':''}><b>${g.name}</b><span>${yen(tripCost(k))}・${g.desc}</span></button>`).join('')}</div></div>`;
+  return head + `<div class="card-scroll" data-keep="foreign" style="margin-top:12px"><div class="mk">${S.foreignCands.map(p=>`<div class="card" data-id="${p.id}">
+      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(p.pos)} <b>${esc(p.name)}</b></span><span class="tag">${REGIONS[p.region].name}</span></div>
+      <p class="small muted" style="margin:6px 0">「${esc(p.bio)}」</p>
+      <div class="kv">
+        <span>年齢</span><span class="v">${p.age}歳</span>
+        <span>推定能力</span><span class="v"><b>${p.lo}〜${p.hi}</b> <span class="small muted">（謎）</span></span>
+        <span>年俸</span><span class="v">${yen(p.salary)}/年</span>
+        <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
+      </div>
+      <div class="row"><button class="btn" data-act="dropForeign" data-arg="${p.id}">見送る</button><button class="btn primary" data-act="signForeign" data-arg="${p.id}" ${S.money<p.fee||foreignCount()>=FOREIGN_MAX||S.players.length>=26?'disabled':''}>獲得する</button></div>
+    </div>`).join('') || `<p class="muted small">${fs?'まだ候補はいません。派遣すると2〜3週で候補を連れて帰ってきます。':'海外スカウトを雇うと、ここに候補が並びます。'}</p>`}</div></div>`;
+}
+
 // ===================== 旧セーブ互換 =====================
 function migrate(s){
   if(!s.v || s.v<2){ // 旧版は金額が実際の約1/10だったので補正
@@ -1185,7 +1328,7 @@ function migrate(s){
     S = s;
     s.staff = {manager:genStaff('manager',34), hc:genStaff('hc',32), physical:genStaff('physical',28), gk:genStaff('gk',28), youth:genStaff('youth',28), scout:genStaff('scout',28), sales:[genStaff('sales',32)]};
   }
-  s.staffMarket ??= []; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
+  s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
   s.visitsLeft ??= 1; s.watchLeft ??= 1; s.mentor ??= 0; s.cfSeason ??= 0;
   s.players.forEach(p=>{ p.mor ??= 60; });
   if(!s.staffMarket.length){ S = s; refreshStaffMarket(); }
@@ -1358,7 +1501,7 @@ function renderSquad(){
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}">
       <td>${posTag(p.pos)}</td>
-      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
+      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.loanFrom?`<span class="tag">レンタル（${esc(p.loanFrom)}）</span>`:''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
       <td>${stars(p)}</td>
@@ -1367,7 +1510,7 @@ function renderSquad(){
       <td class="num hide-s">${p.sg}<span class="muted small">/${p.goals}</span></td>
       <td class="num hide-s">${yen(p.salary)}</td>
       <td><button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用':'休ませる'}</button>
-          <button class="btn" data-act="sell" data-arg="${p.id}">売却</button></td>
+          ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取</button>`:`<button class="btn" data-act="sell" data-arg="${p.id}">売却</button>`}</td>
     </tr>`).join('')}
   </tbody></table></div></div>`;
 }
@@ -1400,22 +1543,24 @@ function renderTactics(){
 function renderMarket(){
   const xi = getLineup(true);
   return `<div class="card" style="margin-top:12px"><h3>移籍市場</h3>
-    <p class="small muted" style="margin:-4px 0 0">毎週入れ替わります。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明）':''}。登録 ${S.players.length}/26人・資金 ${yen(S.money)}</p></div>
+    <p class="small muted" style="margin:-4px 0 0">毎週入れ替わります。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明）':''}。登録 ${S.players.length}/26人・外国籍 ${foreignCount()}/${FOREIGN_MAX}人・資金 ${yen(S.money)}<br>フリー移籍（移籍金0円）や、上位クラブの若手のレンタル移籍も並びます。</p></div>
     <div class="card-scroll" data-keep="market" style="margin-top:12px"><div class="mk">${S.market.map(p=>{
       const sameXI = xi.filter(s=>s.slot===p.pos).map(s=>s.p.ovr);
       const worst = sameXI.length?Math.min(...sameXI):0;
       const up = p.ovr - worst;
       return `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-          <span>${posTag(p.pos)} <b>${esc(p.name)}</b></span>${p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
+          <span>${posTag(p.pos)} <b>${esc(p.name)}</b></span>${p.loanFrom?'<span class="tag xi">レンタル</span>':p.free?'<span class="tag xi">フリー</span>':p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
+        ${p.loanFrom?`<div class="small muted" style="margin-top:4px">${esc(p.loanFrom)}（${p.loanDiv}）の有望株。今季終了まで期限付き移籍</div>`:p.bio?`<div class="small muted" style="margin-top:4px">${esc(p.bio)}</div>`:''}
         <div class="kv" style="margin-top:8px">
           <span>年齢</span><span class="v">${p.age}歳</span>
           <span>能力</span><span class="v"><span class="ovr">${round1(p.ovr)}</span> <span class="small ${up>0?'plus':'muted'}">${up>0?`先発+${round1(up)}`:'控え級'}</span></span>
           <span>伸びしろ</span><span class="v">${stars(p)}</span>
-          <span>年俸</span><span class="v">${yen(p.salary)}/年</span>
-          <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
+          <span>年俸</span><span class="v">${yen(p.salary)}/年${p.loanFrom?'<br><span class="small muted">（残り半分は親クラブ負担）</span>':''}</span>
+          ${p.loanFrom?`<span>レンタル料</span><span class="v"><b>${yen(p.fee)}</b></span><span>買取オプション</span><span class="v">${yen(p.buyFee)}</span>`
+            :`<span>移籍金</span><span class="v"><b>${p.free?'0円（フリー）':yen(p.fee)}</b></span>`}
         </div>
-        <div class="row"><button class="btn primary" data-act="sign" data-arg="${p.id}" ${S.money<p.fee||S.players.length>=26?'disabled':''}>獲得する</button></div>
+        <div class="row"><button class="btn primary" data-act="sign" data-arg="${p.id}" ${S.money<p.fee||S.players.length>=26||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>獲得する</button></div>
       </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div></div>`;
 }
 
@@ -1521,8 +1666,8 @@ function renderStaff(){
 
 function renderTransfer(){
   const sub = ui.sub || 'market';
-  return `<div class="seg" style="margin-top:14px"><button class="${sub==='market'?'on':''}" data-act="sub" data-arg="market">移籍市場（プロ）</button><button class="${sub==='ama'?'on':''}" data-act="sub" data-arg="ama">高校・大学スカウト${S.prospects.filter(p=>p.status==='none').length?` (${S.prospects.filter(p=>p.status==='none').length})`:''}</button></div>
-    ${sub==='ama'?renderAma():renderMarket()}`;
+  return `<div class="seg" style="margin-top:14px"><button class="${sub==='market'?'on':''}" data-act="sub" data-arg="market">移籍市場</button><button class="${sub==='ama'?'on':''}" data-act="sub" data-arg="ama">高校・大学${S.prospects.filter(p=>p.status==='none').length?` (${S.prospects.filter(p=>p.status==='none').length})`:''}</button><button class="${sub==='foreign'?'on':''}" data-act="sub" data-arg="foreign">海外スカウト${S.foreignCands.length?` (${S.foreignCands.length})`:''}</button></div>
+    ${sub==='ama'?renderAma():sub==='foreign'?renderForeign():renderMarket()}`;
 }
 function renderAma(){
   const upcoming = AMA_EVENTS.filter(e=>e.r>=S.round);
@@ -1710,6 +1855,10 @@ const ACTIONS = {
   propose(a){ const [i,t]=a.split('|'); ui.flash='co'+i; proposeDeal(+i,t); },
   invest(a){ askInvest(+a); },
   crowdfund(){ crowdfund(); },
+  buyout(a){ ui.flash=a; buyoutPlayer(a); },
+  dispatch(a){ dispatchScout(a); },
+  signForeign(a){ signForeign(a); },
+  dropForeign(a){ dropForeign(a); },
   confirm(){ closeModal(); const cb=confirmCb; confirmCb=null; cb&&cb(); },
   restart(){ closeModal(); S=null; render(); },
 };
