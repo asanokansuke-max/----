@@ -149,6 +149,11 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .seg button.on{background:var(--indigo);border-color:var(--indigo);color:var(--panel)}
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .tiers .btn{padding:6px 4px;line-height:1.35}
+.offplan{margin:0;padding-left:20px;font-size:13.5px}
+.offplan li{padding:3px 0}
+.offplan li.done{color:var(--muted);text-decoration:line-through}
+.offplan li.now{font-weight:700}
+.offplan li.now::marker{color:var(--gold)}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -343,11 +348,7 @@ function startSeason(){
   refreshStaffMarket();
   S.fin = {income:0, expense:0};
   S.players.forEach(p=>{p.sg=0; p.sa=0;});
-  // 目標順位 = 戦力順位
-  const my = teamRating(getLineup(true)).ovr;
-  const better = S.teams.filter(t=>!t.isMe && t.str > my).length;
-  S.target = clamp(better+1, 1, 9);
-  if(S.div===0 && S.season===1) S.target = Math.max(S.target, 7);
+  computeTarget(); // 目標順位 = 戦力順位
 }
 
 // ===================== 戦力計算 =====================
@@ -556,9 +557,9 @@ function genCandidate(kind){
 
 function payWeekly(home){
   const out = {ticket:0, att:0, sponsor:0, salary:0, upkeep:0};
-  out.sponsor = Math.round((S.sponsor+contractIncome())/ROUNDS); earn(out.sponsor);
-  out.salary = Math.round((S.players.filter(p=>!p.loan).reduce((a,p)=>a+p.salary,0)+staffSalary())/ROUNDS); spend(out.salary);
-  out.upkeep = Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0) * (1+S.div*0.3);
+  out.sponsor = Math.round((S.sponsor+contractIncome())/YEAR_WEEKS); earn(out.sponsor);
+  out.salary = Math.round((S.players.filter(p=>!p.loan).reduce((a,p)=>a+p.salary,0)+staffSalary())/YEAR_WEEKS); spend(out.salary);
+  out.upkeep = Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0) * (1+S.div*0.3) * 0.75;
   out.upkeep = Math.round(out.upkeep); spend(out.upkeep);
   if(home){
     const tk = TICKET[S.ticket]; const last = S.results.slice(-5);
@@ -572,6 +573,7 @@ function payWeekly(home){
 }
 
 function advance(){
+  if(S && !S.over && isOff()) return advanceOff();
   if(!S || S.over || S.round>=ROUNDS) return;
   const before = {money:S.money, fans:S.fans};
   expireReports();
@@ -692,7 +694,8 @@ function endSeason(){
   startSeason();
   refreshMarket(6);
   for(let i=0;i<3;i++) S.market.push(genCandidate('free')); // オフの契約満了組
-  addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
+  S.phase = 'off'; S.offWeek = 0; S.camp = null;
+  addNews(`オフシーズンに入った。開幕は${OFF_WEEKS}週後。`);
   if(S.trust<=0) S.over='fired';
   save();
   return report;
@@ -846,10 +849,10 @@ function moraleFace(m){ return m>=70?'😊':m>=45?'🙂':m>=25?'😐':'😠'; }
 function hcFrom(){ const h=S.staff.hc; return h?`ヘッドコーチ ${h.name}`:'ヘッドコーチ（空席）'; }
 function phyFrom(){ const h=S.staff.physical; return h?`フィジカルコーチ ${h.name}`:'メディカルスタッフ'; }
 function scFrom(){ const h=S.staff.scout; return h?`チーフスカウト ${h.name}`:'スカウト部'; }
-function tick(){ return S.season*100 + S.round; }
+function tick(){ return isOff() ? S.season*100 - 10 + S.offWeek : S.season*100 + S.round; }
 function recentRep(p){ return p.repT && tick()-p.repT < 5; }
 function mkRep(kind, from, title, body, opts, extra){
-  return Object.assign({id:uid(), kind, from, title, body, opts, t:tick(), s:S.season, r:S.round}, extra||{});
+  return Object.assign({id:uid(), kind, from, title, body, opts, t:tick(), s:S.season, r:S.round, off:isOff()?OFF_PLAN[S.offWeek]?.label||'オフ':null}, extra||{});
 }
 function boostMor(list, d){ list.forEach(p=>p.mor = clamp((p.mor??60)+d,0,100)); }
 function ctxNow(){
@@ -946,13 +949,14 @@ const REPORTS = {
       return `${s.name}は新天地へ旅立った。${STAFF_ROLES[s.role].name}の後任を探そう。`; }
   },
   fscout:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='foreign'; } return '海外スカウトの報告を確認した。'; } },
+  camp:{ make(){ return null; }, resolve(k){ return campResolve(k); } },
   ama:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='ama'; } return 'スカウトの報告を確認した。'; } },
 };
 function generateReports(){
   if(S.inbox.length>=4) return;
   const c = ctxNow();
   const chance = 0.4 + staffAb('hc')/220;
-  const kinds = Object.keys(REPORTS).filter(k=>k!=='ama'&&k!=='fscout').sort(()=>Math.random()-0.5);
+  const kinds = Object.keys(REPORTS).filter(k=>!['ama','fscout','camp'].includes(k)).sort(()=>Math.random()-0.5);
   let made = 0, max = staffAb('hc')>=55 ? 2 : 1;
   for(const k of kinds){
     if(made>=max || Math.random()>chance) continue;
@@ -1316,6 +1320,165 @@ function renderForeign(){
     </div>`).join('') || `<p class="muted small">${fs?'まだ候補はいません。派遣すると2〜3週で候補を連れて帰ってきます。':'海外スカウトを雇うと、ここに候補が並びます。'}</p>`}</div></div>`;
 }
 
+// ===================== オフシーズン =====================
+const OFF_WEEKS = 6;
+const YEAR_WEEKS = ROUNDS + OFF_WEEKS; // 年俸・スポンサー料はこの週数で割って毎週やりとりする
+const OFF_PLAN = [
+  {label:'12月上旬', title:'契約更改・戦力外通告', desc:'主力との契約更改。構想外の選手には戦力外を通告できる（選手タブ）'},
+  {label:'12月下旬', title:'合同トライアウト', desc:'戦力外になった選手たちが集まる。フリーの選手が市場に増える'},
+  {label:'1月上旬',  title:'高校選手権・新体制発表会', desc:'冬の高校選手権。新体制発表会でファンにお披露目。キャンプ地の検討も'},
+  {label:'1月下旬',  title:'始動・キャンプ地決定', desc:'チーム始動。春季キャンプの行き先を決める'},
+  {label:'2月上旬',  title:'春季キャンプ（前半）', desc:'キャンプで鍛える。練習試合も'},
+  {label:'2月下旬',  title:'春季キャンプ（後半）・開幕準備', desc:'仕上げの時期。この週が終わると開幕'},
+];
+const CAMPS = {
+  okinawa: {name:'沖縄キャンプ', cost:2500, g:1.5, desc:'温暖で練習効果大。J1クラブとの練習試合も'},
+  miyazaki:{name:'宮崎キャンプ', cost:1500, g:1.3, desc:'定番のキャンプ地。バランスが良い'},
+  thai:    {name:'タイ遠征', cost:2000, g:1.3, desc:'現地企業との縁ができ、営業に効果', thai:true},
+  home:    {name:'金沢で調整', cost:0, g:0.8, desc:'費用はかからないが、雪で思うように練習できない'},
+};
+function pushCampReport(){
+  S.inbox.push(mkRep('camp', hcFrom(), '春季キャンプの行き先を決めてください', `2月の春季キャンプ（2週間）の行き先を決めます。キャンプの質で開幕までの仕上がりが変わります。（資金 ${yen(S.money)}）\n${Object.values(CAMPS).map(c=>`・${c.name}：${c.desc}`).join('\n')}`,
+    Object.entries(CAMPS).map(([k,c])=>[k, `${c.name}（${c.cost?yen(campCost(k)):'無料'}）`])));
+}
+function campCost(k){ return Math.round(CAMPS[k].cost*(1+S.div*0.3)); }
+function isOff(){ return S.phase==='off'; }
+function offTraining(w){
+  const lines = [];
+  for(const p of S.players){
+    if(p.inj>0){ p.inj = Math.max(0,p.inj-1); }
+    if(w<=2){ p.cond = 100; continue; } // 12月〜1月上旬は休暇
+    const camp = w>=4 ? CAMPS[S.camp||'home'] : {g:0.5};
+    const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
+    const facG = (0.8+0.15*S.fac.training) * (p.age<=23 ? 0.8+staffAb('youth')/250 : 1);
+    p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*camp.g*ageF*facG*R(0.5,1.5));
+    p.cond = clamp(p.cond - 4 + 8, 40, 100);
+    if(w>=4 && Math.random()<0.012*(1.15-staffAb('physical')/250)){ p.inj = RI(1,3); lines.push(`キャンプ中に${p.name}が負傷（全治${p.inj}週）。`); }
+  }
+  return lines;
+}
+function payOffWeek(){
+  const sp = Math.round((S.sponsor+contractIncome())/YEAR_WEEKS); earn(sp);
+  const sal = Math.round((S.players.filter(p=>!p.loan).reduce((a,p)=>a+p.salary,0)+staffSalary())/YEAR_WEEKS); spend(sal);
+  const up = Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+S.div*0.3)*0.75); spend(up);
+}
+const OFF_EVENTS = [
+  w=>{ // 契約更改
+    const lines = ['契約更改と戦力外通告の時期。構想外の選手は選手タブの「戦力外」で契約を打ち切れます。'];
+    const c = ctxNow();
+    const top = S.players.filter(p=>!p.loanFrom && p.raised!==S.season && (p.ovr>=c.avg+2 || p.sg>=4) && p.age>=21).sort((a,b)=>b.ovr-a.ovr).slice(0,2);
+    for(const p of top){
+      const ask = Math.round(Math.max(p.salary*1.3, calcSalary(p.ovr))+100);
+      S.inbox.push(mkRep('raise', hcFrom(), `契約更改：${p.name}が年俸アップを希望`, `昨季チームを支えた${p.name}（${p.pos}・能力${Math.round(p.ovr)}）との契約更改です。本人は年俸${yen(p.salary)}→${yen(ask)}を希望しています。`,
+        [['ok',`希望をのむ（${yen(ask)}）`],['nego','間を取って交渉する'],['no','現状維持で押し切る']],{pid:p.id, ask}));
+      p.repT = tick();
+    }
+    return lines;
+  },
+  w=>{ // 合同トライアウト
+    const n = RI(3,5);
+    for(let i=0;i<n;i++){ const p = genCandidate('free'); p.bio = '合同トライアウトに参加。再起をかける'; p.salary = Math.round(p.salary*0.6); S.market.push(p); }
+    return [`合同トライアウトが開催され、${n}人の選手が移籍市場に加わった（年俸は控えめ）。`];
+  },
+  w=>{ // 高校選手権・新体制発表会
+    const sch = pick(SCHOOLS);
+    const res = pick(['初戦で涙をのんだ','ベスト16に進出','ベスト8に進出','ベスト4の快進撃','準優勝に輝いた']);
+    const lines = [`全国高校サッカー選手権で石川県代表の${sch}が${res}。`];
+    const ours = S.players.filter(p=>p.from===sch && p.age<=19);
+    const f = changeFans(0.03 + (ours.length?0.03:0), 30);
+    if(ours.length) lines.push(`${sch}出身の${ours.map(p=>p.name).join('、')}も後輩たちの戦いぶりに刺激を受けた。`);
+    lines.push(`金沢市内で新体制発表会を開催。新ユニフォームもお披露目され、ファン +${f}人。`);
+    pushCampReport();
+    lines.push('春季キャンプの行き先を決めましょう（報告タブ）。');
+    return lines;
+  },
+  w=>{ // 始動
+    const lines = ['チームが始動。選手たちが金沢に戻ってきた。'];
+    if(S.camp) lines.push(`来週から${CAMPS[S.camp].name}へ出発する。`);
+    else if(S.inbox.some(r=>r.kind==='camp')) lines.push('キャンプ地がまだ決まっていません。決めないと金沢で調整になります（報告タブ）。');
+    return lines;
+  },
+  w=>campDay(),
+  w=>campDay(true),
+];
+function campDay(last){
+  const c = CAMPS[S.camp||'home']; const lines = [];
+  const lv = Math.min(4, S.div+1);
+  const opp = `${pick(CITY_NATION)} ${pick(SUFFIX)}（${DIVS[lv].short}）`;
+  const my = teamRating(getLineup(true)).ovr, os = DIVS[lv].base[0] + R(-2,4);
+  const gu = poisson(lam(my, os, true, 1)), go = poisson(lam(os, my, false, 0.9));
+  lines.push(`${c.name}：練習試合 vs ${opp} ${gu}-${go}${gu>go?'。手応えのある勝利':gu<go?'。課題が見えた':''}。`);
+  if(S.camp==='thai' && !last){ S.companies.forEach(co=>{ if(co.size>=2) co.rel=clamp(co.rel+4,0,100); }); lines.push('タイ遠征が地元経済紙で取り上げられ、企業の関心が高まった（関係+4）。'); }
+  if(S.camp==='okinawa' && Math.random()<0.5){ const f=changeFans(0.01,10); lines.push(`沖縄まで駆けつけたサポーターと交流。ファン +${f}人。`); }
+  if(S.camp==='home') lines.push('金沢は連日の雪。室内練習場を借りてしのいだ。');
+  if(last) lines.push('キャンプ打ち上げ。いよいよ開幕だ！');
+  return lines;
+}
+function campResolve(k){
+  if(k!=='home' && S.money < campCost(k)){ S.camp='home'; return `資金が足りず、${CAMPS[k].name}は断念。金沢で調整することになった。`; }
+  spend(campCost(k)); S.camp = k;
+  return `春季キャンプは${CAMPS[k].name}に決定！`;
+}
+function releasePlayer(id){
+  const p = S.players.find(x=>x.id===id); if(!p) return;
+  if(S.players.length<=14) return toast('選手は最低14人必要です。');
+  confirmBox(`${p.name}（${p.age}歳・年俸${yen(p.salary)}）に戦力外を通告しますか？ 移籍金は入りませんが、年俸の負担がなくなります。`, ()=>{
+    S.players = S.players.filter(x=>x!==p);
+    addNews(`${p.name}に戦力外を通告。「${S.club}で過ごした日々に感謝します」とコメント。`);
+    if(p.age<=26 && p.ovr>=teamRating(getLineup(true)).ovr) boostMor(S.players,-2);
+    save(); render();
+  });
+}
+function computeTarget(){
+  const my = teamRating(getLineup(true)).ovr;
+  const better = S.teams.filter(t=>!t.isMe && t.str > my).length;
+  S.target = clamp(better+1, 1, 9);
+  if(S.div===0 && S.season===1) S.target = Math.max(S.target, 7);
+}
+function advanceOff(){
+  const before = {money:S.money, fans:S.fans};
+  expireReports();
+  const w = S.offWeek;
+  const lines = [...offTraining(w), ...OFF_EVENTS[w](w)];
+  payOffWeek();
+  refreshMarket(3);
+  S.offWeek++;
+  checkTrip();
+  S.visitsLeft = salesTeam().length;
+  lines.forEach(l=>addNews(l));
+  let kickoff = false;
+  if(S.offWeek>=OFF_WEEKS){
+    kickoff = true;
+    S.phase = null; S.offWeek = 0; S.camp = null;
+    S.sponsor = Math.round(DIVS[S.div].sponsor*1.4 + S.fans*3);
+    computeTarget();
+    S.players.forEach(p=>{ p.cond = Math.max(p.cond, 90); });
+    addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
+  }
+  save();
+  showOffWeek(w, lines, {dm:S.money-before.money, df:S.fans-before.fans}, kickoff);
+}
+function showOffWeek(w, lines, d, kickoff){
+  const P = OFF_PLAN[w];
+  openModal(`<div class="small muted">オフシーズン ${w+1}/${OFF_WEEKS}週・${P.label}</div>
+    <h2>${kickoff?`⚽ ${S.season}年目、開幕！`:esc(P.title)}</h2>
+    <ul class="small" style="padding-left:18px">${lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
+    <div class="kv">
+      <span>資金の増減</span><span class="v">${d.dm>=0?'<span class="plus">+':'<span class="minus">'}${yen(d.dm)}</span></span>
+      <span>ファン</span><span class="v ${d.df>=0?'plus':'minus'}">${d.df>=0?'+':''}${d.df}人</span>
+      ${kickoff?`<span>今季のリーグ</span><span class="v">${DIVS[S.div].name}</span><span>フロントの目標</span><span class="v"><b>${S.target}位以内</b></span>`:''}
+    </div>
+    ${!kickoff && OFF_PLAN[w+1]?`<p class="small muted">次の週：${OFF_PLAN[w+1].label}「${OFF_PLAN[w+1].title}」</p>`:''}
+    <div class="row"><button class="btn primary" data-act="close">続ける</button></div>`);
+}
+function renderOffCard(){
+  const w = S.offWeek;
+  return `<div class="card" style="margin-top:14px"><h3>オフシーズン — 開幕まであと${OFF_WEEKS-w}週</h3>
+    <ol class="offplan">${OFF_PLAN.map((p,i)=>`<li class="${i<w?'done':i===w?'now':''}"><b>${p.label}</b> ${esc(p.title)}${i===w?`<div class="small muted">${esc(p.desc)}</div>`:''}</li>`).join('')}</ol>
+    <p class="small muted" style="margin:6px 0 0">オフの間も移籍・スタッフ人事・営業ができます。${S.camp?`キャンプ：${CAMPS[S.camp].name}`:''}</p>
+  </div>`;
+}
+
 // ===================== 旧セーブ互換 =====================
 function migrate(s){
   if(!s.v || s.v<2){ // 旧版は金額が実際の約1/10だったので補正
@@ -1355,7 +1518,7 @@ function posTag(p){ return `<span class="pos ${p}">${p}</span>`; }
 function resBadge(r){ return `<span class="res ${r}">${{W:'勝',D:'分',L:'負'}[r]}</span>`; }
 
 function nextMatch(){
-  if(S.round>=ROUNDS) return null;
+  if(isOff() || S.round>=ROUNDS) return null;
   const pr = S.schedule[S.round].find(([h,a])=>h===0||a===0);
   const home = pr[0]===0; const oi = home?pr[1]:pr[0];
   return {home, opp:S.teams[oi], oi};
@@ -1412,7 +1575,7 @@ function render(){
   <header class="top"><div class="top-inner">
     <div class="club-row">
       <span class="club-name"><span class="mark">◆</span> ${esc(S.club)}</span>
-      <span class="meta">${S.season}年目・${DIVS[S.div].name}・${S.round<ROUNDS?`第${S.round+1}節（${month(S.round)}月）`:'シーズン終了'}</span>
+      <span class="meta">${S.season}年目・${DIVS[S.div].name}・${isOff()?`オフシーズン（${OFF_PLAN[S.offWeek].label}）`:S.round<ROUNDS?`第${S.round+1}節（${month(S.round)}月）`:'シーズン終了'}</span>
     </div>
     <div class="stats">
       <span class="stat">資金 <b class="${S.money<0?'neg':''}">${yen(S.money)}</b></span>
@@ -1435,8 +1598,8 @@ function render(){
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
   f.innerHTML = `<div class="footer-inner">
-    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">📋 報告${ni}件</a>　`:''}${nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
-    ${nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
+    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">📋 報告${ni}件</a>　`:''}${isOff() ? `オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
+    ${isOff() ? `<button class="go" data-act="advance">${S.offWeek>=OFF_WEEKS-1?'開幕へ ▶':'次の週へ ▶'}</button>` : nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
   </div>`;
 }
 
@@ -1455,6 +1618,8 @@ function renderHome(){
       <p class="small" style="text-align:center;margin:10px 0 0">相手は<b>${word}</b>。戦術：${TACTICS[S.tactic].name} / ${S.formation} / ${TRAINING[S.training].name}</p>
       ${licenseWarn()}
     </div>`;
+  } else if(isOff()){
+    match = renderOffCard();
   } else {
     match = `<div class="card" style="margin-top:14px"><h3>シーズン終了</h3><p>全日程が終了しました。最終順位は <b>${rank}位</b>。下のボタンからシーズン総括へ進みましょう。</p></div>`;
   }
@@ -1510,7 +1675,7 @@ function renderSquad(){
       <td class="num hide-s">${p.sg}<span class="muted small">/${p.goals}</span></td>
       <td class="num hide-s">${yen(p.salary)}</td>
       <td><button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用':'休ませる'}</button>
-          ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取</button>`:`<button class="btn" data-act="sell" data-arg="${p.id}">売却</button>`}</td>
+          ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取</button>`:`<button class="btn" data-act="sell" data-arg="${p.id}">売却</button>`}${isOff()&&!p.loanFrom?` <button class="btn" data-act="release" data-arg="${p.id}">戦力外</button>`:''}</td>
     </tr>`).join('')}
   </tbody></table></div></div>`;
 }
@@ -1608,7 +1773,7 @@ function renderInbox(){
   if(!S.inbox.length) return `<div class="card" style="margin-top:14px"><h3>報告</h3><p class="muted" style="margin:0">いま対応が必要な報告はありません。ヘッドコーチやスタッフ、フロントから報告が届くとここに表示されます。</p></div>`;
   return `<p class="small muted" style="margin:14px 0 8px">返答しないまま次の節を2回進めると、いちばん下の選択肢で自動的に処理されます。</p>
     <div class="card-scroll" data-keep="inbox"><div class="grid" style="margin-top:0">${S.inbox.map(r=>`<div class="card rep">
-      <div class="rep-from">${esc(r.from)} <span class="muted small">・${r.s}年目 第${r.r+1}節後</span> ${tick()-r.t>=2?'<span class="tag inj">今週中に返答</span>':''}</div>
+      <div class="rep-from">${esc(r.from)} <span class="muted small">・${r.s}年目 ${r.off?`オフ（${r.off}）`:`第${r.r+1}節後`}</span> ${tick()-r.t>=2?'<span class="tag inj">今週中に返答</span>':''}</div>
       <h4>${esc(r.title)}</h4>
       <p class="small" style="white-space:pre-line;margin:0">${esc(r.body)}</p>
       <div class="row" style="justify-content:flex-start">${r.opts.map(([k,l],i)=>`<button class="btn ${i===0?'primary':''}" data-act="resolve" data-arg="${r.id}|${k}">${esc(l)}</button>`).join('')}</div>
@@ -1813,9 +1978,9 @@ function showSeasonEnd(){
     ${rep.retired.length?`<p class="small"><b>引退：</b>${rep.retired.map(esc).join('、')}</p>`:''}
     <p class="small"><b>ユース昇格：</b>${rep.youth.map(esc).join('、')}</p>
     ${rep.joined.length?`<p class="small"><b>高校から入団：</b>${rep.joined.map(esc).join('、')}</p>`:''}
-    <p class="small muted">新シーズンは${DIVS[S.div].name}。フロントの目標は${S.target}位以内。</p>
+    <p class="small muted">新シーズンは${DIVS[S.div].name}。開幕までの${OFF_WEEKS}週間はオフシーズン（契約更改・トライアウト・キャンプ）です。</p>
     ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}
-    <div class="row"><button class="btn primary" data-act="seasonDone">新シーズンへ</button></div>`);
+    <div class="row"><button class="btn primary" data-act="seasonDone">オフシーズンへ</button></div>`);
 }
 
 function showGameOver(){
@@ -1856,6 +2021,7 @@ const ACTIONS = {
   invest(a){ askInvest(+a); },
   crowdfund(){ crowdfund(); },
   buyout(a){ ui.flash=a; buyoutPlayer(a); },
+  release(a){ releasePlayer(a); },
   dispatch(a){ dispatchScout(a); },
   signForeign(a){ signForeign(a); },
   dropForeign(a){ dropForeign(a); },
