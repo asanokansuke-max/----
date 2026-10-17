@@ -159,6 +159,12 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .rbar i.pot{background:var(--gold-soft);box-shadow:inset 0 0 0 1px var(--gold)}
 .rbar i.now{background:var(--indigo);top:2px;bottom:2px}
 .rbar-axis{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:6px}
+.infobar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:8px 0;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12.5px}
+.infobar details{flex-basis:100%;color:var(--muted)}
+.infobar summary{cursor:pointer;color:var(--indigo);font-weight:600}
+.infobar .btn{padding:3px 10px;font-size:12px}
+.infobar .regions{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.infobar .regions .btn{line-height:1.3;padding:4px 2px}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -1337,13 +1343,15 @@ function dropForeign(id){ S.foreignCands = S.foreignCands.filter(x=>x.id!==id); 
 
 function renderForeign(){
   const fs = S.staff.fscout, t = S.fscoutTrip;
-  const head = !fs ? `<div class="card" style="margin-top:12px"><h3>海外スカウト</h3>
-      <p class="small" style="margin:0 0 8px">海外スカウトを雇うと、南米・東欧・アジア・アフリカに派遣して、無名の外国人選手を連れてきてくれます。実力は未知数。大当たりもハズレもあります。</p>
-      <button class="btn primary" data-act="staffRole" data-arg="fscout">海外スカウトを探す</button></div>`
-    : `<div class="card" style="margin-top:12px"><h3>海外スカウト：${esc(fs.name)}（能力${fs.abil}）</h3>
-      <p class="small muted" style="margin:0 0 8px">${t?`✈ ${REGIONS[t.region].name}に出張中。第${t.back%100}節の後に帰国予定。`:'派遣先を選んでください。能力が高いほど見積もりが正確で、当たりを引きやすくなります。'} 外国籍 ${foreignCount()}/${FOREIGN_MAX}人</p>
-      <div class="opts">${Object.entries(REGIONS).map(([k,g])=>`<button class="opt" data-act="dispatch" data-arg="${k}" ${t||S.money<tripCost(k)?'disabled':''}><b>${g.name}</b><span>${yen(tripCost(k))}・${g.desc}</span></button>`).join('')}</div></div>`;
-  return head + `<div class="card-scroll" data-keep="foreign" style="margin-top:12px"><div class="mk">${S.foreignCands.map(p=>`<div class="card" data-id="${p.id}">
+  const head = !fs ? `<div class="infobar">
+      <span>海外スカウトがいません</span><button class="btn primary" data-act="staffRole" data-arg="fscout">探す</button>
+      <details><summary>説明</summary>海外スカウトを雇うと、南米・東欧・アジア・アフリカに派遣して、無名の外国人選手を連れてきてくれます。実力は未知数。大当たりもハズレもあります。</details></div>`
+    : `<div class="infobar">
+      <span>${esc(fs.name)}（能力${fs.abil}）</span><span>外国籍 <b>${foreignCount()}</b>/${FOREIGN_MAX}</span>
+      ${t?`<span>✈ ${REGIONS[t.region].name}に出張中（第${t.back%100}節後に帰国）</span>`:''}
+      ${t?'':`<div class="regions">${Object.entries(REGIONS).map(([k,g])=>`<button class="btn" data-act="dispatch" data-arg="${k}" ${S.money<tripCost(k)?'disabled':''}>${g.name}<br><span class="small muted">${yen(tripCost(k))}</span></button>`).join('')}</div>`}
+      <details><summary>行き先の特徴</summary>${Object.values(REGIONS).map(g=>`${g.name}：${g.desc}`).join('<br>')}<br>能力が高いスカウトほど見積もりが正確で、当たりを引きやすくなります。</details></div>`;
+  return head + `<div class="card-scroll" data-keep="foreign"><div class="mk">${S.foreignCands.map(p=>`<div class="card" data-id="${p.id}">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(p.pos)} <b>${esc(p.name)}</b></span><span class="tag">${REGIONS[p.region].name}</span></div>
       <p class="small muted" style="margin:6px 0">「${esc(p.bio)}」</p>
       <div class="kv">
@@ -1743,9 +1751,11 @@ function renderTactics(){
 
 function renderMarket(){
   const xi = getLineup(true);
-  return `<div class="card" style="margin-top:12px"><h3>移籍市場</h3>
-    <p class="small muted" style="margin:-4px 0 0">毎週入れ替わります。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明）':''}。登録 ${S.players.length}/26人・外国籍 ${foreignCount()}/${FOREIGN_MAX}人・資金 ${yen(S.money)}<br>フリー移籍（移籍金0円）や、上位クラブの若手のレンタル移籍も並びます。</p></div>
-    <div class="card-scroll" data-keep="market" style="margin-top:12px"><div class="mk">${S.market.map(p=>{
+  return `<div class="infobar">
+      <span>登録 <b>${S.players.length}</b>/26</span><span>外国籍 <b>${foreignCount()}</b>/${FOREIGN_MAX}</span><span>資金 <b>${yen(S.money)}</b></span>
+      <details><summary>説明</summary>毎週入れ替わります。フリー移籍（移籍金0円）や、上位クラブの若手のレンタル移籍も並びます。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明。Lv2以上で見える）':''}。</details>
+    </div>
+    <div class="card-scroll" data-keep="market"><div class="mk">${S.market.map(p=>{
       const sameXI = xi.filter(s=>s.slot===p.pos).map(s=>s.p.ovr);
       const worst = sameXI.length?Math.min(...sameXI):0;
       const up = p.ovr - worst;
@@ -1867,21 +1877,17 @@ function renderStaff(){
 
 function renderTransfer(){
   const sub = ui.sub || 'market';
-  return `<div class="seg" style="margin-top:14px"><button class="${sub==='market'?'on':''}" data-act="sub" data-arg="market">移籍市場</button><button class="${sub==='ama'?'on':''}" data-act="sub" data-arg="ama">高校・大学${S.prospects.filter(p=>p.status==='none').length?` (${S.prospects.filter(p=>p.status==='none').length})`:''}</button><button class="${sub==='foreign'?'on':''}" data-act="sub" data-arg="foreign">海外スカウト${S.foreignCands.length?` (${S.foreignCands.length})`:''}</button></div>
+  return `<div class="seg" style="margin-top:10px;margin-bottom:0"><button class="${sub==='market'?'on':''}" data-act="sub" data-arg="market">移籍市場</button><button class="${sub==='ama'?'on':''}" data-act="sub" data-arg="ama">高校・大学${S.prospects.filter(p=>p.status==='none').length?` (${S.prospects.filter(p=>p.status==='none').length})`:''}</button><button class="${sub==='foreign'?'on':''}" data-act="sub" data-arg="foreign">海外スカウト${S.foreignCands.length?` (${S.foreignCands.length})`:''}</button></div>
     ${sub==='ama'?renderAma():sub==='foreign'?renderForeign():renderMarket()}`;
 }
 function renderAma(){
   const upcoming = AMA_EVENTS.filter(e=>e.r>=S.round);
   const st = {none:'', signed:'<span class="tag xi">内定</span>', joined:'<span class="tag xi">合流済み</span>', declined:'<span class="tag rest">辞退</span>'};
-  return `<div class="card" style="margin-top:12px"><h3>地元アマチュアのスカウト</h3>
-      <p class="small" style="margin:0">大会で活躍した選手をスカウトがリストアップ。<b>視察</b>するほど見積もりが正確になり、本人の関心も高まります。</p>
-      <div class="kv" style="margin-top:8px">
-        <span>今週の視察枠</span><span class="v">${S.watchLeft} / ${watchPerWeek()}回（1回 ${yen(watchCost())}）</span>
-        <span>見積もりの精度</span><span class="v">±${noiseLevel().toFixed(0)}（スカウト網・チーフスカウトで向上）</span>
-        <span>次の大会</span><span class="v small">${upcoming[0]?`第${upcoming[0].r+1}節後：${upcoming[0].name}`:'今季は終了'}</span>
-      </div>
-      <details class="small muted" style="margin-top:6px"><summary>今後の大会と入団・登録のしくみ</summary>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>・視察すると推定能力の幅が約半分に狭まり、入団の見込みも上がります（バーの幅が実力の見積もり）。<br>・高校生は内定後に<b>2種登録</b>すれば、今季から試合に出せます。<br>・大学生は内定すると<b>特別指定選手</b>として今季から出場できます。<br>・どちらもアマチュアなので今季は年俸なし。来季からプロ契約になります。</details></div>
-    <div class="card-scroll" data-keep="ama" style="margin-top:12px"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
+  return `<div class="infobar">
+      <span>視察 <b>${S.watchLeft}</b>/${watchPerWeek()}回</span><span>精度 ±${noiseLevel().toFixed(0)}</span><span>次の大会 ${upcoming[0]?`第${upcoming[0].r+1}節後`:'今季終了'}</span>
+      <details><summary>説明</summary>大会で活躍した選手をスカウトがリストアップします。<br>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>・視察すると推定能力の幅が約半分に狭まり、入団の見込みも上がります（バーの幅が実力の見積もり）。<br>・高校生は内定後に<b>2種登録</b>すれば、今季から試合に出せます。<br>・大学生は内定すると<b>特別指定選手</b>として今季から出場できます。<br>・どちらもアマチュアなので今季は年俸なし。来季からプロ契約になります。<br>・精度はスカウト網とチーフスカウトで上がります。</details>
+    </div>
+    <div class="card-scroll" data-keep="ama"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b></span>${st[pr.status]}</div>
       <div class="small muted" style="margin:4px 0">${esc(pr.school)} ${pr.grade}・${pr.age}歳</div>
       <div><span class="tag">${esc(pr.tag)}</span> ${pr.hot?'<span class="tag inj">他クラブも注目</span>':''}</div>
