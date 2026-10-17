@@ -161,10 +161,15 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .rbar-axis{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:6px}
 .infobar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;margin:8px 0;padding:8px 12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;font-size:12.5px}
 .infobar details{flex-basis:100%;color:var(--muted)}
-.infobar summary{cursor:pointer;color:var(--indigo);font-weight:600}
+summary{cursor:pointer;color:var(--indigo);font-weight:600}
 .infobar .btn{padding:3px 10px;font-size:12px}
 .infobar .regions{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .infobar .regions .btn{line-height:1.3;padding:4px 2px}
+.pcell{white-space:normal!important;min-width:5.5em;max-width:7.5em}
+.pname{font-weight:600;line-height:1.3;word-break:keep-all;overflow-wrap:anywhere}
+.ptags{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+.ptags .tag{font-size:10px;padding:0 5px;line-height:1.6}
+.ptags:empty{display:none}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -1705,12 +1710,12 @@ function renderSquad(){
   const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
   return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
-  <p class="small muted" style="margin-top:-4px">スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。</p>
+  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>印：2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中</details>
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}">
       <td>${posTag(p.pos)}</td>
-      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.loanFrom?`<span class="tag">レンタル（${esc(p.loanFrom)}）</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur}</span>`:''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
+      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">${esc(p.from.replace('大学','大').replace('高校','高'))}</span>`:''}</div></td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
       <td>${stars(p)}</td>
