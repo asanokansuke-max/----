@@ -22,12 +22,23 @@
   --win:#3fbf74;--loss:#e5675a;--draw:#9aa3b2;--warn:#e6a63a;--shadow:none;
 }
 *{box-sizing:border-box}
-html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%;display:flex;flex-direction:column;overflow:hidden}
+#app{flex:1;min-height:0;display:flex;flex-direction:column}
 button{font:inherit;color:inherit;cursor:pointer}
 select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
-.wrap{max-width:1040px;margin:0 auto;padding:0 16px 110px}
-header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 16px}
+main.main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+/* リスト系のタブはページ全体を動かさず、リストの枠だけがスクロールする */
+main.fill{overflow:hidden}
+main.fill>.wrap{height:100%;display:flex;flex-direction:column}
+main.fill>.wrap>*{flex-shrink:0}
+main.fill .grow{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+main.fill .grow>*{flex-shrink:0}
+main.fill .grow>.list-scroll,main.fill .grow>.card-scroll,main.fill>.wrap>.card-scroll{flex:1 1 0;min-height:120px;max-height:none}
+main.fill .side{flex:0 1 auto;max-height:26%;overflow-y:auto}
+.title-wrap{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+header.top{flex:none;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
 .top-inner{max-width:1040px;margin:0 auto;padding:10px 16px 0}
 .club-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .club-name{font-size:19px;font-weight:800;letter-spacing:.02em}
@@ -71,6 +82,8 @@ table.sticky th:nth-child(1),table.sticky th:nth-child(2){z-index:3}
 table.sticky tr.me td{background:var(--gold-soft)}
 .card-scroll{max-height:min(66vh,640px);overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2);-webkit-overflow-scrolling:touch}
 .card-scroll .card{box-shadow:none}
+.card-scroll h3.grp{margin:14px 0 8px;font-size:14px;color:var(--muted)}
+.card-scroll h3.grp:first-of-type{margin-top:4px}
 @keyframes flash{from{background:var(--gold-soft);box-shadow:0 0 0 2px var(--gold)}to{}}
 .flash,.flash td{animation:flash 1.6s ease-out}
 @media (prefers-reduced-motion:reduce){.flash,.flash td{animation:none;outline:2px solid var(--gold)}}
@@ -108,7 +121,7 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .lv i{width:18px;height:6px;border-radius:3px;background:var(--line)}
 .lv i.on{background:var(--gold)}
 .warn{border-left:4px solid var(--warn);background:var(--gold-soft);padding:8px 10px;border-radius:6px;font-size:13px;margin-top:10px}
-.footer-bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);z-index:6}
+.footer-bar{flex:none;background:var(--panel);border-top:1px solid var(--line);z-index:6}
 .footer-inner{max-width:1040px;margin:0 auto;padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between}
 .footer-inner .info{font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .go{background:var(--gold);color:#fff;border:0;border-radius:10px;padding:11px 20px;font-weight:800;font-size:15px;white-space:nowrap}
@@ -147,7 +160,6 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .ladder span{font-size:12px;padding:3px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
 .ladder span.on{background:var(--gold);color:#fff;border-color:var(--gold)}
 @media (max-width:560px){
-  header.top{position:static}
   th.hide-s,td.hide-s{display:none}
   .score .n{font-size:32px;min-width:84px}
 }
@@ -894,13 +906,13 @@ const REPORTS = {
     resolve(k){ const m=S.staff.manager;
       if(k==='meet'){ if(Math.random()<((m?.man||30)+staffAb('hc'))/170){ boostMor(S.players,8); return '話し合いでわだかまりが解けた。チームの士気が回復。'; } boostMor(S.players,-2); return '話し合いは物別れに終わった…'; }
       if(k==='back'){ boostMor(S.players,-4); if(m) m.man=clamp(m.man+6,0,100); return 'GMとして監督支持を表明した。選手の一部は不満げだ。'; }
-      ui.tab='staff'; return '監督交代を視野に、スタッフタブで後任候補を探し始めた。'; }
+      ui.tab='staff'; ui.staffSub='hire'; ui.staffRole='manager'; return '監督交代を視野に、スタッフタブで後任候補を探し始めた。'; }
   },
   board:{
     make(){ if(S.trust>=35||S.results.slice(-4).filter(r=>r==='L').length<3||(S.boardT&&tick()-S.boardT<6)) return null; S.boardT=tick();
       return mkRep('board','社長（フロント）','フロントから：監督交代を検討してほしい',`成績不振を受け、取締役会で「このままでは目標達成は難しい」との意見が出ています。GMとして、監督交代も含めた対応を求めます。`,
         [['change','監督交代を検討する'],['keep','現体制で巻き返すと説明する']]); },
-    resolve(k){ if(k==='change'){ ui.tab='staff'; S.trust=clamp(S.trust+3,0,100); return 'フロントに監督交代の検討を約束した。'; } S.trust=clamp(S.trust-4,0,100); return '「結果で示してもらう」と社長。フロントの信頼が下がった。'; }
+    resolve(k){ if(k==='change'){ ui.tab='staff'; ui.staffSub='hire'; ui.staffRole='manager'; S.trust=clamp(S.trust+3,0,100); return 'フロントに監督交代の検討を約束した。'; } S.trust=clamp(S.trust-4,0,100); return '「結果で示してもらう」と社長。フロントの信頼が下がった。'; }
   },
   mood:{
     make(c){ const a=c.active.reduce((x,p)=>x+(p.mor??60),0)/c.active.length; if(a<70||S.results.at(-1)!=='W'||Math.random()<0.7) return null;
@@ -1207,7 +1219,7 @@ function nextMatch(){
 function renderTitle(){
   const saved = load();
   $app.innerHTML = `
-  <div class="title-screen">
+  <div class="title-wrap"><div class="title-screen">
     <div style="font-size:44px">⚽</div>
     <h1>百万石<span>フットボール</span></h1>
     <div class="gold-line"></div>
@@ -1228,7 +1240,7 @@ function renderTitle(){
         <li>フロントの信頼が0になると解任。資金のマイナスにも注意。</li>
       </ul>
     </div>
-  </div>`;
+  </div></div>`;
   document.getElementById('footer')?.remove();
 }
 
@@ -1265,7 +1277,7 @@ function render(){
     </div>
     <nav class="tabs" data-keep="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
   </div></header>
-  <main class="wrap">${body}</main>`;
+  <main class="main ${['squad','league','transfer','staff','sales','inbox'].includes(ui.tab)?'fill':''}" data-keep="main-${ui.tab}-${ui.sub||''}-${ui.staffSub||''}"><div class="wrap">${body}</div></main>`;
   // 再描画してもリストのスクロール位置を保ち、操作した項目を光らせる
   document.querySelectorAll('[data-keep]').forEach(el=>{ const k=keep[el.dataset.keep]; if(k){ el.scrollTop=k[0]; el.scrollLeft=k[1]; } });
   window.scrollTo(0, wy);
@@ -1338,7 +1350,7 @@ function renderSquad(){
   const order = {GK:0,DF:1,MF:2,FW:3};
   const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
-  return `<div class="card" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
+  return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
   <p class="small muted" style="margin-top:-4px">スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。</p>
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr></thead><tbody>
@@ -1417,7 +1429,7 @@ function renderFacility(){
 function renderLeague(){
   const st = standings();
   const up = S.div<4 ? 2 : 1, down = S.div>0 ? 2 : 0;
-  return `<div class="card" style="margin-top:14px"><h3>${DIVS[S.div].name} 順位表（第${Math.min(S.round,ROUNDS)}節終了）</h3>
+  return `<div class="card grow" style="margin-top:14px"><h3>${DIVS[S.div].name} 順位表（第${Math.min(S.round,ROUNDS)}節終了）</h3>
     <div class="scroll list-scroll" data-keep="league"><table class="sticky" style="--c1:34px">
       <thead><tr><th>#</th><th>クラブ</th><th class="num">試</th><th class="num">勝</th><th class="num">分</th><th class="num">負</th><th class="num hide-s">得</th><th class="num hide-s">失</th><th class="num">差</th><th class="num">勝点</th><th class="hide-s">直近</th></tr></thead><tbody>
       ${st.map((t,i)=>`<tr class="${t.isMe?'me':''} ${i<up?'up':''} ${i>=st.length-down?'down':''}">
@@ -1426,7 +1438,7 @@ function renderLeague(){
         <td class="hide-s">${t.form.slice(-5).map(resBadge).join('')}</td></tr>`).join('')}
     </tbody></table></div>
     <p class="small muted" style="margin-bottom:0">緑：${S.div<4?'昇格圏':'優勝'}　赤：${S.div>0?'降格圏':'—'}</p></div>
-  <div class="card" style="margin-top:14px"><h3>クラブ史</h3>
+  <div class="card side" style="margin-top:14px"><h3>クラブ史</h3>
     ${S.history.length? `<table><tr><th>年</th><th>リーグ</th><th class="num">順位</th><th class="num">勝点</th><th></th></tr>
     ${S.history.map(h=>`<tr><td>${h.season}年目</td><td>${DIVS[h.div].name}</td><td class="num">${h.rank}位</td><td class="num">${h.pts}</td><td>${h.champion?'🏆 J1優勝':h.moved===1?'⬆ 昇格':h.moved===-1?'⬇ 降格':''}</td></tr>`).join('')}</table>`
     : '<p class="muted small">まだ記録はありません。</p>'}</div>`;
@@ -1434,13 +1446,13 @@ function renderLeague(){
 
 function renderInbox(){
   if(!S.inbox.length) return `<div class="card" style="margin-top:14px"><h3>報告</h3><p class="muted" style="margin:0">いま対応が必要な報告はありません。ヘッドコーチやスタッフ、フロントから報告が届くとここに表示されます。</p></div>`;
-  return `<div class="grid" style="margin-top:14px">${S.inbox.map(r=>`<div class="card rep">
+  return `<p class="small muted" style="margin:14px 0 8px">返答しないまま次の節を2回進めると、いちばん下の選択肢で自動的に処理されます。</p>
+    <div class="card-scroll" data-keep="inbox"><div class="grid" style="margin-top:0">${S.inbox.map(r=>`<div class="card rep">
       <div class="rep-from">${esc(r.from)} <span class="muted small">・${r.s}年目 第${r.r+1}節後</span> ${tick()-r.t>=2?'<span class="tag inj">今週中に返答</span>':''}</div>
       <h4>${esc(r.title)}</h4>
       <p class="small" style="white-space:pre-line;margin:0">${esc(r.body)}</p>
       <div class="row" style="justify-content:flex-start">${r.opts.map(([k,l],i)=>`<button class="btn ${i===0?'primary':''}" data-act="resolve" data-arg="${r.id}|${k}">${esc(l)}</button>`).join('')}</div>
-    </div>`).join('')}</div>
-    <p class="small muted">返答しないまま次の節を2回進めると、いちばん下の選択肢で自動的に処理されます。</p>`;
+    </div>`).join('')}</div></div>`;
 }
 
 function staffCard(st, role){
@@ -1465,14 +1477,16 @@ function renderStaff(){
   const sel = ui.staffRole || 'manager';
   const cands = S.staffMarket.filter(s=>s.role===sel).sort((a,b)=>b.abil-a.abil);
   const li = licenseIssues();
-  return `<div class="card" style="margin-top:14px"><h3>現在のスタッフ（年俸計 ${yen(staffSalary())}）</h3>
+  const sub = ui.staffSub || 'team';
+  const tabsHtml = `<div class="seg" style="margin-top:14px"><button class="${sub==='team'?'on':''}" data-act="staffSub" data-arg="team">現在の体制</button><button class="${sub==='hire'?'on':''}" data-act="staffSub" data-arg="hire">人事・候補者</button></div>`;
+  if(sub==='team') return tabsHtml + `<div class="card"><h3>現在のスタッフ（年俸計 ${yen(staffSalary())}）</h3>
       <p class="small muted" style="margin:0">J3以上で戦うには<b>S級ライセンスを持つ監督</b>が必要です。監督の得意戦術に合わせると戦力が上がります。</p>
       ${li.length?`<div class="warn">⚠ ${DIVS[S.div+1].name}への昇格条件で未達のもの：${li.join('・')}</div>`:''}</div>
-    <div class="grid g2">${roles.map(r=>staffCard(S.staff[r], r)).join('')}
+    <div class="card-scroll" data-keep="staffTeam" style="margin-top:12px"><div class="grid g2" style="margin-top:0">${roles.map(r=>staffCard(S.staff[r], r)).join('')}
       ${salesTeam().map(s=>staffCard(s,'sales')).join('')}
       ${salesTeam().length<MAX_SALES?staffCard(null,'sales'):''}
-    </div>
-    <div class="card" style="margin-top:14px"><h3>人事：候補者リスト</h3>
+    </div></div>`;
+  return tabsHtml + `<div class="card grow"><h3>人事：候補者リスト</h3>
       <div class="seg">${Object.entries(STAFF_ROLES).map(([k,v])=>`<button class="${sel===k?'on':''}" data-act="staffRole" data-arg="${k}">${v.name}</button>`).join('')}</div>
       <p class="small muted">${STAFF_ROLES[sel].desc}。候補は数週ごとに入れ替わります。実力者ほど、下位カテゴリーのクラブからの打診を断りがちです。</p>
       <div class="card-scroll" data-keep="staff-${sel}"><div class="mk">${cands.map(st=>`<div class="card">
@@ -1499,13 +1513,13 @@ function renderAma(){
   const upcoming = AMA_EVENTS.filter(e=>e.r>=S.round);
   const st = {none:'', signed:'<span class="tag xi">内定</span>', declined:'<span class="tag rest">辞退</span>'};
   return `<div class="card" style="margin-top:12px"><h3>地元アマチュアのスカウト</h3>
-      <p class="small" style="margin:0">石川・北信越の高校や大学の大会で活躍した選手を、スカウトがリストアップします。<b>視察</b>するほど能力の見積もりが正確になり、本人の関心も高まります。</p>
+      <p class="small" style="margin:0">大会で活躍した選手をスカウトがリストアップ。<b>視察</b>するほど見積もりが正確になり、本人の関心も高まります。</p>
       <div class="kv" style="margin-top:8px">
         <span>今週の視察枠</span><span class="v">${S.watchLeft} / ${watchPerWeek()}回（1回 ${yen(watchCost())}）</span>
         <span>見積もりの精度</span><span class="v">±${noiseLevel().toFixed(0)}（スカウト網・チーフスカウトで向上）</span>
-        <span>今後の大会</span><span class="v small">${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季は終了（シーズン後に入団）'}</span>
+        <span>次の大会</span><span class="v small">${upcoming[0]?`第${upcoming[0].r+1}節後：${upcoming[0].name}`:'今季は終了'}</span>
       </div>
-      <p class="small muted" style="margin-bottom:0">高校生は来季から加入。大学生は内定すれば特別指定選手として今季から合流します。</p></div>
+      <details class="small muted" style="margin-top:6px"><summary>今後の大会と入団時期</summary>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>高校生は来季から加入。大学生は内定すれば特別指定選手として今季から合流します。</details></div>
     <div class="card-scroll" data-keep="ama" style="margin-top:12px"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b></span>${st[pr.status]}</div>
       <div class="small muted" style="margin:4px 0">${esc(pr.school)} ${pr.grade}・${pr.age}歳</div>
@@ -1528,20 +1542,19 @@ function renderSales(){
     return `<span>${s.name}</span><span class="v small">${holders.map(c=>esc(c.name)).join('、')||`<span class="muted">空き ${s.max}${lock}</span>`}${holders.length&&holders.length<s.max?` <span class="muted">他 空き${s.max-holders.length}</span>`:''}</span>`;
   }).join('');
   const sizes = [1,2,3];
-  return `<div class="grid g2">
-    <div class="card"><h3>営業部</h3>
+  return `<div class="card" style="margin-top:14px"><h3>営業部</h3>
       <div class="kv">
         <span>営業担当</span><span class="v">${salesTeam().map(s=>esc(s.name)).join('、')||'<span class="minus">不在</span>'}</span>
         <span>今週の訪問枠</span><span class="v"><b>${S.visitsLeft}</b> / ${salesTeam().length}社</span>
-        <span>契約スポンサー収入</span><span class="v"><b>${yen(ci)}</b>/年</span>
-        <span>小口協賛・会員収入</span><span class="v">${yen(S.sponsor)}/年</span>
+        <span>スポンサー収入</span><span class="v"><b>${yen(ci)}</b>＋小口 ${yen(S.sponsor)}/年</span>
       </div>
-      <p class="small muted" style="margin-bottom:0">企業を訪問して関係を深め、スポンサー契約を提案しましょう。関係が深いほど、強気の金額でも成約しやすくなります。</p>
-      <div class="row" style="justify-content:flex-start"><button class="btn gold" data-act="crowdfund" ${S.cfSeason===S.season?'disabled':''}>クラウドファンディング${S.cfSeason===S.season?'（今季は実施済み）':'を実施（年1回）'}</button></div>
+      <details class="small" style="margin-top:6px"><summary>スポンサー枠の状況</summary><div class="kv" style="margin-top:6px">${slotRows}</div></details>
+      <div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn gold" data-act="crowdfund" ${S.cfSeason===S.season?'disabled':''}>クラウドファンディング${S.cfSeason===S.season?'（今季は実施済み）':'を実施（年1回）'}</button></div>
     </div>
-    <div class="card"><h3>スポンサー枠</h3><div class="kv">${slotRows}</div></div>
-  </div>
-  ${sizes.map(sz=>`<div class="card" style="margin-top:14px"><h3>${SIZE_LABEL[sz]}</h3><div class="mk">${S.companies.map((c,i)=>({c,i})).filter(x=>x.c.size===sz).map(({c,i})=>companyCard(c,i)).join('')}</div></div>`).join('')}`;
+    <div class="card-scroll" data-keep="sales" style="margin-top:12px">
+      <p class="small muted" style="margin:0 0 8px">企業を訪問して関係を深め、スポンサー契約を提案しましょう。関係が深いほど、強気の金額でも成約しやすくなります。</p>
+      ${sizes.map(sz=>`<h3 class="grp">${SIZE_LABEL[sz]}</h3><div class="mk">${S.companies.map((c,i)=>({c,i})).filter(x=>x.c.size===sz).map(({c,i})=>companyCard(c,i)).join('')}</div>`).join('')}
+    </div>`;
 }
 function companyCard(c,i){
   const lock = companyLocked(c);
@@ -1658,7 +1671,7 @@ function showGameOver(){
 const ACTIONS = {
   start(){ const n = (document.getElementById('clubName')?.value||'').trim().slice(0,16); newGame(n); ui.tab='home'; render(); },
   continue(){ S = migrate(load()); ui.tab='home'; render(); },
-  tab(a){ ui.tab=a; render(); window.scrollTo(0,0); },
+  tab(a){ ui.tab=a; render(); },
   advance(){ advance(); },
   skip(){ ui.finishMatch && ui.finishMatch(); },
   matchDone(){ closeModal(); render(); if(S.over) showGameOver(); else if(S.round>=ROUNDS) showSeasonEnd(); },
@@ -1672,7 +1685,8 @@ const ACTIONS = {
   close(){ closeModal(); },
   resolve(a){ const [id,k]=a.split('|'); const msg=resolveReport(id,k); save(); render(); if(msg) toast(msg); },
   sub(a){ ui.sub=a; render(); },
-  staffRole(a){ ui.staffRole=a; ui.tab='staff'; render(); },
+  staffRole(a){ ui.staffRole=a; ui.staffSub='hire'; ui.tab='staff'; render(); },
+  staffSub(a){ ui.staffSub=a; render(); },
   hire(a){ hireStaff(a); },
   fireStaff(a){ fireStaff(a); },
   watch(a){ ui.flash=a; watchProspect(a); },
