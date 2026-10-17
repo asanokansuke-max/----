@@ -65,9 +65,15 @@ tr.down td:first-child{box-shadow:inset 3px 0 var(--loss)}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .list-scroll{max-height:min(62vh,560px);overflow:auto;border:1px solid var(--line);border-radius:8px}
 table.sticky th{position:sticky;top:0;z-index:2;background:var(--panel);box-shadow:inset 0 -1px var(--line)}
-table.sticky td:nth-child(1),table.sticky th:nth-child(1){position:sticky;left:0;width:46px;min-width:46px;background:var(--panel);z-index:1}
-table.sticky td:nth-child(2),table.sticky th:nth-child(2){position:sticky;left:46px;background:var(--panel);z-index:1;box-shadow:inset -1px 0 var(--line)}
+table.sticky td:nth-child(1),table.sticky th:nth-child(1){position:sticky;left:0;width:var(--c1,46px);min-width:var(--c1,46px);background:var(--panel);z-index:1}
+table.sticky td:nth-child(2),table.sticky th:nth-child(2){position:sticky;left:var(--c1,46px);background:var(--panel);z-index:1;box-shadow:inset -1px 0 var(--line)}
 table.sticky th:nth-child(1),table.sticky th:nth-child(2){z-index:3}
+table.sticky tr.me td{background:var(--gold-soft)}
+.card-scroll{max-height:min(66vh,640px);overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2);-webkit-overflow-scrolling:touch}
+.card-scroll .card{box-shadow:none}
+@keyframes flash{from{background:var(--gold-soft);box-shadow:0 0 0 2px var(--gold)}to{}}
+.flash,.flash td{animation:flash 1.6s ease-out}
+@media (prefers-reduced-motion:reduce){.flash,.flash td{animation:none;outline:2px solid var(--gold)}}
 .pos{display:inline-block;min-width:30px;text-align:center;border-radius:5px;font-size:11px;font-weight:800;padding:1px 4px;color:#fff}
 .pos.GK{background:#b07a12}.pos.DF{background:#2f6db5}.pos.MF{background:#2f8f55}.pos.FW{background:#c2453a}
 .ovr{font-weight:800;font-variant-numeric:tabular-nums}
@@ -1243,6 +1249,8 @@ function render(){
     case 'league': body=renderLeague(); break;
     default: body=renderHome();
   }
+  const keep = {}; document.querySelectorAll('[data-keep]').forEach(el=>keep[el.dataset.keep]=[el.scrollTop,el.scrollLeft]);
+  const wy = window.scrollY;
   $app.innerHTML = `
   <header class="top"><div class="top-inner">
     <div class="club-row">
@@ -1258,6 +1266,10 @@ function render(){
     <nav class="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
   </div></header>
   <main class="wrap">${body}</main>`;
+  // 再描画してもリストのスクロール位置を保ち、操作した項目を光らせる
+  document.querySelectorAll('[data-keep]').forEach(el=>{ const k=keep[el.dataset.keep]; if(k){ el.scrollTop=k[0]; el.scrollLeft=k[1]; } });
+  window.scrollTo(0, wy);
+  if(ui.flash){ const el=document.querySelector(`[data-id="${ui.flash}"]`); if(el){ el.classList.add('flash'); } ui.flash=null; }
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
   f.innerHTML = `<div class="footer-inner">
@@ -1323,9 +1335,9 @@ function renderSquad(){
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
   return `<div class="card" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
   <p class="small muted" style="margin-top:-4px">スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。</p>
-  <div class="scroll list-scroll"><table class="sticky">
+  <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr></thead><tbody>
-    ${ps.map(p=>`<tr>
+    ${ps.map(p=>`<tr data-id="${p.id}">
       <td>${posTag(p.pos)}</td>
       <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
       <td class="num">${p.age}</td>
@@ -1362,7 +1374,7 @@ function renderMarket(){
   const xi = getLineup(true);
   return `<div class="card" style="margin-top:12px"><h3>移籍市場</h3>
     <p class="small muted" style="margin:-4px 0 0">毎週入れ替わります。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明）':''}。登録 ${S.players.length}/26人・資金 ${yen(S.money)}</p></div>
-    <div class="mk" style="margin-top:12px">${S.market.map(p=>{
+    <div class="card-scroll" data-keep="market" style="margin-top:12px"><div class="mk">${S.market.map(p=>{
       const sameXI = xi.filter(s=>s.slot===p.pos).map(s=>s.p.ovr);
       const worst = sameXI.length?Math.min(...sameXI):0;
       const up = p.ovr - worst;
@@ -1377,7 +1389,7 @@ function renderMarket(){
           <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
         </div>
         <div class="row"><button class="btn primary" data-act="sign" data-arg="${p.id}" ${S.money<p.fee||S.players.length>=26?'disabled':''}>獲得する</button></div>
-      </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div>`;
+      </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div></div>`;
 }
 
 function renderFacility(){
@@ -1401,13 +1413,13 @@ function renderLeague(){
   const st = standings();
   const up = S.div<4 ? 2 : 1, down = S.div>0 ? 2 : 0;
   return `<div class="card" style="margin-top:14px"><h3>${DIVS[S.div].name} 順位表（第${Math.min(S.round,ROUNDS)}節終了）</h3>
-    <div class="scroll"><table>
-      <tr><th>#</th><th>クラブ</th><th class="num">試</th><th class="num">勝</th><th class="num">分</th><th class="num">負</th><th class="num hide-s">得</th><th class="num hide-s">失</th><th class="num">差</th><th class="num">勝点</th><th class="hide-s">直近</th></tr>
+    <div class="scroll list-scroll" data-keep="league"><table class="sticky" style="--c1:34px">
+      <thead><tr><th>#</th><th>クラブ</th><th class="num">試</th><th class="num">勝</th><th class="num">分</th><th class="num">負</th><th class="num hide-s">得</th><th class="num hide-s">失</th><th class="num">差</th><th class="num">勝点</th><th class="hide-s">直近</th></tr></thead><tbody>
       ${st.map((t,i)=>`<tr class="${t.isMe?'me':''} ${i<up?'up':''} ${i>=st.length-down?'down':''}">
         <td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.p}</td><td class="num">${t.w}</td><td class="num">${t.d}</td><td class="num">${t.l}</td>
         <td class="num hide-s">${t.gf}</td><td class="num hide-s">${t.ga}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td><td class="num"><b>${t.pts}</b></td>
         <td class="hide-s">${t.form.slice(-5).map(resBadge).join('')}</td></tr>`).join('')}
-    </table></div>
+    </tbody></table></div>
     <p class="small muted" style="margin-bottom:0">緑：${S.div<4?'昇格圏':'優勝'}　赤：${S.div>0?'降格圏':'—'}</p></div>
   <div class="card" style="margin-top:14px"><h3>クラブ史</h3>
     ${S.history.length? `<table><tr><th>年</th><th>リーグ</th><th class="num">順位</th><th class="num">勝点</th><th></th></tr>
@@ -1458,7 +1470,7 @@ function renderStaff(){
     <div class="card" style="margin-top:14px"><h3>人事：候補者リスト</h3>
       <div class="seg">${Object.entries(STAFF_ROLES).map(([k,v])=>`<button class="${sel===k?'on':''}" data-act="staffRole" data-arg="${k}">${v.name}</button>`).join('')}</div>
       <p class="small muted">${STAFF_ROLES[sel].desc}。候補は数週ごとに入れ替わります。実力者ほど、下位カテゴリーのクラブからの打診を断りがちです。</p>
-      <div class="mk">${cands.map(st=>`<div class="card">
+      <div class="card-scroll" data-keep="staff-${sel}"><div class="mk">${cands.map(st=>`<div class="card">
         <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(st.name)} <span class="muted small">${st.age}歳</span></b>${st.lic?`<span class="tag ${st.lic==='S級'?'xi':''}">${st.lic}</span>`:''}</div>
         <div class="small muted" style="margin:4px 0 6px">${esc(st.bio)}</div>
         <div class="kv">
@@ -1469,7 +1481,7 @@ function renderStaff(){
           <span>就任の見込み</span><span class="v">${Math.round(hireChance(st)*100)}%</span>
         </div>
         <div class="row"><button class="btn primary" data-act="hire" data-arg="${st.id}">招聘する（契約金 ${yen(Math.round(st.salary*0.3))}）</button></div>
-      </div>`).join('') || '<p class="muted small">この役職の候補者は今いません。数週後にまた確認しましょう。</p>'}</div>
+      </div>`).join('') || '<p class="muted small">この役職の候補者は今いません。数週後にまた確認しましょう。</p>'}</div></div>
     </div>`;
 }
 
@@ -1489,7 +1501,7 @@ function renderAma(){
         <span>今後の大会</span><span class="v small">${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季は終了（シーズン後に入団）'}</span>
       </div>
       <p class="small muted" style="margin-bottom:0">高校生は来季から加入。大学生は内定すれば特別指定選手として今季から合流します。</p></div>
-    <div class="mk" style="margin-top:12px">${S.prospects.map(pr=>`<div class="card">
+    <div class="card-scroll" data-keep="ama" style="margin-top:12px"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b></span>${st[pr.status]}</div>
       <div class="small muted" style="margin:4px 0">${esc(pr.school)} ${pr.grade}・${pr.age}歳</div>
       <div><span class="tag">${esc(pr.tag)}</span> ${pr.hot?'<span class="tag inj">他クラブも注目</span>':''}</div>
@@ -1500,7 +1512,7 @@ function renderAma(){
         ${pr.status==='none'?`<span>入団の見込み</span><span class="v">${interest(pr)}%</span><span>支度金</span><span class="v">${yen(prospectFee(pr))}</span>`:''}
       </div>
       ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する</button><button class="btn primary" data-act="offer" data-arg="${pr.id}">オファー</button></div>`:''}
-    </div>`).join('') || '<p class="muted small">まだリストアップされた選手はいません。大会が終わるとスカウトから報告が届きます。</p>'}</div>`;
+    </div>`).join('') || '<p class="muted small">まだリストアップされた選手はいません。大会が終わるとスカウトから報告が届きます。</p>'}</div></div>`;
 }
 
 function renderSales(){
@@ -1542,7 +1554,7 @@ function companyCard(c,i){
       ${c.cool>0?`<p class="small muted" style="margin:6px 0 0">前回の提案から間がないため、あと${c.cool}週は提案できません。</p>`:''}</div>`
       : '<p class="small muted">空いているスポンサー枠がありません。</p>';
   }
-  return `<div class="card">
+  return `<div class="card" data-id="co${i}">
     <div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(c.name)}</b><span class="tag">${esc(c.ind)}</span></div>
     <div class="small muted" style="margin:6px 0 2px">関係 ${Math.round(c.rel)}</div>
     <div class="bar gold"><i style="width:${c.rel}%"></i></div>
@@ -1650,7 +1662,7 @@ const ACTIONS = {
   set(a){ const [k,v]=a.split(':'); S[k]=v; save(); render(); },
   sign(a){ signPlayer(a); },
   sell(a){ sellPlayer(a); },
-  rest(a){ const p=S.players.find(x=>x.id===a); if(p){p.rest=!p.rest; save(); render();} },
+  rest(a){ const p=S.players.find(x=>x.id===a); if(p){p.rest=!p.rest; ui.flash=a; save(); render();} },
   upgrade(a){ upgrade(a); },
   close(){ closeModal(); },
   resolve(a){ const [id,k]=a.split('|'); const msg=resolveReport(id,k); save(); render(); if(msg) toast(msg); },
@@ -1658,10 +1670,10 @@ const ACTIONS = {
   staffRole(a){ ui.staffRole=a; ui.tab='staff'; render(); },
   hire(a){ hireStaff(a); },
   fireStaff(a){ fireStaff(a); },
-  watch(a){ watchProspect(a); },
+  watch(a){ ui.flash=a; watchProspect(a); },
   offer(a){ offerProspect(a); },
-  visit(a){ visitCompany(+a); },
-  propose(a){ const [i,t]=a.split('|'); proposeDeal(+i,t); },
+  visit(a){ ui.flash='co'+a; visitCompany(+a); },
+  propose(a){ const [i,t]=a.split('|'); ui.flash='co'+i; proposeDeal(+i,t); },
   invest(a){ askInvest(+a); },
   crowdfund(){ crowdfund(); },
   confirm(){ closeModal(); const cb=confirmCb; confirmCb=null; cb&&cb(); },
@@ -1669,7 +1681,7 @@ const ACTIONS = {
 };
 document.addEventListener('change', e=>{
   const el = e.target.closest('[data-ch]'); if(!el) return;
-  if(el.dataset.ch==='slot'){ ui.slotSel = ui.slotSel||{}; ui.slotSel[el.dataset.arg]=el.value; render(); }
+  if(el.dataset.ch==='slot'){ ui.slotSel = ui.slotSel||{}; ui.slotSel[el.dataset.arg]=el.value; ui.flash='co'+el.dataset.arg; render(); }
 });
 document.addEventListener('click', e=>{
   const el = e.target.closest('[data-act]'); if(!el || el.disabled) return;
