@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>百万石フットボール</title>
+<style>
+:root{
+  --bg:#f5f1e8;--panel:#ffffff;--panel2:#faf7f0;--ink:#1d2433;--muted:#6b7280;--line:#e4ddcd;
+  --gold:#b8862a;--gold-soft:#f3e6c6;--indigo:#1f3a68;--indigo-soft:#e3e9f4;
+  --win:#1f8a4c;--loss:#c0392b;--draw:#8a8a8a;--warn:#c27c0e;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10141d;--panel:#191f2c;--panel2:#1e2535;--ink:#e9e6df;--muted:#9aa3b2;--line:#2a3245;
+  --gold:#dcb257;--gold-soft:#3a3120;--indigo:#8fb0ea;--indigo-soft:#22304a;
+  --win:#3fbf74;--loss:#e5675a;--draw:#9aa3b2;--warn:#e6a63a;--shadow:none;
+}}
+:root[data-theme="dark"]{
+  --bg:#10141d;--panel:#191f2c;--panel2:#1e2535;--ink:#e9e6df;--muted:#9aa3b2;--line:#2a3245;
+  --gold:#dcb257;--gold-soft:#3a3120;--indigo:#8fb0ea;--indigo-soft:#22304a;
+  --win:#3fbf74;--loss:#e5675a;--draw:#9aa3b2;--warn:#e6a63a;--shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px 110px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.top-inner{max-width:1040px;margin:0 auto;padding:10px 16px 0}
+.club-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.club-name{font-size:19px;font-weight:800;letter-spacing:.02em}
+.club-name .mark{color:var(--gold)}
+.meta{color:var(--muted);font-size:13px}
+.stats{display:flex;gap:6px 16px;flex-wrap:wrap;margin:6px 0 8px;font-size:13px}
+.stat b{font-size:15px;font-variant-numeric:tabular-nums}
+.stat .neg{color:var(--loss)}
+.trust{display:inline-block;width:70px;height:7px;background:var(--line);border-radius:4px;vertical-align:middle;overflow:hidden;margin-left:4px}
+.trust i{display:block;height:100%;background:var(--gold)}
+nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;white-space:nowrap;color:var(--muted);font-weight:600}
+nav.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
+.grid{display:grid;gap:14px;margin-top:14px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:var(--shadow);min-width:0}
+.card h3{margin:0 0 10px;font-size:14px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+.vs{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:center}
+.vs .side{flex:1;min-width:0}
+.vs .nm{font-weight:800;font-size:16px;overflow-wrap:anywhere}
+.vs .x{font-size:13px;color:var(--muted)}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--indigo)}
+.bar.gold i{background:var(--gold)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--muted);font-weight:600;font-size:12px}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+tr.me td{background:var(--gold-soft);font-weight:700}
+tr.up td:first-child{box-shadow:inset 3px 0 var(--win)}
+tr.down td:first-child{box-shadow:inset 3px 0 var(--loss)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.pos{display:inline-block;min-width:30px;text-align:center;border-radius:5px;font-size:11px;font-weight:800;padding:1px 4px;color:#fff}
+.pos.GK{background:#b07a12}.pos.DF{background:#2f6db5}.pos.MF{background:#2f8f55}.pos.FW{background:#c2453a}
+.ovr{font-weight:800;font-variant-numeric:tabular-nums}
+.stars{color:var(--gold);letter-spacing:-1px;font-size:12px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:10px;background:var(--indigo-soft);color:var(--indigo);font-weight:700}
+.tag.inj{background:#f8dcd8;color:#a02b1f}
+.tag.rest{background:var(--line);color:var(--muted)}
+.tag.xi{background:var(--gold-soft);color:var(--gold)}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:5px 10px;font-size:13px;font-weight:600}
+.btn:hover{border-color:var(--gold)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--indigo);border-color:var(--indigo);color:#fff}
+:root[data-theme="dark"] .btn.primary{color:#0f1420}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.primary{color:#0f1420}}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#fff}
+.opts{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.opt{border:1.5px solid var(--line);border-radius:10px;padding:9px 10px;background:var(--panel2);text-align:left}
+.opt b{display:block;font-size:14px}
+.opt span{font-size:12px;color:var(--muted)}
+.opt.on{border-color:var(--gold);background:var(--gold-soft)}
+.news{list-style:none;margin:0;padding:0;font-size:13.5px}
+.news li{padding:6px 0;border-bottom:1px dashed var(--line)}
+.news li:last-child{border:0}
+.news .r{color:var(--muted);font-size:11.5px;margin-right:6px}
+.res{display:inline-flex;width:22px;height:22px;border-radius:5px;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:800;margin-right:3px}
+.res.W{background:var(--win)}.res.D{background:var(--draw)}.res.L{background:var(--loss)}
+.mk{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.mk .card{padding:12px}
+.fac{display:flex;gap:12px;align-items:center}
+.fac .ic{font-size:26px;width:38px;text-align:center}
+.lv{display:flex;gap:3px;margin:4px 0}
+.lv i{width:18px;height:6px;border-radius:3px;background:var(--line)}
+.lv i.on{background:var(--gold)}
+.warn{border-left:4px solid var(--warn);background:var(--gold-soft);padding:8px 10px;border-radius:6px;font-size:13px;margin-top:10px}
+.footer-bar{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);z-index:6}
+.footer-inner{max-width:1040px;margin:0 auto;padding:10px 16px calc(10px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between}
+.footer-inner .info{font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.go{background:var(--gold);color:#fff;border:0;border-radius:10px;padding:11px 20px;font-weight:800;font-size:15px;white-space:nowrap}
+.modal{position:fixed;inset:0;background:rgba(10,14,22,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+.modal.hidden{display:none}
+.modal-box{background:var(--panel);border-radius:14px;max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:18px;border:1px solid var(--line)}
+.modal-box h2{margin:0 0 8px;font-size:19px}
+.score{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0 4px}
+.score .t{flex:1;text-align:center;font-weight:800;overflow-wrap:anywhere}
+.score .n{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;min-width:110px;text-align:center}
+.clock{text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+.log{list-style:none;padding:0;margin:10px 0;max-height:240px;overflow:auto;font-size:13.5px}
+.log li{padding:4px 0;border-bottom:1px dashed var(--line)}
+.log .m{display:inline-block;width:34px;color:var(--muted);font-variant-numeric:tabular-nums}
+.log .goal{font-weight:800}
+.log .us{color:var(--win)}
+.log .them{color:var(--loss)}
+.row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
+.kv .v{text-align:right;font-variant-numeric:tabular-nums}
+.plus{color:var(--win)}.minus{color:var(--loss)}
+.title-screen{max-width:560px;margin:8vh auto 0;padding:0 16px;text-align:center}
+.title-screen h1{font-size:32px;margin:0;letter-spacing:.06em}
+.title-screen h1 span{color:var(--gold)}
+.title-screen p{color:var(--muted)}
+.title-screen input{font:inherit;font-size:17px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);width:100%;max-width:340px;text-align:center}
+.gold-line{height:3px;width:80px;background:var(--gold);margin:14px auto;border-radius:2px}
+.ladder{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin:14px 0}
+.ladder span{font-size:12px;padding:3px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.ladder span.on{background:var(--gold);color:#fff;border-color:var(--gold)}
+@media (max-width:560px){
+  header.top{position:static}
+  th.hide-s,td.hide-s{display:none}
+  .score .n{font-size:32px;min-width:84px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal" class="modal hidden"><div class="modal-box" id="modalBox"></div></div>
+<script>
+'use strict';
+// ===================== 定数 =====================
+const SAVE_KEY = 'hyakumangoku-football-v1';
+const ROUNDS = 18;
+const DIVS = [
+  {name:'北信越リーグ', short:'地域', base:[31,45], sponsor:450,  ticket:800,  prize:200,  lic:1},
+  {name:'JFL',          short:'JFL',  base:[41,55], sponsor:900,  ticket:1200, prize:500,  lic:1},
+  {name:'J3リーグ',     short:'J3',   base:[51,63], sponsor:2000, ticket:1800, prize:1200, lic:2},
+  {name:'J2リーグ',     short:'J2',   base:[59,71], sponsor:4500, ticket:2500, prize:3000, lic:3},
+  {name:'J1リーグ',     short:'J1',   base:[67,81], sponsor:9000, ticket:3500, prize:8000, lic:4},
+];
+const DIV_MULT = [1,2,4,8,15];
+const CAP = [2500,6000,12000,22000,38000];
+const FAN_CAP = [5000,14000,30000,60000,100000]; // リーグごとのファン数の目安（これを超えると伸びにくい）
+const FAC = {
+  stadium: {name:'スタジアム', ic:'🏟️', cost:[0,800,3000,9000,25000], upkeep:8,
+            desc:l=>`収容 ${CAP[l-1].toLocaleString()}人`},
+  training:{name:'練習場', ic:'⚽', cost:[0,400,1200,3500,9000], upkeep:3,
+            desc:l=>`選手の成長速度 ×${(0.8+0.15*l).toFixed(2)}`},
+  youth:   {name:'ユースアカデミー', ic:'🌱', cost:[0,300,1000,3000,8000], upkeep:3,
+            desc:l=>`毎シーズン ${youthCount(l)}人昇格・素質 ${'★'.repeat(l)}`},
+  medical: {name:'メディカル', ic:'🩺', cost:[0,250,800,2400,6000], upkeep:3,
+            desc:l=>`負傷率 -${(l-1)*15}%・回復 +${(l-1)*2}/週`},
+  scout:   {name:'スカウト網', ic:'🔭', cost:[0,250,800,2400,6000], upkeep:3,
+            desc:l=>`移籍市場の選手の質 +${(l-1)*3}・伸びしろが見える`},
+};
+const FORMATIONS = {
+  '4-4-2':{DF:4,MF:4,FW:2,att:0,def:0,desc:'バランス型の基本陣形'},
+  '4-3-3':{DF:4,MF:3,FW:3,att:3,def:-2,desc:'攻撃的。前線に3人'},
+  '3-5-2':{DF:3,MF:5,FW:2,att:1.5,def:-1,desc:'中盤で主導権を握る'},
+  '5-3-2':{DF:5,MF:3,FW:2,att:-3,def:3.5,desc:'守備を固める'},
+};
+const TACTICS = {
+  attack: {name:'超攻撃的', own:1.2, opp:1.18, desc:'点を取りにいくが失点も増える'},
+  balance:{name:'バランス', own:1, opp:1, desc:'状況に応じて戦う'},
+  counter:{name:'カウンター', own:0.95, opp:0.88, desc:'格上相手に有効', counter:true},
+  defend: {name:'守備的', own:0.8, opp:0.76, desc:'失点を減らすが得点も減る'},
+};
+const TRAINING = {
+  rest:  {name:'休養', g:0,   c:15,  inj:0,     desc:'コンディション大回復'},
+  normal:{name:'通常練習', g:1, c:-3, inj:0.008, desc:'成長とコンディションを両立'},
+  hard:  {name:'猛練習', g:1.8, c:-11, inj:0.025, desc:'成長◎ 疲労・負傷リスク大'},
+};
+const TICKET = {
+  low: {name:'安め', price:0.7, demand:1.3},
+  mid: {name:'標準', price:1, demand:1},
+  high:{name:'強気', price:1.45, demand:0.72},
+};
+const PR = {
+  none:   {name:'なし', cost:0, desc:'今週は活動しない'},
+  kenroku:{name:'兼六園クリーン活動', cost:0, desc:'ファン微増・フロント信頼+1', fans:[0.008,8], trust:1},
+  omicho: {name:'近江町市場コラボ屋台', cost:30, desc:'ファン増', fans:[0.025,30]},
+  tv:     {name:'地元テレビ・ラジオ出演', cost:60, desc:'ファン大幅増', fans:[0.04,40]},
+  school: {name:'小学校サッカー教室', cost:20, desc:'ファン増・ユースの素質UP', fans:[0.015,15], youth:1},
+  gold:   {name:'金箔ユニフォーム限定販売', cost:120, desc:'グッズ収入（当たり外れあり）', fans:[0.015,10], merch:true},
+};
+const SURN = ['佐藤','鈴木','高橋','田中','伊藤','渡辺','山本','中村','小林','加藤','吉田','山田','佐々木','山口','松本','井上','木村','林','清水','山崎','森','池田','橋本','阿部','石川','前田','藤井','岡田','後藤','長谷川','村上','近藤','石井','坂本','遠藤','青木','藤田','西村','福田','太田','松田','原田','中島','竹内','金子','和田','中野','北村','浅野','米田','寺井','西田','東','本田','谷口','宮本','新谷','能登谷','小松','南','表','道下','島田','荒木','宮川'];
+const GIVEN = ['翔','大輝','蓮','陽斗','悠真','湊','颯太','樹','大和','陸','海斗','拓海','優斗','健太','亮','航','駿','涼','隼人','恭平','慎吾','直樹','雄大','和真','誠','啓太','龍之介','光','匠','瑛太','奏','碧','朝陽','健','康平','圭','晴','壮真','凌','一輝','俊介','裕太','剛','悠人','伸'];
+const FOREIGN = ['マルコス','ジュニーニョ','ラファエル','チアゴ','レアンドロ','パウロ','ディエゴ','ルーカス','イゴール','ヴィトール','オリヴェイラ','エヴェルトン','ガブリエル','ドウグラス','ペドロ','ミハイル','ソン・ミンジェ','キム・ドヒョン','ヤン・ハオ','ティーラシン'];
+const CITY_LOCAL = ['富山','高岡','福井','敦賀','長野','松本','上田','新潟','長岡','上越','小松','七尾','輪島','加賀','白山','能美','珠洲','鯖江','魚津','黒部','氷見','砺波','佐渡','飯山','越前','羽咋','坂井','糸魚川','大野','射水'];
+const CITY_NATION = ['札幌','函館','青森','盛岡','秋田','山形','福島','水戸','宇都宮','前橋','大宮','千葉','柏','町田','相模原','静岡','浜松','沼津','甲府','岐阜','四日市','奈良','和歌山','姫路','岡山','福山','鳥取','松江','山口','徳島','高松','松山','高知','北九州','佐賀','長崎','大分','熊本','宮崎','鹿児島','那覇','いわき','八戸','藤枝','今治','草津'];
+const SUFFIX = ['FC','SC','ユナイテッド','シティ','スターズ','ウェーブ','ファルコンズ','ブレイブ','フェニックス','オーシャンズ','ライジング','グランデ','ヴィクトリー','ドラゴンズ','ユニオン','アスレティック','レインボー','ウィングス','サンダース','クレスト'];
+
+// ===================== ユーティリティ =====================
+const R = (a,b)=>a+Math.random()*(b-a);
+const RI = (a,b)=>Math.floor(R(a,b+1));
+const pick = a=>a[Math.floor(Math.random()*a.length)];
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const esc = s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const round1 = v=>Math.round(v);
+function yen(v){
+  v=Math.round(v); const neg=v<0; v=Math.abs(v);
+  const s = v>=10000 ? Math.floor(v/10000)+'億'+(v%10000? (v%10000)+'万':'') : v+'万';
+  return (neg?'-':'')+s+'円';
+}
+function poisson(l){ const L=Math.exp(-l); let k=0,p=1; do{k++;p*=Math.random();}while(p>L); return k-1; }
+let uidc = 1;
+const uid = ()=> 'p'+(Date.now().toString(36))+(uidc++);
+
+// ===================== 状態 =====================
+let S = null;
+let ui = {tab:'home', pendingSeasonEnd:false};
+
+function youthCount(l){ return 1 + (l>=3?1:0) + (l>=5?1:0); }
+function month(r){ return 3 + Math.floor(Math.min(r,ROUNDS-1)/2); }
+
+function genName(foreign){ return foreign ? pick(FOREIGN) : pick(SURN)+' '+pick(GIVEN); }
+function calcSalary(ovr){ return Math.round(Math.pow(Math.max(1,ovr-25),2.2)*0.1+15); }
+function playerValue(p){
+  const base = Math.pow(Math.max(1,p.ovr-25),2.2)*0.4;
+  const ageF = p.age<=21?1.4:p.age<=25?1.2:p.age<=29?1:p.age<=32?0.7:0.4;
+  const potF = 1+Math.max(0,p.pot-p.ovr)/60;
+  return Math.round(base*ageF*potF+10);
+}
+function makePlayer(pos, ovr, age, pot, foreign){
+  ovr = clamp(ovr,12,95);
+  return {id:uid(), name:genName(foreign), pos, age, ovr, pot:clamp(Math.max(pot,ovr),12,97),
+          cond:100, inj:0, goals:0, apps:0, sg:0, sa:0, rest:false, salary:calcSalary(ovr), foreign:!!foreign};
+}
+function randPos(){ const r=Math.random()*12; return r<1.2?'GK':r<5.2?'DF':r<9?'MF':'FW'; }
+
+function genTeam(div, ex){
+  const b = DIVS[div].base; const str = R(b[0],b[1]) + (ex||0);
+  let name;
+  const used = new Set((S&&S.teams||[]).map(t=>t.name));
+  do{ name = pick(div<=1?CITY_LOCAL:CITY_NATION)+' '+pick(SUFFIX); }while(used.has(name));
+  return {name, str, att:str+R(-4,4), def:str+R(-4,4), isMe:false};
+}
+function resetTable(t){ Object.assign(t,{p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0,form:[]}); }
+
+function makeSchedule(n){
+  const idx=[...Array(n).keys()]; const rounds=[];
+  for(let r=0;r<n-1;r++){
+    const pairs=[];
+    for(let i=0;i<n/2;i++){
+      const a=idx[i], b=idx[n-1-i];
+      pairs.push((r+i)%2 ? [b,a] : [a,b]);
+    }
+    rounds.push(pairs);
+    idx.splice(1,0,idx.pop());
+  }
+  // シャッフル（前半）
+  for(let i=rounds.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [rounds[i],rounds[j]]=[rounds[j],rounds[i]]; }
+  return rounds.concat(rounds.map(rd=>rd.map(([a,b])=>[b,a])));
+}
+
+function newGame(clubName){
+  S = {
+    v:1, club: clubName || '金沢百万石FC', season:1, round:0, div:0,
+    money:1500, fans:700, trust:60,
+    fac:{stadium:1,training:1,youth:1,medical:1,scout:1},
+    players:[], teams:[], schedule:[],
+    formation:'4-4-2', tactic:'balance', training:'normal', ticket:'mid', pr:'none',
+    market:[], news:[], history:[], results:[], youthBonus:0,
+    fin:{income:0,expense:0}, target:8, sponsor:0, over:false, champion:0,
+  };
+  const comp = {GK:2,DF:6,MF:6,FW:4};
+  for(const pos in comp) for(let i=0;i<comp[pos];i++){
+    const age = RI(19,33);
+    const ovr = R(25,37) + (age>=24&&age<=30?2:0);
+    const pot = age<=22 ? ovr+R(6,20) : age<=26 ? ovr+R(0,7) : ovr;
+    S.players.push(makePlayer(pos, ovr, age, pot));
+  }
+  // 希望の星
+  const star = makePlayer('FW', 33, 17, 72); star.name = pick(SURN)+' '+pick(GIVEN);
+  S.players.push(star);
+  S.teams = [{name:S.club, isMe:true}];
+  for(let i=0;i<9;i++) S.teams.push(genTeam(0));
+  startSeason();
+  addNews(`${S.club}の新監督に就任。目標は金沢からJ1の頂点へ！`);
+  addNews(`ユースから期待の17歳FW ${star.name} がトップ昇格。`);
+  refreshMarket(5);
+  save();
+}
+
+function startSeason(){
+  S.teams.forEach(resetTable);
+  S.schedule = makeSchedule(10);
+  S.round = 0;
+  S.sponsor = Math.round(DIVS[S.div].sponsor + S.fans*0.2);
+  S.fin = {income:0, expense:0};
+  S.players.forEach(p=>{p.sg=0; p.sa=0;});
+  // 目標順位 = 戦力順位
+  const my = teamRating(getLineup(true)).ovr;
+  const better = S.teams.filter(t=>!t.isMe && t.str > my).length;
+  S.target = clamp(better+1, 1, 9);
+  if(S.div===0 && S.season===1) S.target = Math.max(S.target, 7);
+}
+
+// ===================== 戦力計算 =====================
+function eff(p){ return p.ovr*(0.72+0.28*p.cond/100); }
+function getLineup(ignoreCond){
+  const f = FORMATIONS[S.formation];
+  const need = {GK:1, DF:f.DF, MF:f.MF, FW:f.FW};
+  const avail = S.players.filter(p=>p.inj===0 && !p.rest);
+  const score = p=> ignoreCond ? p.ovr : eff(p);
+  const used = new Set(); const xi = [];
+  for(const pos of ['GK','DF','MF','FW']){
+    const c = avail.filter(p=>p.pos===pos).sort((a,b)=>score(b)-score(a)).slice(0,need[pos]);
+    c.forEach(p=>{used.add(p.id); xi.push({p, slot:pos, pen:false});});
+    need[pos]-=c.length;
+  }
+  for(const pos of ['GK','DF','MF','FW']){
+    while(need[pos]>0){
+      const rest = avail.filter(p=>!used.has(p.id)).sort((a,b)=>score(b)-score(a));
+      if(rest.length){ used.add(rest[0].id); xi.push({p:rest[0], slot:pos, pen:true}); }
+      else xi.push({p:{id:'ghost'+Math.random(),name:'ユース（臨時）',pos,ovr:18,cond:100,age:16,ghost:true}, slot:pos, pen:false});
+      need[pos]--;
+    }
+  }
+  return xi;
+}
+function teamRating(xi){
+  const f = FORMATIONS[S.formation];
+  const g = {GK:[],DF:[],MF:[],FW:[]};
+  xi.forEach(s=>g[s.slot].push(eff(s.p)*(s.pen?(s.slot==='GK'?0.55:0.78):1)));
+  const avg = a=>a.length? a.reduce((x,y)=>x+y,0)/a.length : 15;
+  const GK=avg(g.GK), DF=avg(g.DF), MF=avg(g.MF), FW=avg(g.FW);
+  const att = FW*0.5 + MF*0.38 + DF*0.12 + f.att;
+  const def = DF*0.48 + GK*0.27 + MF*0.25 + f.def;
+  return {att, def, ovr:(att+def)/2};
+}
+function lam(att, def, home, mul){ return clamp(1.25*Math.exp((att-def)/13)*(home?1.12:0.9)*mul, 0.12, 4.8); }
+
+// ===================== 進行 =====================
+function addNews(t){ S.news.unshift({s:S.season, r:S.round, t}); S.news = S.news.slice(0,40); }
+function changeFans(rate, flat, div){
+  const before=S.fans; let g = S.fans*rate + flat;
+  if(g>0) g *= Math.max(0.03, 1 - S.fans/FAN_CAP[div===undefined?S.div:div]);
+  S.fans = Math.max(200, Math.round(S.fans+g)); return S.fans-before;
+}
+function earn(v){ S.money+=v; S.fin.income+=v; }
+function spend(v){ S.money-=v; S.fin.expense+=v; }
+
+function applyTraining(){
+  const t = TRAINING[S.training];
+  const facG = 0.8 + 0.15*S.fac.training;
+  const medRed = 1 - (S.fac.medical-1)*0.15;
+  const injured = [];
+  for(const p of S.players){
+    if(p.inj>0){ p.inj--; p.cond = clamp(p.cond+10,30,100); continue; }
+    const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
+    if(t.g>0 && ageF>0 && !S.snow){
+      p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*t.g*ageF*facG*R(0.5,1.5));
+    }
+    p.cond = clamp(p.cond + t.c + (p.rest?12:0), 30, 100);
+    if(!p.rest && Math.random() < t.inj*medRed){ p.inj = RI(1,3); injured.push(p); }
+  }
+  injured.forEach(p=>addNews(`練習中に ${p.name} が負傷（全治${p.inj}週）。`));
+  S.snow = false;
+}
+
+function applyPR(){
+  const a = PR[S.pr]; if(!a || S.pr==='none') return null;
+  if(S.money < a.cost){ addNews(`資金不足で「${a.name}」は中止になった。`); return null; }
+  spend(a.cost);
+  let msg = `「${a.name}」を実施。`;
+  const df = changeFans(a.fans[0], a.fans[1]*Math.sqrt(DIV_MULT[S.div]));
+  msg += ` ファン +${df}人`;
+  if(a.trust) S.trust = clamp(S.trust+a.trust,0,100);
+  if(a.youth) S.youthBonus = Math.min(S.youthBonus+1, 8);
+  if(a.merch){
+    const sold = Math.round(R(40,300) * (0.5 + S.fans/2000));
+    earn(sold); msg += `・グッズ売上 ${yen(sold)}`;
+  }
+  addNews(msg);
+  return msg;
+}
+
+function simAI(h,a){
+  const H=S.teams[h], A=S.teams[a];
+  const gh = poisson(lam(H.att+R(-3,3), A.def+R(-3,3), true, 1));
+  const ga = poisson(lam(A.att+R(-3,3), H.def+R(-3,3), false, 1));
+  record(h,a,gh,ga);
+}
+function record(h,a,gh,ga){
+  const H=S.teams[h], A=S.teams[a];
+  H.p++;A.p++;H.gf+=gh;H.ga+=ga;A.gf+=ga;A.ga+=gh;
+  if(gh>ga){H.w++;A.l++;H.pts+=3;H.form.push('W');A.form.push('L');}
+  else if(gh<ga){A.w++;H.l++;A.pts+=3;H.form.push('L');A.form.push('W');}
+  else{H.d++;A.d++;H.pts++;A.pts++;H.form.push('D');A.form.push('D');}
+}
+
+const GOAL_LINES = ['豪快なミドルシュート！','ヘディングで叩き込む！','鮮やかなカウンターから！','PKを冷静に決める！','こぼれ球を押し込んだ！','華麗なループシュート！','セットプレーから！','ドリブル突破からのゴール！'];
+const OPP_LINES = ['失点…守備が崩された。','相手のカウンターに沈む。','セットプレーから失点。','ミドルシュートを決められる。','一瞬の隙を突かれた。'];
+const FLAVOR = ['スタンドから「金沢コール」が響く。','雨の中、激しい攻防が続く。','GKのビッグセーブ！','惜しい！シュートはポスト直撃。','中盤で激しいボールの奪い合い。','サポーターの太鼓が鳴り響く。','決定機を逃した…','相手の猛攻をしのぐ。'];
+
+function pickScorer(xi){
+  const w = xi.map(s=>({p:s.p, w:(s.slot==='FW'?5:s.slot==='MF'?2.5:s.slot==='DF'?0.8:0.02)*Math.pow(s.p.ovr/40,2)}));
+  let tot = w.reduce((a,b)=>a+b.w,0), r=Math.random()*tot;
+  for(const x of w){ r-=x.w; if(r<=0) return x.p; }
+  return w[0].p;
+}
+
+function playOurMatch(h,a){
+  const home = h===0; const oi = home?a:h; const opp = S.teams[oi];
+  const xi = getLineup(); const rt = teamRating(xi); const t = TACTICS[S.tactic];
+  let own=t.own, opm=t.opp;
+  if(t.counter){ const stronger = opp.str > rt.ovr; own = stronger?1.08:0.9; opm = stronger?0.85:0.95; }
+  const gu = poisson(lam(rt.att, opp.def+R(-3,3), home, own));
+  const go = poisson(lam(opp.att+R(-3,3), rt.def, !home, opm));
+  const events=[];
+  for(let i=0;i<gu;i++){ const s=pickScorer(xi); events.push({m:RI(1,90), us:true, p:s}); }
+  for(let i=0;i<go;i++) events.push({m:RI(1,90), us:false});
+  [...FLAVOR].sort(()=>Math.random()-0.5).slice(0,RI(3,5)).forEach(t=>events.push({m:RI(1,90), flavor:t}));
+  events.sort((x,y)=>x.m-y.m);
+  events.forEach(e=>{
+    if(e.flavor) return;
+    if(e.us){ e.text = `⚽ ${e.p.name} ${pick(GOAL_LINES)}`; if(!e.p.ghost){e.p.goals++; e.p.sg++;} }
+    else e.text = `${opp.name} ${pick(OPP_LINES)}`;
+  });
+  // 選手の状態
+  const ids = new Set(xi.map(s=>s.p.id));
+  const medRed = 1 - (S.fac.medical-1)*0.15;
+  const injuredNow=[];
+  for(const p of S.players){
+    if(ids.has(p.id)){
+      p.apps++; p.sa++; p.cond = clamp(p.cond-18,30,100);
+      if(p.age<=27) p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.012);
+      if(Math.random()<0.025*medRed){ p.inj=RI(1,4); injuredNow.push(p); }
+    } else if(p.inj===0){ p.cond = clamp(p.cond+8,30,100); }
+    p.cond = clamp(p.cond + 6 + (S.fac.medical-1)*2, 30, 100);
+  }
+  injuredNow.forEach(p=>{ events.push({m:RI(10,89), text:`🚑 ${p.name} が負傷交代（全治${p.inj}週）`, inj:true}); });
+  events.sort((x,y)=>x.m-y.m);
+  if(home) record(0,oi,gu,go); else record(oi,0,go,gu);
+  const res = gu>go?'W':gu<go?'L':'D';
+  S.results.push(res); S.results = S.results.slice(-10);
+  return {opp, home, gu, go, events, res, rating:rt, xi};
+}
+
+function seasonFanGain(res){
+  if(res==='W') return changeFans(0.04, 15*Math.sqrt(DIV_MULT[S.div]));
+  if(res==='D') return changeFans(0.008, 3);
+  return changeFans(-0.015, 0);
+}
+
+const EVENTS = [
+  {w:1, ok:()=>month(S.round)<=3||month(S.round)>=11, f:()=>{S.snow=true; return '大雪で練習場が雪に埋もれた…次週の練習効果はなし。';}},
+  {w:1.2, f:()=>{const v=Math.round(R(50,200)*DIV_MULT[S.div]); earn(v); return `金沢の老舗和菓子店がスポンサーに名乗り！ ${yen(v)}の支援。`;}},
+  {w:1, f:()=>{const d=changeFans(0.03,20); return `北陸新幹線の車内広告が話題に。ファン +${d}人`;}},
+  {w:1, f:()=>{const d=changeFans(0.025,15); return `兼六園ライトアップとのコラボ企画が好評。ファン +${d}人`;}},
+  {w:0.8, f:()=>{const d=changeFans(0.02,15); return `金沢21世紀美術館でクラブ展示を開催。ファン +${d}人`;}},
+  {w:0.8, f:()=>{const d=changeFans(0.015,10); return `選手たちが近江町市場で海鮮丼を食べる姿がSNSでバズる。ファン +${d}人`;}},
+  {w:1.2, f:()=>{const c=S.players.filter(p=>p.inj===0); if(!c.length) return null; const p=pick(c); p.inj=RI(1,2); return `${p.name} が雪道で転倒し負傷（全治${p.inj}週）。`;}},
+  {w:0.8, f:()=>{const v=Math.round(R(30,100)*Math.sqrt(DIV_MULT[S.div])); spend(v); return `雷雨でスタジアムの照明が故障。修理費 ${yen(v)}。`;}},
+  {w:0.8, f:()=>{S.trust=clamp(S.trust-3,0,100); return '北國の地元紙が辛口のクラブ批評を掲載。フロントの信頼 -3';}},
+  {w:2, ok:()=>month(S.round)===6, f:()=>{const d=changeFans(0.05,30); return `百万石まつりの行列にクラブで参加！ ファン +${d}人`;}},
+  {w:0.9, f:()=>{const c=S.players.filter(p=>p.age<=22 && p.ovr<p.pot); if(!c.length) return null; const p=pick(c); p.ovr=Math.min(p.pot,p.ovr+2.5); return `若手 ${p.name} が練習で覚醒の兆し！ 能力UP`;}},
+  {w:0.7, f:()=>{const b=DIVS[S.div].base; const p=makePlayer(randPos(), (b[0]+b[1])/2+R(2,8), RI(31,34), 0); p.fee=Math.round(playerValue(p)*0.5); p.local=true; S.market.unshift(p); return `石川県出身のベテラン ${p.name} が「地元に恩返ししたい」と格安での入団を希望！（移籍市場）`;}},
+  {w:0.7, f:()=>{const v=Math.round(R(40,120)*Math.sqrt(DIV_MULT[S.div])); earn(v); return `加賀友禅コラボのマフラーが完売！ 売上 ${yen(v)}`;}},
+  {w:0.6, f:()=>{S.players.forEach(p=>p.cond=clamp(p.cond+10,30,100)); return '犀川沿いの合同ランニングで選手たちがリフレッシュ。全員のコンディションUP';}},
+];
+function randomEvent(){
+  if(Math.random()>0.38) return null;
+  const pool = EVENTS.filter(e=>!e.ok||e.ok());
+  let tot = pool.reduce((a,b)=>a+b.w,0), r=Math.random()*tot;
+  for(const e of pool){ r-=e.w; if(r<=0){ const t=e.f(); if(t) addNews(t); return t; } }
+  return null;
+}
+
+function refreshMarket(n){
+  S.market = S.market.filter(p=>!p.stale);
+  S.market.forEach(p=>p.age2=(p.age2||0)+1);
+  S.market = S.market.filter(p=>p.age2<4);
+  for(let i=0;i<n;i++) S.market.push(genCandidate());
+  S.market = S.market.slice(-8);
+}
+function genCandidate(){
+  const b = DIVS[S.div].base; const mid=(b[0]+b[1])/2;
+  const sc = S.fac.scout;
+  const foreign = Math.random()<0.12;
+  const age = RI(18,33);
+  let ovr = mid + (sc-1)*3 + R(-13,7) + (foreign?4:0);
+  if(Math.random()<0.08) ovr += R(5,10); // 掘り出し物
+  const pot = age<=21 ? ovr+R(4,16+sc*2) : age<=25 ? ovr+R(1,8+sc) : age<=28 ? ovr+R(0,3) : ovr;
+  const p = makePlayer(randPos(), ovr, age, pot, foreign);
+  p.fee = Math.round(playerValue(p) * (foreign?1.15:1));
+  return p;
+}
+
+function payWeekly(home){
+  const out = {ticket:0, att:0, sponsor:0, salary:0, upkeep:0};
+  out.sponsor = Math.round(S.sponsor/ROUNDS); earn(out.sponsor);
+  out.salary = Math.round(S.players.reduce((a,p)=>a+p.salary,0)/ROUNDS); spend(out.salary);
+  out.upkeep = Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0) * (1+S.div*0.3);
+  out.upkeep = Math.round(out.upkeep); spend(out.upkeep);
+  if(home){
+    const tk = TICKET[S.ticket]; const last = S.results.slice(-5);
+    const form = last.filter(r=>r==='W').length - last.filter(r=>r==='L').length;
+    const demand = S.fans * (0.66 + form*0.03) * tk.demand * R(0.85,1.15);
+    out.att = Math.round(clamp(demand, 150, CAP[S.fac.stadium-1]));
+    out.ticket = Math.round(out.att * DIVS[S.div].ticket * tk.price / 10000);
+    earn(out.ticket);
+  }
+  return out;
+}
+
+function advance(){
+  if(!S || S.over || S.round>=ROUNDS) return;
+  const before = {money:S.money, fans:S.fans};
+  applyTraining();
+  applyPR();
+  let ours=null;
+  for(const [h,a] of S.schedule[S.round]){
+    if(h===0||a===0) ours = playOurMatch(h,a); else simAI(h,a);
+  }
+  const fin = payWeekly(ours.home);
+  if(ours.res==='W') S.trust+=3; else if(ours.res==='L') S.trust-=2;
+  const fanD = seasonFanGain(ours.res);
+  if(S.money<0) { S.trust-=3; addNews('⚠ 資金がマイナスです。フロントの信頼が下がっています。'); }
+  S.trust = clamp(S.trust,0,100);
+  const sc = `${ours.home?'H':'A'} ${ours.gu}-${ours.go} vs ${ours.opp.name}`;
+  addNews(`第${S.round+1}節 ${ {W:'勝利',D:'引き分け',L:'敗戦'}[ours.res] }：${sc}`);
+  const ev = randomEvent();
+  refreshMarket(2);
+  S.round++;
+  if(S.trust<=0){ S.over='fired'; }
+  save();
+  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev});
+}
+
+function standings(){
+  return S.teams.map((t,i)=>({...t,i,gd:t.gf-t.ga})).sort((a,b)=>b.pts-a.pts||b.gd-a.gd||b.gf-a.gf);
+}
+function myRank(){ return standings().findIndex(t=>t.isMe)+1; }
+
+function endSeason(){
+  const st = standings(); const rank = st.findIndex(t=>t.isMe)+1;
+  const d = S.div; const report = {rank, div:d, lines:[], target:S.target};
+  // 賞金
+  const prize = Math.round(DIVS[d].prize * (11-rank)/10 * (rank===1?2:1));
+  earn(prize); report.prize = prize;
+  // 昇格・降格
+  let moved = 0, champion=false;
+  const licOK = d<4 && S.fac.stadium >= DIVS[d+1].lic;
+  const upIdx = []; const downIdx=[];
+  if(d<4){
+    for(const t of st){ if(upIdx.length>=2) break; if(t.isMe && !licOK) continue; upIdx.push(t.i); }
+  }
+  if(d>0) downIdx.push(st[st.length-1].i, st[st.length-2].i);
+  if(upIdx.includes(0)) moved = 1;
+  if(downIdx.includes(0)) moved = -1;
+  if(d===4 && rank===1){ champion=true; S.champion++; }
+  if(d<4 && rank<=2 && !licOK) report.lines.push(`昇格圏でしたが、スタジアムが${DIVS[d+1].name}の基準（レベル${DIVS[d+1].lic}）を満たさず昇格できませんでした…`);
+  // 信頼
+  let td = (S.target - rank)*4;
+  if(moved===1) td+=20; if(moved===-1) td-=20; if(champion) td+=30;
+  S.trust = clamp(S.trust + td, 0, 100);
+  report.trust = td;
+  // ファン
+  let fd = 0;
+  if(moved===1) fd = changeFans(0.3, 300*DIV_MULT[d], d+1);
+  else if(moved===-1) fd = changeFans(-0.15, 0);
+  else fd = changeFans(rank<=3?0.08:rank>=8?-0.05:0.02, 0);
+  if(champion) fd += changeFans(0.25,0);
+  report.fans = fd;
+  S.history.push({season:S.season, div:d, rank, pts:st[rank-1].pts, moved, champion});
+  // 選手の加齢・引退
+  const retired=[];
+  for(const p of S.players){
+    p.age++;
+    if(p.age>=31) p.ovr = Math.max(12, p.ovr - R(0.5,2.2)*(p.age-29)/2);
+    if(p.age>=30) p.pot = p.ovr;
+    p.salary = Math.max(Math.round(p.salary*0.9), calcSalary(p.ovr));
+    if(p.age>=34 && Math.random()<(p.age-33)*0.3) retired.push(p);
+  }
+  S.players = S.players.filter(p=>!retired.includes(p));
+  report.retired = retired.map(p=>p.name);
+  // ユース昇格
+  const ys = []; const b = DIVS[0].base;
+  for(let i=0;i<youthCount(S.fac.youth);i++){
+    const age = RI(16,18);
+    const lvl = S.fac.youth + S.youthBonus*0.5;
+    const ovr = b[0] - 8 + lvl*3 + R(-4,4) + S.div*2;
+    const p = makePlayer(randPos(), ovr, age, ovr + R(12, 22+lvl*4));
+    S.players.push(p); ys.push(p);
+  }
+  S.youthBonus = 0;
+  report.youth = ys.map(p=>`${p.name}（${p.pos}）`);
+  // リーグ再編
+  const me = S.teams[0];
+  if(moved!==0){
+    S.div += moved;
+    S.teams = [me];
+    for(let i=0;i<9;i++) S.teams.push(genTeam(S.div));
+  } else {
+    const repl = new Set([...upIdx, ...downIdx]);
+    S.teams = S.teams.map((t,i)=>{
+      if(t.isMe) return t;
+      if(repl.has(i)) return genTeam(S.div, upIdx.includes(i)? -2 : 2);
+      const dr = R(-3,3); t.str+=dr; t.att+=dr+R(-1,1); t.def+=dr+R(-1,1); return t;
+    });
+  }
+  report.moved = moved; report.champion = champion;
+  S.season++;
+  startSeason();
+  refreshMarket(6);
+  addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
+  if(S.trust<=0) S.over='fired';
+  save();
+  return report;
+}
+
+// ===================== アクション =====================
+function signPlayer(id){
+  const p = S.market.find(x=>x.id===id); if(!p) return;
+  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  if(S.money < p.fee) return toast('資金が足りません。');
+  spend(p.fee);
+  S.market = S.market.filter(x=>x!==p);
+  delete p.fee; delete p.age2;
+  p.cond = 90;
+  S.players.push(p);
+  addNews(`${p.name}（${p.pos}・${p.age}歳）を獲得！`);
+  save(); render();
+}
+function sellPlayer(id){
+  const p = S.players.find(x=>x.id===id); if(!p) return;
+  if(S.players.length<=14) return toast('選手は最低14人必要です。');
+  const v = Math.round(playerValue(p)*0.7);
+  confirmBox(`${p.name} を ${yen(v)} で売却しますか？`, ()=>{
+    S.players = S.players.filter(x=>x!==p); earn(v);
+    addNews(`${p.name} を${yen(v)}で他クラブへ売却。`);
+    if(p.ovr >= teamRating(getLineup(true)).ovr+5) { S.trust=clamp(S.trust-2,0,100); changeFans(-0.02,0); }
+    save(); render();
+  });
+}
+function upgrade(k){
+  const l = S.fac[k]; if(l>=5) return;
+  const c = FAC[k].cost[l];
+  if(S.money < c) return toast('資金が足りません。');
+  spend(c); S.fac[k]++;
+  if(k==='scout') { S.market.forEach(p=>p.stale=true); refreshMarket(4); }
+  addNews(`${FAC[k].name}をレベル${S.fac[k]}に強化。`);
+  save(); render();
+}
+
+// ===================== 保存 =====================
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const s = localStorage.getItem(SAVE_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
+function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
+
+// ===================== 描画 =====================
+const $app = document.getElementById('app');
+const $modal = document.getElementById('modal');
+const $mbox = document.getElementById('modalBox');
+
+function stars(p){
+  const gap = p.pot - p.ovr;
+  if(S.fac.scout<=1 && !S.players.includes(p)) return '<span class="muted small">?</span>';
+  const n = gap>=20?5:gap>=14?4:gap>=8?3:gap>=4?2:gap>=1.5?1:0;
+  return n? `<span class="stars" title="伸びしろ">${'★'.repeat(n)}</span>` : '<span class="muted small">—</span>';
+}
+function posTag(p){ return `<span class="pos ${p}">${p}</span>`; }
+function resBadge(r){ return `<span class="res ${r}">${{W:'勝',D:'分',L:'負'}[r]}</span>`; }
+
+function nextMatch(){
+  if(S.round>=ROUNDS) return null;
+  const pr = S.schedule[S.round].find(([h,a])=>h===0||a===0);
+  const home = pr[0]===0; const oi = home?pr[1]:pr[0];
+  return {home, opp:S.teams[oi], oi};
+}
+
+function renderTitle(){
+  const saved = load();
+  $app.innerHTML = `
+  <div class="title-screen">
+    <div style="font-size:44px">⚽</div>
+    <h1>百万石<span>フットボール</span></h1>
+    <div class="gold-line"></div>
+    <p>北信越リーグの弱小クラブを率いて、<br>金沢からJ1の頂点を目指すクラブ経営シミュレーション。</p>
+    <div class="ladder">${DIVS.map((d,i)=>`<span class="${i===0?'on':''}">${d.short}</span>`).join('<span style="border:0;background:none">→</span>')}</div>
+    <p style="margin-top:20px"><label for="clubName" class="small muted">クラブ名</label><br>
+    <input id="clubName" maxlength="16" value="金沢百万石FC"></p>
+    <p><button class="go" data-act="start">新しく始める</button></p>
+    ${saved && !saved.over ? `<p><button class="btn" data-act="continue">続きから（${esc(saved.club)}・${saved.season}年目 ${DIVS[saved.div].short}）</button></p>`:''}
+    <div class="card" style="text-align:left;margin-top:24px">
+      <h3>あそびかた</h3>
+      <ul class="small" style="margin:0;padding-left:18px">
+        <li>毎週、練習・戦術・広報活動を決めて「次の試合へ」。1シーズン18節。</li>
+        <li>上位2チームが昇格。ただしスタジアムがリーグ基準を満たす必要あり。</li>
+        <li>若手を育てて売る、施設に投資する、ファンを増やして収入を伸ばす。</li>
+        <li>フロントの信頼が0になると解任。資金のマイナスにも注意。</li>
+      </ul>
+    </div>
+  </div>`;
+  document.getElementById('footer')?.remove();
+}
+
+function render(){
+  if(!S){ renderTitle(); return; }
+  const nm = nextMatch();
+  const tabs = [['home','ホーム'],['squad','選手'],['tactics','作戦・練習'],['market','移籍市場'],['facility','施設'],['league','順位表']];
+  let body='';
+  switch(ui.tab){
+    case 'squad': body=renderSquad(); break;
+    case 'tactics': body=renderTactics(); break;
+    case 'market': body=renderMarket(); break;
+    case 'facility': body=renderFacility(); break;
+    case 'league': body=renderLeague(); break;
+    default: body=renderHome();
+  }
+  $app.innerHTML = `
+  <header class="top"><div class="top-inner">
+    <div class="club-row">
+      <span class="club-name"><span class="mark">◆</span> ${esc(S.club)}</span>
+      <span class="meta">${S.season}年目・${DIVS[S.div].name}・${S.round<ROUNDS?`第${S.round+1}節（${month(S.round)}月）`:'シーズン終了'}</span>
+    </div>
+    <div class="stats">
+      <span class="stat">資金 <b class="${S.money<0?'neg':''}">${yen(S.money)}</b></span>
+      <span class="stat">ファン <b>${S.fans.toLocaleString()}</b>人</span>
+      <span class="stat">順位 <b>${myRank()}</b>位</span>
+      <span class="stat">フロント信頼 <b>${Math.round(S.trust)}</b><span class="trust"><i style="width:${S.trust}%"></i></span></span>
+    </div>
+    <nav class="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
+  </div></header>
+  <main class="wrap">${body}</main>`;
+  let f = document.getElementById('footer');
+  if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
+  f.innerHTML = `<div class="footer-inner">
+    <div class="info">${nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
+    ${nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
+  </div>`;
+}
+
+function renderHome(){
+  const nm = nextMatch(); const xi=getLineup(); const rt=teamRating(xi);
+  const rank = myRank(); const st = standings();
+  let match = '';
+  if(nm){
+    const oppO = (nm.opp.att+nm.opp.def)/2;
+    const diff = rt.ovr - oppO;
+    const word = diff>6?'格下':diff>2?'やや格下':diff>-2?'互角':diff>-6?'やや格上':'格上';
+    match = `<div class="card"><h3>次の試合 — 第${S.round+1}節 ${nm.home?'ホーム（金沢）':'アウェイ'}</h3>
+      <div class="vs"><div class="side"><div class="nm">${esc(S.club)}</div><div class="small muted">総合 ${rt.ovr.toFixed(1)}</div></div>
+      <div class="x">VS</div>
+      <div class="side"><div class="nm">${esc(nm.opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}・${standings().findIndex(t=>t.i===nm.oi)+1}位</div></div></div>
+      <p class="small" style="text-align:center;margin:10px 0 0">相手は<b>${word}</b>。戦術：${TACTICS[S.tactic].name} / ${S.formation} / ${TRAINING[S.training].name}</p>
+      ${licenseWarn()}
+    </div>`;
+  } else {
+    match = `<div class="card"><h3>シーズン終了</h3><p>全日程が終了しました。最終順位は <b>${rank}位</b>。下のボタンからシーズン総括へ進みましょう。</p></div>`;
+  }
+  const around = st.map((t,i)=>({t,i})).filter(({i})=>Math.abs(i-(rank-1))<=2 || i<2);
+  const mini = `<table><tr><th>#</th><th>クラブ</th><th class="num">勝点</th><th class="num">得失</th></tr>
+    ${around.map(({t,i})=>`<tr class="${t.isMe?'me':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.pts}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td></tr>`).join('')}</table>`;
+  const sal = S.players.reduce((a,p)=>a+p.salary,0);
+  return `<div class="grid g2">
+    ${match}
+    <div class="card"><h3>クラブ状況</h3>
+      <div class="kv">
+        <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
+        <span>直近の結果</span><span class="v">${S.results.slice(-5).map(resBadge).join('')||'<span class="muted">—</span>'}</span>
+        <span>攻撃力 / 守備力</span><span class="v">${rt.att.toFixed(1)} / ${rt.def.toFixed(1)}</span>
+        <span>年俸総額</span><span class="v">${yen(sal)}/年</span>
+        <span>スポンサー収入</span><span class="v">${yen(S.sponsor)}/年</span>
+        <span>今季の収支</span><span class="v ${S.fin.income-S.fin.expense>=0?'plus':'minus'}">${yen(S.fin.income-S.fin.expense)}</span>
+        <span>J1優勝</span><span class="v">${S.champion}回</span>
+      </div>
+    </div>
+    <div class="card"><h3>順位（抜粋）</h3>${mini}</div>
+    <div class="card"><h3>ニュース</h3><ul class="news">${S.news.slice(0,10).map(n=>`<li><span class="r">${n.s}年目${n.r?` 第${n.r}節`:''}</span>${esc(n.t)}</li>`).join('')}</ul></div>
+  </div>`;
+}
+function licenseWarn(){
+  if(S.div>=4) return '';
+  const need = DIVS[S.div+1].lic;
+  if(S.fac.stadium>=need) return '';
+  return `<div class="warn">⚠ ${DIVS[S.div+1].name}に昇格するにはスタジアム・レベル${need}が必要です（現在${S.fac.stadium}）。「施設」から強化しましょう。</div>`;
+}
+
+function renderSquad(){
+  const xi = getLineup(); const xiIds = new Set(xi.map(s=>s.p.id));
+  const order = {GK:0,DF:1,MF:2,FW:3};
+  const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
+  const sal = S.players.reduce((a,p)=>a+p.salary,0);
+  return `<div class="card" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
+  <p class="small muted" style="margin-top:-4px">スタメンはフォーメーションに合わせて能力×コンディションで自動選出。「休ませる」でスタメンから外せます。</p>
+  <div class="scroll"><table>
+    <tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr>
+    ${ps.map(p=>`<tr>
+      <td>${posTag(p.pos)}</td>
+      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}</td>
+      <td class="num">${p.age}</td>
+      <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
+      <td>${stars(p)}</td>
+      <td style="min-width:60px"><div class="bar ${p.cond>70?'':'gold'}"><i style="width:${p.cond}%"></i></div></td>
+      <td class="num hide-s">${p.sg}<span class="muted small">/${p.goals}</span></td>
+      <td class="num hide-s">${p.salary}万</td>
+      <td><button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用':'休ませる'}</button>
+          <button class="btn" data-act="sell" data-arg="${p.id}">売却</button></td>
+    </tr>`).join('')}
+  </table></div></div>`;
+}
+
+function optGroup(key, defs, cur, extra){
+  return `<div class="opts">${Object.entries(defs).map(([k,d])=>`<button class="opt ${cur===k?'on':''}" data-act="set" data-arg="${key}:${k}"><b>${d.name||k}</b><span>${extra?extra(k,d):d.desc}</span></button>`).join('')}</div>`;
+}
+function renderTactics(){
+  const rt = teamRating(getLineup());
+  return `<div class="grid g2">
+    <div class="card"><h3>フォーメーション</h3>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}
+      <p class="small muted" style="margin-bottom:0">現在の戦力：攻撃 ${rt.att.toFixed(1)} / 守備 ${rt.def.toFixed(1)}</p></div>
+    <div class="card"><h3>戦術</h3>${optGroup('tactic', TACTICS, S.tactic)}</div>
+    <div class="card"><h3>今週の練習</h3>${optGroup('training', TRAINING, S.training)}</div>
+    <div class="card"><h3>チケット価格（ホーム）</h3>${optGroup('ticket', TICKET, S.ticket, (k,d)=>`${Math.round(DIVS[S.div].ticket*d.price)}円・集客×${d.demand}`)}
+      <p class="small muted" style="margin-bottom:0">スタジアム収容 ${CAP[S.fac.stadium-1].toLocaleString()}人</p></div>
+    <div class="card" style="grid-column:1/-1"><h3>今週の広報活動（金沢の街で）</h3>${optGroup('pr', PR, S.pr, (k,d)=>`${d.cost?yen(d.cost):'無料'}・${d.desc}`)}
+      <p class="small muted" style="margin-bottom:0">選んだ活動は毎週実施されます（資金が足りないと中止）。</p></div>
+  </div>`;
+}
+
+function renderMarket(){
+  const xi = getLineup(true);
+  return `<div class="card" style="margin-top:14px"><h3>移籍市場</h3>
+    <p class="small muted" style="margin:-4px 0 0">毎週入れ替わります。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明）':''}。登録 ${S.players.length}/26人・資金 ${yen(S.money)}</p></div>
+    <div class="mk" style="margin-top:12px">${S.market.map(p=>{
+      const sameXI = xi.filter(s=>s.slot===p.pos).map(s=>s.p.ovr);
+      const worst = sameXI.length?Math.min(...sameXI):0;
+      const up = p.ovr - worst;
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span>${posTag(p.pos)} <b>${esc(p.name)}</b></span>${p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
+        <div class="kv" style="margin-top:8px">
+          <span>年齢</span><span class="v">${p.age}歳</span>
+          <span>能力</span><span class="v"><span class="ovr">${round1(p.ovr)}</span> <span class="small ${up>0?'plus':'muted'}">${up>0?`先発+${round1(up)}`:'控え級'}</span></span>
+          <span>伸びしろ</span><span class="v">${stars(p)}</span>
+          <span>年俸</span><span class="v">${p.salary}万/年</span>
+          <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
+        </div>
+        <div class="row"><button class="btn primary" data-act="sign" data-arg="${p.id}" ${S.money<p.fee||S.players.length>=26?'disabled':''}>獲得する</button></div>
+      </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div>`;
+}
+
+function renderFacility(){
+  return `<div class="grid g2">${Object.entries(FAC).map(([k,f])=>{
+    const l=S.fac[k]; const c=f.cost[l];
+    return `<div class="card fac"><div class="ic">${f.ic}</div><div style="flex:1;min-width:0">
+      <b>${f.name}</b> <span class="muted small">Lv${l}</span>
+      <div class="lv">${[1,2,3,4,5].map(i=>`<i class="${i<=l?'on':''}"></i>`).join('')}</div>
+      <div class="small">${f.desc(l)}</div>
+      ${l<5?`<div class="small muted">次：${f.desc(l+1)}</div>`:''}
+    </div>
+    <div>${l<5?`<button class="btn gold" data-act="upgrade" data-arg="${k}" ${S.money<c?'disabled':''}>${yen(c)}</button>`:'<span class="tag">MAX</span>'}</div></div>`;}).join('')}
+    <div class="card" style="grid-column:1/-1"><h3>リーグ基準（スタジアム）</h3>
+      <div class="small">${DIVS.map((d,i)=>`${d.short}：Lv${d.lic}`).join(' ／ ')}</div>
+      <div class="small muted">維持費は施設レベルに応じて毎週かかります（現在 ${yen(Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+S.div*0.3)))}/週）。</div>
+      ${licenseWarn()}
+    </div></div>`;
+}
+
+function renderLeague(){
+  const st = standings();
+  const up = S.div<4 ? 2 : 1, down = S.div>0 ? 2 : 0;
+  return `<div class="card" style="margin-top:14px"><h3>${DIVS[S.div].name} 順位表（第${Math.min(S.round,ROUNDS)}節終了）</h3>
+    <div class="scroll"><table>
+      <tr><th>#</th><th>クラブ</th><th class="num">試</th><th class="num">勝</th><th class="num">分</th><th class="num">負</th><th class="num hide-s">得</th><th class="num hide-s">失</th><th class="num">差</th><th class="num">勝点</th><th class="hide-s">直近</th></tr>
+      ${st.map((t,i)=>`<tr class="${t.isMe?'me':''} ${i<up?'up':''} ${i>=st.length-down?'down':''}">
+        <td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.p}</td><td class="num">${t.w}</td><td class="num">${t.d}</td><td class="num">${t.l}</td>
+        <td class="num hide-s">${t.gf}</td><td class="num hide-s">${t.ga}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td><td class="num"><b>${t.pts}</b></td>
+        <td class="hide-s">${t.form.slice(-5).map(resBadge).join('')}</td></tr>`).join('')}
+    </table></div>
+    <p class="small muted" style="margin-bottom:0">緑：${S.div<4?'昇格圏':'優勝'}　赤：${S.div>0?'降格圏':'—'}</p></div>
+  <div class="card" style="margin-top:14px"><h3>クラブ史</h3>
+    ${S.history.length? `<table><tr><th>年</th><th>リーグ</th><th class="num">順位</th><th class="num">勝点</th><th></th></tr>
+    ${S.history.map(h=>`<tr><td>${h.season}年目</td><td>${DIVS[h.div].name}</td><td class="num">${h.rank}位</td><td class="num">${h.pts}</td><td>${h.champion?'🏆 J1優勝':h.moved===1?'⬆ 昇格':h.moved===-1?'⬇ 降格':''}</td></tr>`).join('')}</table>`
+    : '<p class="muted small">まだ記録はありません。</p>'}</div>`;
+}
+
+// ===================== モーダル =====================
+let playTimer = null;
+function openModal(html){ $mbox.innerHTML = html; $modal.classList.remove('hidden'); }
+function closeModal(){ $modal.classList.add('hidden'); if(playTimer){clearInterval(playTimer);playTimer=null;} }
+function toast(msg){ openModal(`<p>${esc(msg)}</p><div class="row"><button class="btn primary" data-act="close">OK</button></div>`); }
+let confirmCb = null;
+function confirmBox(msg, cb){ confirmCb = cb; openModal(`<p>${esc(msg)}</p><div class="row"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="confirm">はい</button></div>`); }
+
+function showMatch(m, fin, d){
+  const homeName = m.home ? S.club : m.opp.name, awayName = m.home ? m.opp.name : S.club;
+  openModal(`
+    <div class="small muted" style="text-align:center">${DIVS[S.div].name} 第${S.round}節・${m.home?'ホーム':'アウェイ'}</div>
+    <div class="score"><div class="t">${esc(homeName)}</div><div class="n" id="sc">0 - 0</div><div class="t">${esc(awayName)}</div></div>
+    <div class="clock" id="clk">キックオフ</div>
+    <ul class="log" id="log"></ul>
+    <div id="after"></div>
+    <div class="row" id="mrow"><button class="btn" data-act="skip">スキップ</button></div>`);
+  let min = 0, hs=0, as=0; const evs=[...m.events];
+  const $log = document.getElementById('log'), $sc=document.getElementById('sc'), $clk=document.getElementById('clk');
+  const step = ()=>{
+    min++;
+    while(evs.length && evs[0].m<=min){
+      const e = evs.shift();
+      if(!e.flavor && !e.inj){ if(e.us===m.home) hs++; else as++; }
+      const cls = e.flavor||e.inj?'':(e.us?'goal us':'goal them');
+      $log.insertAdjacentHTML('beforeend', `<li class="${cls}"><span class="m">${e.m}'</span>${esc(e.text||e.flavor)}</li>`);
+      $sc.textContent = `${hs} - ${as}`;
+      $log.scrollTop = $log.scrollHeight;
+    }
+    $clk.textContent = min>=90 ? '試合終了' : `${min}分`;
+    if(min>=90){ clearInterval(playTimer); playTimer=null; finish(); }
+  };
+  const finish = ()=>{
+    const word = {W:'勝利！',D:'引き分け',L:'敗戦…'}[m.res];
+    const sign = v=>`<span class="${v>=0?'plus':'minus'}">${v>=0?'+':''}${typeof v==='number'&&Math.abs(v)>=1?v.toLocaleString():v}</span>`;
+    document.getElementById('after').innerHTML = `
+      <h2 style="text-align:center;color:var(--${m.res==='W'?'win':m.res==='L'?'loss':'draw'})">${word}</h2>
+      <div class="kv">
+        ${m.home?`<span>観客数</span><span class="v">${fin.att.toLocaleString()}人</span><span>チケット収入</span><span class="v">${yen(fin.ticket)}</span>`:''}
+        <span>スポンサー</span><span class="v">${yen(fin.sponsor)}</span>
+        <span>年俸・維持費</span><span class="v minus">-${yen(fin.salary+fin.upkeep)}</span>
+        <span>資金の増減</span><span class="v">${sign(d.dm)}万円</span>
+        <span>ファン</span><span class="v">${sign(d.df)}人</span>
+        <span>現在の順位</span><span class="v"><b>${myRank()}位</b></span>
+      </div>
+      ${d.ev?`<div class="warn">📰 ${esc(d.ev)}</div>`:''}
+      ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}`;
+    document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="matchDone">続ける</button>`;
+  };
+  ui.finishMatch = ()=>{ if(playTimer){clearInterval(playTimer);playTimer=null;} while(min<90) step(); };
+  playTimer = setInterval(step, 35);
+}
+
+function showSeasonEnd(){
+  const rep = endSeason();
+  const head = rep.champion ? '🏆 J1優勝！ 金沢から日本一へ！' : rep.moved===1 ? `⬆ ${DIVS[rep.div+1].name}へ昇格！` : rep.moved===-1 ? `⬇ ${DIVS[rep.div-1].name}へ降格…` : `${DIVS[rep.div].name} 残留`;
+  openModal(`
+    <div class="small muted">${S.season-1}年目 シーズン総括</div>
+    <h2>${head}</h2>
+    <p>最終順位 <b>${rep.rank}位</b>（目標 ${rep.target}位以内）</p>
+    <div class="kv">
+      <span>賞金</span><span class="v plus">+${yen(rep.prize)}</span>
+      <span>フロント信頼</span><span class="v ${rep.trust>=0?'plus':'minus'}">${rep.trust>=0?'+':''}${rep.trust}</span>
+      <span>ファン</span><span class="v ${rep.fans>=0?'plus':'minus'}">${rep.fans>=0?'+':''}${rep.fans.toLocaleString()}人</span>
+    </div>
+    ${rep.lines.map(l=>`<div class="warn">${esc(l)}</div>`).join('')}
+    ${rep.retired.length?`<p class="small"><b>引退：</b>${rep.retired.map(esc).join('、')}</p>`:''}
+    <p class="small"><b>ユース昇格：</b>${rep.youth.map(esc).join('、')}</p>
+    <p class="small muted">新シーズンは${DIVS[S.div].name}。フロントの目標は${S.target}位以内。</p>
+    ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}
+    <div class="row"><button class="btn primary" data-act="seasonDone">新シーズンへ</button></div>`);
+}
+
+function showGameOver(){
+  const best = S.history.reduce((b,h)=>Math.max(b,h.div),S.div);
+  openModal(`<h2>監督解任</h2>
+    <p>フロントの信頼を失い、${esc(S.club)}の監督を解任されました。</p>
+    <div class="kv"><span>在任</span><span class="v">${S.season}年目</span><span>最高到達リーグ</span><span class="v">${DIVS[best].name}</span><span>J1優勝</span><span class="v">${S.champion}回</span></div>
+    <div class="row"><button class="btn primary" data-act="restart">タイトルへ</button></div>`);
+  clearSave();
+}
+
+// ===================== イベント =====================
+const ACTIONS = {
+  start(){ const n = (document.getElementById('clubName')?.value||'').trim().slice(0,16); newGame(n); ui.tab='home'; render(); },
+  continue(){ S = load(); ui.tab='home'; render(); },
+  tab(a){ ui.tab=a; render(); window.scrollTo(0,0); },
+  advance(){ advance(); },
+  skip(){ ui.finishMatch && ui.finishMatch(); },
+  matchDone(){ closeModal(); render(); if(S.over) showGameOver(); else if(S.round>=ROUNDS) showSeasonEnd(); },
+  season(){ showSeasonEnd(); },
+  seasonDone(){ closeModal(); render(); if(S.over) showGameOver(); },
+  set(a){ const [k,v]=a.split(':'); S[k]=v; save(); render(); },
+  sign(a){ signPlayer(a); },
+  sell(a){ sellPlayer(a); },
+  rest(a){ const p=S.players.find(x=>x.id===a); if(p){p.rest=!p.rest; save(); render();} },
+  upgrade(a){ upgrade(a); },
+  close(){ closeModal(); },
+  confirm(){ closeModal(); const cb=confirmCb; confirmCb=null; cb&&cb(); },
+  restart(){ closeModal(); S=null; render(); },
+};
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-act]'); if(!el || el.disabled) return;
+  const f = ACTIONS[el.dataset.act]; if(f) f(el.dataset.arg, el);
+});
+render();
+</script>
+</body>
+</html>
