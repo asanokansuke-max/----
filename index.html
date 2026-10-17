@@ -154,6 +154,11 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .offplan li.done{color:var(--muted);text-decoration:line-through}
 .offplan li.now{font-weight:700}
 .offplan li.now::marker{color:var(--gold)}
+.rbar{position:relative;height:12px;border-radius:6px;background:var(--line);margin:8px 0 2px;overflow:hidden}
+.rbar i{position:absolute;top:0;bottom:0;border-radius:6px}
+.rbar i.pot{background:var(--gold-soft);box-shadow:inset 0 0 0 1px var(--gold)}
+.rbar i.now{background:var(--indigo);top:2px;bottom:2px}
+.rbar-axis{display:flex;justify-content:space-between;font-size:10.5px;margin-bottom:6px}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -642,6 +647,7 @@ function endSeason(){
   report.fans = fd;
   S.history.push({season:S.season, div:d, rank, pts:st[rank-1].pts, moved, champion});
   loansSeasonEnd(report.lines);
+  amateursSeasonEnd(report.lines);
   // 期限付き移籍から復帰
   for(const p of S.players.filter(x=>x.loan)){
     const g = Math.max(0,p.pot-p.ovr)*R(0.2,0.35); p.ovr += g; p.loan=false; p.mor=clamp((p.mor??60)+5,0,100);
@@ -720,6 +726,7 @@ function signPlayer(id){
 function sellPlayer(id){
   const p = S.players.find(x=>x.id===id); if(!p) return;
   if(p.loanFrom) return toast('期限付き移籍中の選手は売却できません。');
+  if(p.amateur) return toast(`${p.amateur}の選手は売却できません。`);
   if(S.players.length<=14) return toast('選手は最低14人必要です。');
   const v = Math.round(playerValue(p)*0.7);
   confirmBox(`${p.name} を ${yen(v)} で売却しますか？`, ()=>{
@@ -1007,6 +1014,11 @@ const AMA_EVENTS = [
   {r:17, kind:'大学', name:'北信越大学サッカーリーグ後期', type:'league'},
 ];
 const AMA_TAGS = ['大会MVP','得点王','ベストイレブン','優秀選手','守備の要','注目のドリブラー'];
+function rangeBar(lo, hi, plo, phi){
+  const x = v => clamp((v-10)/80*100, 0, 100);
+  return `<div class="rbar" title="推定能力（濃い帯）と推定素質（薄い帯）"><i class="pot" style="left:${x(plo)}%;width:${Math.max(1,x(phi)-x(plo))}%"></i><i class="now" style="left:${x(lo)}%;width:${Math.max(1,x(hi)-x(lo))}%"></i></div>
+    <div class="rbar-axis small muted"><span>10</span><span>50</span><span>90</span></div>`;
+}
 function noiseLevel(){ return Math.max(1.5, 12 - S.fac.scout*1.4 - staffAb('scout')/12); }
 function setEstimate(pr, n){
   pr.lo = Math.round(pr.ovr - R(0.3,1)*n); pr.hi = Math.round(pr.ovr + R(0.3,1)*n);
@@ -1049,10 +1061,14 @@ function watchProspect(id){
   const pr = S.prospects.find(x=>x.id===id); if(!pr) return;
   if(S.watchLeft<=0) return toast('今週の視察枠を使い切りました。');
   if(S.money<watchCost()) return toast('資金が足りません。');
+  const b = {lo:pr.lo, hi:pr.hi, plo:pr.plo, phi:pr.phi, it:interest(pr)};
   spend(watchCost()); S.watchLeft--; pr.seen++;
   setEstimate(pr, noiseLevel()/Math.pow(2,pr.seen));
-  addNews(`${pr.school}の${pr.name}を視察。${pr.seen>=2?'実力がかなり見えてきた。':'評価を更新した。'}`);
+  const note = pick(['ボールを持った時の落ち着きが目を引いた。','守備の切り替えが速い。','監督からの評価も高い。','試合後に本人と少し話せた。「プロでやりたい」と目を輝かせていた。','フィジカルはまだ線が細い。','左足のキックに光るものがある。']);
+  addNews(`${pr.school}の${pr.name}を視察。推定能力 ${b.lo}〜${b.hi} → ${pr.lo}〜${pr.hi}。`);
+  ui.flash = pr.id;
   save(); render();
+  toast(`【視察レポート】${pr.name}（${pr.school}）\n${note}\n推定能力：${b.lo}〜${b.hi} → ${pr.lo}〜${pr.hi}（幅 ${b.hi-b.lo} → ${pr.hi-pr.lo}）\n推定素質：${b.plo}〜${b.phi} → ${pr.plo}〜${pr.phi}\n入団の見込み：${b.it}% → ${interest(pr)}%（本人の関心が高まった）`);
 }
 function offerProspect(id){
   const pr = S.prospects.find(x=>x.id===id); if(!pr||pr.status!=='none') return;
@@ -1064,10 +1080,9 @@ function offerProspect(id){
     if(Math.random()*100 < chance){
       spend(fee); pr.status='signed';
       if(pr.kind==='大学'){
-        const p = makePlayer(pr.pos, pr.ovr, pr.age, pr.pot); p.name=pr.name; p.from=pr.school; p.salary=Math.round(p.salary*0.8); p.mor=75;
-        S.players.push(p);
-        addNews(`🎓 ${pr.school}の${pr.name}が来季加入内定！特別指定選手として今季からチームに合流。`);
-      } else addNews(`🎓 ${pr.school}の${pr.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」`);
+        joinAmateur(pr, '特別指定');
+        addNews(`🎓 ${pr.school}の${pr.name}が来季加入内定！特別指定選手として今季から試合に出られる。`);
+      } else addNews(`🎓 ${pr.school}の${pr.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
       save(); render(); toast(`${pr.name}が入団を決断しました！`);
     } else {
       pr.status='declined';
@@ -1075,6 +1090,27 @@ function offerProspect(id){
       save(); render(); toast(`${pr.name}に断られました…`);
     }
   });
+}
+function joinAmateur(pr, type){
+  const p = makePlayer(pr.pos, pr.ovr, pr.age, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=78;
+  p.proSalary = Math.round(p.salary*0.8); p.salary = 0; p.amateur = type; // アマチュア登録中は年俸なし
+  S.players.push(p); pr.status = 'joined';
+  return p;
+}
+function register2(id){
+  const pr = S.prospects.find(x=>x.id===id); if(!pr||pr.status!=='signed'||pr.kind!=='高校') return;
+  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  confirmBox(`${pr.name}（${pr.school}）を2種登録しますか？ 高校在籍のまま、今季からトップチームの試合に出場できます。年俸はかかりません（来季からプロ契約）。`, ()=>{
+    joinAmateur(pr, '2種登録');
+    addNews(`${pr.name}（${pr.school}）を2種登録。高校生ながらトップチームの一員に！`);
+    save(); render();
+  });
+}
+function amateursSeasonEnd(lines){
+  for(const p of S.players.filter(x=>x.amateur)){
+    lines.push(`${p.amateur}だった${p.name}がプロ契約を結んだ（年俸${yen(p.proSalary)}）。`);
+    p.salary = p.proSalary; delete p.proSalary; delete p.amateur;
+  }
 }
 function prospectsSeasonEnd(lines){
   const joined = [];
@@ -1666,16 +1702,16 @@ function renderSquad(){
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th></th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}">
       <td>${posTag(p.pos)}</td>
-      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.loanFrom?`<span class="tag">レンタル（${esc(p.loanFrom)}）</span>`:''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
+      <td>${esc(p.name)} ${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">先発約束</span>':''}${p.loan?'<span class="tag rest">期限付き移籍中</span>':''}${p.loanFrom?`<span class="tag">レンタル（${esc(p.loanFrom)}）</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur}</span>`:''}${p.from?`<span class="tag">${esc(p.from)}出身</span>`:''}</td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
       <td>${stars(p)}</td>
       <td style="min-width:60px"><div class="bar ${p.cond>70?'':'gold'}"><i style="width:${p.cond}%"></i></div></td>
       <td class="num">${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</td>
       <td class="num hide-s">${p.sg}<span class="muted small">/${p.goals}</span></td>
-      <td class="num hide-s">${yen(p.salary)}</td>
+      <td class="num hide-s">${p.amateur?'アマ':yen(p.salary)}</td>
       <td><button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用':'休ませる'}</button>
-          ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取</button>`:`<button class="btn" data-act="sell" data-arg="${p.id}">売却</button>`}${isOff()&&!p.loanFrom?` <button class="btn" data-act="release" data-arg="${p.id}">戦力外</button>`:''}</td>
+          ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取</button>`:`<button class="btn" data-act="sell" data-arg="${p.id}">売却</button>`}${isOff()&&!p.loanFrom&&!p.amateur?` <button class="btn" data-act="release" data-arg="${p.id}">戦力外</button>`:''}</td>
     </tr>`).join('')}
   </tbody></table></div></div>`;
 }
@@ -1836,7 +1872,7 @@ function renderTransfer(){
 }
 function renderAma(){
   const upcoming = AMA_EVENTS.filter(e=>e.r>=S.round);
-  const st = {none:'', signed:'<span class="tag xi">内定</span>', declined:'<span class="tag rest">辞退</span>'};
+  const st = {none:'', signed:'<span class="tag xi">内定</span>', joined:'<span class="tag xi">合流済み</span>', declined:'<span class="tag rest">辞退</span>'};
   return `<div class="card" style="margin-top:12px"><h3>地元アマチュアのスカウト</h3>
       <p class="small" style="margin:0">大会で活躍した選手をスカウトがリストアップ。<b>視察</b>するほど見積もりが正確になり、本人の関心も高まります。</p>
       <div class="kv" style="margin-top:8px">
@@ -1844,18 +1880,23 @@ function renderAma(){
         <span>見積もりの精度</span><span class="v">±${noiseLevel().toFixed(0)}（スカウト網・チーフスカウトで向上）</span>
         <span>次の大会</span><span class="v small">${upcoming[0]?`第${upcoming[0].r+1}節後：${upcoming[0].name}`:'今季は終了'}</span>
       </div>
-      <details class="small muted" style="margin-top:6px"><summary>今後の大会と入団時期</summary>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>高校生は来季から加入。大学生は内定すれば特別指定選手として今季から合流します。</details></div>
+      <details class="small muted" style="margin-top:6px"><summary>今後の大会と入団・登録のしくみ</summary>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>・視察すると推定能力の幅が約半分に狭まり、入団の見込みも上がります（バーの幅が実力の見積もり）。<br>・高校生は内定後に<b>2種登録</b>すれば、今季から試合に出せます。<br>・大学生は内定すると<b>特別指定選手</b>として今季から出場できます。<br>・どちらもアマチュアなので今季は年俸なし。来季からプロ契約になります。</details></div>
     <div class="card-scroll" data-keep="ama" style="margin-top:12px"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
       <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b></span>${st[pr.status]}</div>
       <div class="small muted" style="margin:4px 0">${esc(pr.school)} ${pr.grade}・${pr.age}歳</div>
       <div><span class="tag">${esc(pr.tag)}</span> ${pr.hot?'<span class="tag inj">他クラブも注目</span>':''}</div>
       <div class="kv" style="margin-top:8px">
         <span>推定能力</span><span class="v"><b>${pr.lo}〜${pr.hi}</b></span>
+      </div>
+      ${rangeBar(pr.lo, pr.hi, pr.plo, pr.phi)}
+      <div class="kv">
         <span>推定素質</span><span class="v">${pr.plo}〜${pr.phi}</span>
-        <span>視察</span><span class="v">${pr.seen}回</span>
+        <span>視察</span><span class="v">${'●'.repeat(Math.min(pr.seen,3))}${'○'.repeat(Math.max(0,3-pr.seen))} ${pr.seen}回${pr.status==='none'&&pr.seen<3?`<br><span class="small muted">次の視察で幅 約${Math.max(1,Math.round((pr.hi-pr.lo)/2))}に</span>`:''}</span>
         ${pr.status==='none'?`<span>入団の見込み</span><span class="v">${interest(pr)}%</span><span>支度金</span><span class="v">${yen(prospectFee(pr))}</span>`:''}
       </div>
-      ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する</button><button class="btn primary" data-act="offer" data-arg="${pr.id}">オファー</button></div>`:''}
+      ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する（${yen(watchCost())}）</button><button class="btn primary" data-act="offer" data-arg="${pr.id}">オファー</button></div>`:''}
+      ${pr.status==='signed'&&pr.kind==='高校'?`<div class="row"><button class="btn gold" data-act="reg2" data-arg="${pr.id}" ${S.players.length>=26?'disabled':''}>2種登録して今季から出場させる</button></div>`:''}
+      ${pr.status==='joined'?'<p class="small plus" style="margin:8px 0 0">トップチームに合流済み（選手タブ）</p>':''}
     </div>`).join('') || '<p class="muted small">まだリストアップされた選手はいません。大会が終わるとスカウトから報告が届きます。</p>'}</div></div>`;
 }
 
@@ -1913,7 +1954,7 @@ function companyCard(c,i){
 let playTimer = null;
 function openModal(html){ $mbox.innerHTML = html; $modal.classList.remove('hidden'); }
 function closeModal(){ $modal.classList.add('hidden'); if(playTimer){clearInterval(playTimer);playTimer=null;} }
-function toast(msg){ openModal(`<p>${esc(msg)}</p><div class="row"><button class="btn primary" data-act="close">OK</button></div>`); }
+function toast(msg){ openModal(`<p style="white-space:pre-line">${esc(msg)}</p><div class="row"><button class="btn primary" data-act="close">OK</button></div>`); }
 let confirmCb = null;
 function confirmBox(msg, cb){ confirmCb = cb; openModal(`<p>${esc(msg)}</p><div class="row"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="confirm">はい</button></div>`); }
 
@@ -2022,6 +2063,7 @@ const ACTIONS = {
   crowdfund(){ crowdfund(); },
   buyout(a){ ui.flash=a; buyoutPlayer(a); },
   release(a){ releasePlayer(a); },
+  reg2(a){ ui.flash=a; register2(a); },
   dispatch(a){ dispatchScout(a); },
   signForeign(a){ signForeign(a); },
   dropForeign(a){ dropForeign(a); },
