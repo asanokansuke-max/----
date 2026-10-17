@@ -291,12 +291,13 @@ function youthCount(l){ return 1 + (l>=3?1:0) + (l>=5?1:0); }
 function month(r){ return 3 + Math.floor(Math.min(r,ROUNDS-1)/2); }
 
 function genName(foreign){ return foreign ? pick(FOREIGN) : pick(SURN)+' '+pick(GIVEN); }
-function calcSalary(ovr){ return Math.round((Math.pow(Math.max(1,ovr-25),2.2)*0.1+15)*10); }
+// 年俸（万円/年）：能力40で約300万円、10上がるごとに約2.1倍（地域リーグ〜JFLは100〜600万、J1主力は数千万円）
+function calcSalary(ovr){ return Math.max(80, Math.round(300 * Math.pow(2.1, (ovr-40)/10))); }
 function playerValue(p){
-  const base = Math.pow(Math.max(1,p.ovr-25),2.2)*0.4;
+  const base = calcSalary(p.ovr)*1.2;
   const ageF = p.age<=21?1.4:p.age<=25?1.2:p.age<=29?1:p.age<=32?0.7:0.4;
   const potF = 1+Math.max(0,p.pot-p.ovr)/60;
-  return Math.round((base*ageF*potF+10)*10);
+  return Math.round(base*ageF*potF+50);
 }
 function makePlayer(pos, ovr, age, pot, foreign){
   ovr = clamp(ovr,12,95);
@@ -309,7 +310,11 @@ function genTeam(div, ex){
   const b = DIVS[div].base; const str = R(b[0],b[1]) + (ex||0);
   let name;
   const used = new Set((S&&S.teams||[]).map(t=>t.name));
-  do{ name = pick(div<=1?CITY_LOCAL:CITY_NATION)+' '+pick(SUFFIX); }while(used.has(name));
+  do{
+    if(div===0) name = pick(CITY_LOCAL)+' '+pick(SUFFIX); // 北信越リーグは地元の地域リーグ
+    else if(div===1 && Math.random()<0.4) name = pick(CITY_NATION)+pick(['製鉄','電機','自動車','重工','ガス','鉄道','精工'])+pick([' SC',' FC']); // JFLは全国リーグ。企業チームも
+    else name = pick(CITY_NATION)+' '+pick(SUFFIX);
+  }while(used.has(name));
   return {name, str, att:str+R(-4,4), def:str+R(-4,4), isMe:false};
 }
 function resetTable(t){ Object.assign(t,{p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0,form:[]}); }
@@ -333,7 +338,7 @@ function makeSchedule(n){
 function newGame(clubName){
   S = {
     club: clubName || '金沢百万石FC', season:1, round:0, div:0,
-    money:15000, fans:700, trust:60, v:2,
+    money:15000, fans:700, trust:60, v:3,
     fac:{stadium:1,training:1,youth:1,medical:1,scout:1},
     players:[], teams:[], schedule:[],
     formation:'4-4-2', tactic:'balance', training:'normal', ticket:'mid', pr:'none',
@@ -370,7 +375,7 @@ function startSeason(){
   S.teams.forEach(resetTable);
   S.schedule = makeSchedule(10);
   S.round = 0;
-  S.sponsor = Math.round(DIVS[S.div].sponsor*1.4 + S.fans*3);
+  S.sponsor = Math.round(DIVS[S.div].sponsor*0.8 + S.fans*2);
   S.visitsLeft = salesTeam().length; S.watchLeft = watchPerWeek();
   refreshStaffMarket();
   S.fin = {income:0, expense:0};
@@ -1173,7 +1178,7 @@ const COMPANIES = [
   {name:'石川ケミカル', ind:'化学', size:3},
 ];
 const SIZE_LABEL = ['','地元の老舗・商店','中堅企業','大企業'];
-const SIZE_BASE = [0,900,3000,8500];
+const SIZE_BASE = [0,450,1500,4200];
 const SLOTS = {
   chest:  {name:'ユニフォーム胸', mult:1.0, max:1},
   back:   {name:'ユニフォーム背中', mult:0.5, max:1},
@@ -1221,7 +1226,7 @@ function proposeDeal(i, tier){
   }
 }
 function firstFreeSlot(){ return Object.keys(SLOTS).find(slotFree); }
-function investAmount(){ return Math.round(10000*(1+S.div*0.4)); }
+function investAmount(){ return Math.round(6000*(1+S.div*0.4)); }
 function askInvest(i){
   const c = S.companies[i]; if(!c||c.size<3||c.invested||c.rel<75) return;
   c.invested = true;
@@ -1515,7 +1520,7 @@ function advanceOff(){
   if(S.offWeek>=OFF_WEEKS){
     kickoff = true;
     S.phase = null; S.offWeek = 0; S.camp = null;
-    S.sponsor = Math.round(DIVS[S.div].sponsor*1.4 + S.fans*3);
+    S.sponsor = Math.round(DIVS[S.div].sponsor*0.8 + S.fans*2);
     computeTarget();
     S.players.forEach(p=>{ p.cond = Math.max(p.cond, 90); });
     addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
@@ -1637,6 +1642,11 @@ function migrate(s){
   if(!s.staff){
     S = s;
     s.staff = {manager:genStaff('manager',34), hc:genStaff('hc',32), physical:genStaff('physical',28), gk:genStaff('gk',28), youth:genStaff('youth',28), scout:genStaff('scout',28), sales:[genStaff('sales',32)]};
+  }
+  if(s.v<3){ // 年俸の計算式を見直したので、プロ選手の年俸を新しい相場に合わせる
+    s.players.forEach(p=>{ if(p.amateur) p.proSalary = calcSalary(p.ovr); else p.salary = Math.round(calcSalary(p.ovr)*(p.loanFrom?0.5:1)); });
+    s.market.forEach(p=>{ p.salary = calcSalary(p.ovr); if(p.fee && !p.free) p.fee = p.loanFrom ? Math.round(playerValue(p)*0.08) : playerValue(p); });
+    s.v = 3;
   }
   s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
   s.visitsLeft ??= 1; s.watchLeft ??= 1; s.mentor ??= 0; s.cfSeason ??= 0;
