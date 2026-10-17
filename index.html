@@ -38,7 +38,7 @@ header.top{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1p
 .stat .neg{color:var(--loss)}
 .trust{display:inline-block;width:70px;height:7px;background:var(--line);border-radius:4px;vertical-align:middle;overflow:hidden;margin-left:4px}
 .trust i{display:block;height:100%;background:var(--gold)}
-nav.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs{position:relative;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
 nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;white-space:nowrap;color:var(--muted);font-weight:600}
 nav.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
@@ -1263,12 +1263,17 @@ function render(){
       <span class="stat">順位 <b>${myRank()}</b>位</span>
       <span class="stat">フロント信頼 <b>${Math.round(S.trust)}</b><span class="trust"><i style="width:${S.trust}%"></i></span></span>
     </div>
-    <nav class="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
+    <nav class="tabs" data-keep="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
   </div></header>
   <main class="wrap">${body}</main>`;
   // 再描画してもリストのスクロール位置を保ち、操作した項目を光らせる
   document.querySelectorAll('[data-keep]').forEach(el=>{ const k=keep[el.dataset.keep]; if(k){ el.scrollTop=k[0]; el.scrollLeft=k[1]; } });
   window.scrollTo(0, wy);
+  const nav = document.querySelector('nav.tabs'), on = nav && nav.querySelector('button.on');
+  if(on){ // 選択中のタブが帯の外に隠れないように横スクロールを合わせる
+    const l = on.offsetLeft - 16, r = on.offsetLeft + on.offsetWidth + 16 - nav.clientWidth;
+    if(nav.scrollLeft > l) nav.scrollLeft = l; else if(nav.scrollLeft < r) nav.scrollLeft = r;
+  }
   if(ui.flash){ const el=document.querySelector(`[data-id="${ui.flash}"]`); if(el){ el.classList.add('flash'); } ui.flash=null; }
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
