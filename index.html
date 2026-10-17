@@ -22,13 +22,14 @@
   --win:#3fbf74;--loss:#e5675a;--draw:#9aa3b2;--warn:#e6a63a;--shadow:none;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0;width:100%}
 body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%;display:flex;flex-direction:column;overflow:hidden}
 #app{flex:1;min-height:0;display:flex;flex-direction:column}
 button{font:inherit;color:inherit;cursor:pointer}
 select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
 .wrap{max-width:1040px;margin:0 auto;padding:0 16px 16px}
-main.main{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+main.main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none}
 /* リスト系のタブはページ全体を動かさず、リストの枠だけがスクロールする */
 main.fill{overflow:hidden}
 main.fill>.wrap{height:100%;display:flex;flex-direction:column}
@@ -36,8 +37,9 @@ main.fill>.wrap>*{flex-shrink:0}
 main.fill .grow{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
 main.fill .grow>*{flex-shrink:0}
 main.fill .grow>.list-scroll,main.fill .grow>.card-scroll,main.fill>.wrap>.card-scroll{flex:1 1 0;min-height:120px;max-height:none}
-main.fill .side{flex:0 1 auto;max-height:26%;overflow-y:auto}
-.title-wrap{flex:1;min-height:0;overflow-y:auto;padding-bottom:24px}
+main.fill .side{flex:0 1 auto;max-height:26%;overflow-y:auto;overscroll-behavior:none}
+.title-wrap{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none;padding-bottom:24px}
+.card-scroll .grid,.card-scroll .mk{align-items:start}
 header.top{flex:none;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
 .top-inner{max-width:1040px;margin:0 auto;padding:10px 16px 0}
 .club-row{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -49,7 +51,7 @@ header.top{flex:none;z-index:5;background:var(--bg);border-bottom:1px solid var(
 .stat .neg{color:var(--loss)}
 .trust{display:inline-block;width:70px;height:7px;background:var(--line);border-radius:4px;vertical-align:middle;overflow:hidden;margin-left:4px}
 .trust i{display:block;height:100%;background:var(--gold)}
-nav.tabs{position:relative;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav.tabs{position:relative;display:flex;gap:2px;overflow-x:auto;overscroll-behavior:none;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
 nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 12px;white-space:nowrap;color:var(--muted);font-weight:600}
 nav.tabs button.on{color:var(--ink);border-bottom-color:var(--gold)}
@@ -74,13 +76,13 @@ tr.me td{background:var(--gold-soft);font-weight:700}
 tr.up td:first-child{box-shadow:inset 3px 0 var(--win)}
 tr.down td:first-child{box-shadow:inset 3px 0 var(--loss)}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
-.list-scroll{max-height:min(62vh,560px);overflow:auto;border:1px solid var(--line);border-radius:8px}
+.list-scroll{max-height:min(62vh,560px);overflow:auto;overscroll-behavior:none;border:1px solid var(--line);border-radius:8px}
 table.sticky th{position:sticky;top:0;z-index:2;background:var(--panel);box-shadow:inset 0 -1px var(--line)}
 table.sticky td:nth-child(1),table.sticky th:nth-child(1){position:sticky;left:0;width:var(--c1,46px);min-width:var(--c1,46px);background:var(--panel);z-index:1}
 table.sticky td:nth-child(2),table.sticky th:nth-child(2){position:sticky;left:var(--c1,46px);background:var(--panel);z-index:1;box-shadow:inset -1px 0 var(--line)}
 table.sticky th:nth-child(1),table.sticky th:nth-child(2){z-index:3}
 table.sticky tr.me td{background:var(--gold-soft)}
-.card-scroll{max-height:min(66vh,640px);overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2);-webkit-overflow-scrolling:touch}
+.card-scroll{max-height:min(66vh,640px);overflow-y:auto;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--panel2);overscroll-behavior:none}
 .card-scroll .card{box-shadow:none}
 .card-scroll h3.grp{margin:14px 0 8px;font-size:14px;color:var(--muted)}
 .card-scroll h3.grp:first-of-type{margin-top:4px}
@@ -127,13 +129,13 @@ table.sticky tr.me td{background:var(--gold-soft)}
 .go{background:var(--gold);color:#fff;border:0;border-radius:10px;padding:11px 20px;font-weight:800;font-size:15px;white-space:nowrap}
 .modal{position:fixed;inset:0;background:rgba(10,14,22,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
 .modal.hidden{display:none}
-.modal-box{background:var(--panel);border-radius:14px;max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;padding:18px;border:1px solid var(--line)}
+.modal-box{background:var(--panel);border-radius:14px;max-width:560px;width:100%;max-height:calc(100vh - 32px);overflow:auto;overscroll-behavior:none;padding:18px;border:1px solid var(--line)}
 .modal-box h2{margin:0 0 8px;font-size:19px}
 .score{display:flex;align-items:center;justify-content:center;gap:14px;margin:8px 0 4px}
 .score .t{flex:1;text-align:center;font-weight:800;overflow-wrap:anywhere}
 .score .n{font-size:40px;font-weight:900;font-variant-numeric:tabular-nums;min-width:110px;text-align:center}
 .clock{text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
-.log{list-style:none;padding:0;margin:10px 0;max-height:240px;overflow:auto;font-size:13.5px}
+.log{list-style:none;padding:0;margin:10px 0;max-height:240px;overflow:auto;overscroll-behavior:none;font-size:13.5px}
 .log li{padding:4px 0;border-bottom:1px dashed var(--line)}
 .log .m{display:inline-block;width:34px;color:var(--muted);font-variant-numeric:tabular-nums}
 .log .goal{font-weight:800}
@@ -1277,7 +1279,7 @@ function render(){
     </div>
     <nav class="tabs" data-keep="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
   </div></header>
-  <main class="main ${['squad','league','transfer','staff','sales','inbox'].includes(ui.tab)?'fill':''}" data-keep="main-${ui.tab}-${ui.sub||''}-${ui.staffSub||''}"><div class="wrap">${body}</div></main>`;
+  <main class="main fill" data-keep="main-${ui.tab}-${ui.sub||''}-${ui.staffSub||''}"><div class="wrap">${body}</div></main>`;
   // 再描画してもリストのスクロール位置を保ち、操作した項目を光らせる
   document.querySelectorAll('[data-keep]').forEach(el=>{ const k=keep[el.dataset.keep]; if(k){ el.scrollTop=k[0]; el.scrollLeft=k[1]; } });
   window.scrollTo(0, wy);
@@ -1303,7 +1305,7 @@ function renderHome(){
     const oppO = (nm.opp.att+nm.opp.def)/2;
     const diff = rt.ovr - oppO;
     const word = diff>6?'格下':diff>2?'やや格下':diff>-2?'互角':diff>-6?'やや格上':'格上';
-    match = `<div class="card"><h3>次の試合 — 第${S.round+1}節 ${nm.home?'ホーム（金沢）':'アウェイ'}</h3>
+    match = `<div class="card" style="margin-top:14px"><h3>次の試合 — 第${S.round+1}節 ${nm.home?'ホーム（金沢）':'アウェイ'}</h3>
       <div class="vs"><div class="side"><div class="nm">${esc(S.club)}</div><div class="small muted">総合 ${rt.ovr.toFixed(1)}</div></div>
       <div class="x">VS</div>
       <div class="side"><div class="nm">${esc(nm.opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}・${standings().findIndex(t=>t.i===nm.oi)+1}位</div></div></div>
@@ -1311,7 +1313,7 @@ function renderHome(){
       ${licenseWarn()}
     </div>`;
   } else {
-    match = `<div class="card"><h3>シーズン終了</h3><p>全日程が終了しました。最終順位は <b>${rank}位</b>。下のボタンからシーズン総括へ進みましょう。</p></div>`;
+    match = `<div class="card" style="margin-top:14px"><h3>シーズン終了</h3><p>全日程が終了しました。最終順位は <b>${rank}位</b>。下のボタンからシーズン総括へ進みましょう。</p></div>`;
   }
   const around = st.map((t,i)=>({t,i})).filter(({i})=>Math.abs(i-(rank-1))<=2 || i<2);
   const mini = `<table><tr><th>#</th><th>クラブ</th><th class="num">勝点</th><th class="num">得失</th></tr>
@@ -1320,8 +1322,8 @@ function renderHome(){
   const repCard = S.inbox.length ? `<div class="card"><h3>スタッフからの報告（${S.inbox.length}件）</h3>
       <ul class="news">${S.inbox.slice(0,4).map(r=>`<li><span class="r">${esc(r.from)}</span><br>${esc(r.title)}</li>`).join('')}</ul>
       <div class="row"><button class="btn primary" data-act="tab" data-arg="inbox">報告を確認する</button></div></div>` : '';
-  return `<div class="grid g2">
-    ${match}${repCard}
+  return `${match}
+  <div class="card-scroll" data-keep="home" style="margin-top:12px"><div class="grid g2" style="margin-top:0">${repCard}
     <div class="card"><h3>クラブ状況</h3>
       <div class="kv">
         <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
@@ -1337,7 +1339,7 @@ function renderHome(){
     </div>
     <div class="card"><h3>順位（抜粋）</h3>${mini}</div>
     <div class="card"><h3>ニュース</h3><ul class="news">${S.news.slice(0,10).map(n=>`<li><span class="r">${n.s}年目${n.r?` 第${n.r}節`:''}</span>${esc(n.t)}</li>`).join('')}</ul></div>
-  </div>`;
+  </div></div>`;
 }
 function licenseWarn(){
   const li = licenseIssues();
@@ -1375,16 +1377,24 @@ function optGroup(key, defs, cur, extra){
 }
 function renderTactics(){
   const rt = teamRating(getLineup());
-  return `<div class="grid g2">
+  const m = S.staff.manager;
+  return `<div class="card" style="margin-top:14px"><h3>今週の方針</h3>
+    <div class="kv">
+      <span>陣形・戦術</span><span class="v"><b>${S.formation}</b>・${TACTICS[S.tactic].name}${m&&m.style===S.tactic?' <span class="plus">（監督の得意戦術）</span>':''}</span>
+      <span>練習・チケット</span><span class="v">${TRAINING[S.training].name}・${TICKET[S.ticket].name}</span>
+      <span>広報活動</span><span class="v">${PR[S.pr].name}</span>
+      <span>戦力</span><span class="v">攻撃 <b>${rt.att.toFixed(1)}</b> / 守備 <b>${rt.def.toFixed(1)}</b></span>
+    </div></div>
+  <div class="card-scroll" data-keep="tactics" style="margin-top:12px"><div class="grid g2" style="margin-top:0">
     <div class="card"><h3>フォーメーション</h3>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}
-      <p class="small muted" style="margin-bottom:0">現在の戦力：攻撃 ${rt.att.toFixed(1)} / 守備 ${rt.def.toFixed(1)}</p></div>
+</div>
     <div class="card"><h3>戦術</h3>${optGroup('tactic', TACTICS, S.tactic)}</div>
     <div class="card"><h3>今週の練習</h3>${optGroup('training', TRAINING, S.training)}</div>
     <div class="card"><h3>チケット価格（ホーム）</h3>${optGroup('ticket', TICKET, S.ticket, (k,d)=>`${Math.round(DIVS[S.div].ticket*d.price)}円・集客×${d.demand}`)}
       <p class="small muted" style="margin-bottom:0">スタジアム収容 ${CAP[S.fac.stadium-1].toLocaleString()}人</p></div>
     <div class="card" style="grid-column:1/-1"><h3>今週の広報活動（金沢の街で）</h3>${optGroup('pr', PR, S.pr, (k,d)=>`${d.cost?yen(d.cost):'無料'}・${d.desc}`)}
       <p class="small muted" style="margin-bottom:0">選んだ活動は毎週実施されます（資金が足りないと中止）。</p></div>
-  </div>`;
+  </div></div>`;
 }
 
 function renderMarket(){
@@ -1410,7 +1420,16 @@ function renderMarket(){
 }
 
 function renderFacility(){
-  return `<div class="grid g2">${Object.entries(FAC).map(([k,f])=>{
+  const upkeep = Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+S.div*0.3));
+  return `<div class="card" style="margin-top:14px"><h3>施設</h3>
+      <div class="kv">
+        <span>資金</span><span class="v"><b>${yen(S.money)}</b></span>
+        <span>維持費</span><span class="v">${yen(upkeep)}/週</span>
+        <span>リーグ基準（スタジアム）</span><span class="v small">${DIVS.map(d=>`${d.short} Lv${d.lic}`).join('・')}</span>
+      </div>
+      ${licenseWarn()}
+    </div>
+    <div class="card-scroll" data-keep="facility" style="margin-top:12px"><div class="grid g2" style="margin-top:0">${Object.entries(FAC).map(([k,f])=>{
     const l=S.fac[k]; const c=f.cost[l];
     return `<div class="card fac"><div class="ic">${f.ic}</div><div style="flex:1;min-width:0">
       <b>${f.name}</b> <span class="muted small">Lv${l}</span>
@@ -1419,10 +1438,6 @@ function renderFacility(){
       ${l<5?`<div class="small muted">次：${f.desc(l+1)}</div>`:''}
     </div>
     <div>${l<5?`<button class="btn gold" data-act="upgrade" data-arg="${k}" ${S.money<c?'disabled':''}>${yen(c)}</button>`:'<span class="tag">MAX</span>'}</div></div>`;}).join('')}
-    <div class="card" style="grid-column:1/-1"><h3>リーグ基準（スタジアム）</h3>
-      <div class="small">${DIVS.map((d,i)=>`${d.short}：Lv${d.lic}`).join(' ／ ')}</div>
-      <div class="small muted">維持費は施設レベルに応じて毎週かかります（現在 ${yen(Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+S.div*0.3)))}/週）。</div>
-      ${licenseWarn()}
     </div></div>`;
 }
 
