@@ -819,7 +819,7 @@ function endSeason(){
     const upR = new Set(zn.up||[]), dnR = new Set(zn.dn||[]);
     const keep = st.filter((t,k)=>t.isMe || (!upR.has(k+1) && !dnR.has(k+1))).map(t=>S.teams[t.i]);
     const mid = (DIVS[S.div].base[0]+DIVS[S.div].base[1])/2;
-    const nextTeams = keep.map(t=>{ if(!t.isMe){ const dr = R(-3,3) + (mid - t.str)*0.2; // 戦力は毎年少し入れ替わり、リーグの平均に寄っていく t.str+=dr; t.att+=dr+R(-1,1); t.def+=dr+R(-1,1); } return t; });
+    const nextTeams = keep.map(t=>{ if(!t.isMe){ const dr = R(-3,3) + (mid - t.str)*0.2; t.str+=dr; t.att+=dr+R(-1,1); t.def+=dr+R(-1,1); } return t; }); // 戦力は毎年少し入れ替わり、リーグの平均に寄っていく
     while(nextTeams.length < DIVS[S.div].teams) nextTeams.push(genTeam(S.div, R(-2,2)));
     S.teams = [me, ...nextTeams.filter(t=>!t.isMe)].slice(0, DIVS[S.div].teams);
   }
