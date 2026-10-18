@@ -207,6 +207,20 @@ table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .cal-d{font-variant-numeric:tabular-nums;font-size:12.5px;line-height:1.35}
 .cal-ev{font-size:11.5px;color:var(--indigo);margin-top:2px}
 .cal-r{display:flex;align-items:center;gap:4px;white-space:nowrap}
+.subhead{display:flex;align-items:center;gap:10px;margin-top:10px}
+.subhead b{font-size:16px}
+.back{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:5px 12px;font-weight:700;font-size:13px;color:var(--indigo)}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+@media (min-width:700px){.menu{grid-template-columns:repeat(9,1fr)}}
+.tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:8px 10px;text-align:left;box-shadow:var(--shadow);min-width:0}
+.tile:hover{border-color:var(--gold)}
+.tile:active{transform:scale(.97)}
+.tile .ic{font-size:18px;line-height:1.2}
+.tile b{font-size:13.5px}
+.tile .st{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.tile .badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--loss);color:#fff;font-size:10.5px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px}
+.matchcard{padding:10px 14px}
+.matchcard h3{margin-bottom:6px}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -2398,7 +2412,6 @@ function render(){
   if(!S){ renderTitle(); return; }
   const nm = nextMatch();
   const ni = S.inbox.length;
-  const tabs = [['home','ホーム'],['cal','日程'],['inbox',`報告${ni?` (${ni})`:''}`],['squad','選手'],['tactics','作戦・練習'],['transfer','補強'],['staff','スタッフ'],['sales','営業'],['facility','施設'],['league','順位表']];
   let body='';
   switch(ui.tab){
     case 'squad': body=renderSquad(); break;
@@ -2426,17 +2439,11 @@ function render(){
       <span class="stat">順位 <b>${myRank()}</b>位</span>
       <span class="stat">フロント信頼 <b>${Math.round(S.trust)}</b><span class="trust"><i style="width:${S.trust}%"></i></span></span>
     </div>
-    <nav class="tabs" data-keep="tabs">${tabs.map(([k,n])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-arg="${k}">${n}</button>`).join('')}</nav>
   </div></header>
-  <main class="main fill" data-keep="main-${ui.tab}-${ui.sub||''}-${ui.staffSub||''}"><div class="wrap">${body}</div></main>`;
+  <main class="main fill" data-keep="main-${ui.tab}-${ui.sub||''}-${ui.staffSub||''}"><div class="wrap">${ui.tab!=='home' ? `<div class="subhead"><button class="back" data-act="tab" data-arg="home">‹ ホーム</button><b>${MENU.find(m=>m.k===ui.tab)?.name||''}</b></div>` : ''}${body}</div></main>`;
   // 再描画してもリストのスクロール位置を保ち、操作した項目を光らせる
   document.querySelectorAll('[data-keep]').forEach(el=>{ const k=keep[el.dataset.keep]; if(k){ el.scrollTop=k[0]; el.scrollLeft=k[1]; } });
   window.scrollTo(0, wy);
-  const nav = document.querySelector('nav.tabs'), on = nav && nav.querySelector('button.on');
-  if(on){ // 選択中のタブが帯の外に隠れないように横スクロールを合わせる
-    const l = on.offsetLeft - 16, r = on.offsetLeft + on.offsetWidth + 16 - nav.clientWidth;
-    if(nav.scrollLeft > l) nav.scrollLeft = l; else if(nav.scrollLeft < r) nav.scrollLeft = r;
-  }
   if(ui.flash){ const el=document.querySelector(`[data-id="${ui.flash}"]`); if(el){ el.classList.add('flash'); } ui.flash=null; }
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
@@ -2446,6 +2453,22 @@ function render(){
   </div>`;
 }
 
+// ホームのクラブハウスメニュー（各画面への入口）
+const MENU = [
+  {k:'inbox',    name:'報告',     ic:'📋', st:()=>S.inbox.length?`${S.inbox.length}件 未対応`:'なし', badge:()=>S.inbox.length},
+  {k:'squad',    name:'選手',     ic:'👥', st:()=>`${S.players.length}人・負傷${S.players.filter(p=>p.inj>0).length}`, badge:()=>S.players.filter(p=>p.expiring).length},
+  {k:'tactics',  name:'作戦・練習', ic:'📐', st:()=>`${S.formation}・${TACTICS[S.tactic].name}`},
+  {k:'transfer', name:'補強',     ic:'🔍', st:()=>`市場${S.market.length}・学生${S.prospects.filter(p=>p.status==='none').length}`, badge:()=>S.foreignCands.length},
+  {k:'staff',    name:'スタッフ', ic:'🧑‍💼', st:()=>S.staff.manager?`監督 能力${S.staff.manager.abil}`:'監督 空席', badge:()=>licenseIssues().some(x=>x.includes('監督'))?1:0},
+  {k:'sales',    name:'営業',     ic:'💼', st:()=>`訪問 ${S.visitsLeft}/${salesTeam().length}社`},
+  {k:'facility', name:'施設',     ic:'🏟️', st:()=>`スタジアムLv${S.fac.stadium}`, badge:()=>licenseIssues().some(x=>x.includes('スタジアム'))?1:0},
+  {k:'cal',      name:'日程',     ic:'📅', st:()=>isOff()?`オフ ${OFF_PLAN[S.offWeek].label}`:S.round<nr()?`次 ${fmtDate(roundDate(S.round))}`:'全日程終了'},
+  {k:'league',   name:'順位表',   ic:'🏆', st:()=>`${myRank()}位 / ${S.teams.length}チーム`},
+];
+function renderMenu(){
+  return `<div class="menu">${MENU.map(m=>{ const b = m.badge ? m.badge() : 0;
+    return `<button class="tile" data-act="tab" data-arg="${m.k}"><span class="ic">${m.ic}</span><b>${m.name}</b><span class="st">${esc(m.st())}</span>${b?`<i class="badge">${b}</i>`:''}</button>`; }).join('')}</div>`;
+}
 function renderHome(){
   const nm = nextMatch(); const xi=getLineup(); const rt=teamRating(xi);
   const rank = myRank(); const st = standings();
@@ -2454,7 +2477,7 @@ function renderHome(){
     const oppO = (nm.opp.att+nm.opp.def)/2;
     const diff = rt.ovr - oppO;
     const word = diff>6?'格下':diff>2?'やや格下':diff>-2?'互角':diff>-6?'やや格上':'格上';
-    match = `<div class="card" style="margin-top:14px"><h3>次の試合 — 第${S.round+1}節 ${nm.home?'ホーム（金沢）':'アウェイ'}</h3>
+    match = `<div class="card matchcard" style="margin-top:12px"><h3>次の試合 — 第${S.round+1}節 ${nm.home?'ホーム（金沢）':'アウェイ'}</h3>
       <div class="vs"><div class="side"><div class="nm">${esc(S.club)}</div><div class="small muted">総合 ${rt.ovr.toFixed(1)}</div></div>
       <div class="x">VS</div>
       <div class="side"><div class="nm">${esc(nm.opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}・${standings().findIndex(t=>t.i===nm.oi)+1}位</div></div></div>
@@ -2474,7 +2497,8 @@ function renderHome(){
       <ul class="news">${S.inbox.slice(0,4).map(r=>`<li><span class="r">${esc(r.from)}</span><br>${esc(r.title)}</li>`).join('')}</ul>
       <div class="row"><button class="btn primary" data-act="tab" data-arg="inbox">報告を確認する</button></div></div>` : '';
   return `${match}
-  <div class="card-scroll" data-keep="home" style="margin-top:12px"><div class="grid g2" style="margin-top:0">${repCard}
+  ${renderMenu()}
+  <div class="card-scroll" data-keep="home" style="margin-top:10px"><div class="grid g2" style="margin-top:0">${repCard}
     <div class="card"><h3>クラブ状況</h3>
       <div class="kv">
         <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
