@@ -270,6 +270,7 @@ ol.rank li span:nth-child(2){flex:1;min-width:0}
   th.hide-s,td.hide-s{display:none}
   .score .n{font-size:32px;min-width:84px}
 }
+.acbtns{text-align:right;white-space:nowrap}.acbtns .btn{display:block;width:100%;padding:4px 8px;font-size:12px;margin:2px 0}
 </style>
 </head>
 <body>
@@ -301,7 +302,7 @@ const FAC = {
   training:{name:'練習場', ic:'ball', cost:[0,4000,12000,35000,90000], upkeep:30,
             desc:l=>`選手の成長速度 ×${(0.8+0.15*l).toFixed(2)}`},
   youth:   {name:'ユースアカデミー', ic:'sprout', cost:[0,3000,10000,30000,80000], upkeep:30,
-            desc:l=>`毎シーズン ${youthCount(l)}人昇格・素質 ${'★'.repeat(l)}`},
+            desc:l=>`U-15に毎年${3+l}人入団・育成速度 ×${(0.8+0.15*l).toFixed(2)}`},
   medical: {name:'メディカル', ic:'medical', cost:[0,2500,8000,24000,60000], upkeep:30,
             desc:l=>`負傷率 -${(l-1)*15}%・回復 +${(l-1)*2}/週`},
   scout:   {name:'スカウト網', ic:'scout', cost:[0,2500,8000,24000,60000], upkeep:30,
@@ -510,6 +511,7 @@ function newGame(clubName){
              youth:genStaff('youth',26), scout:genStaff('scout',26), sales:[genStaff('sales',30)]};
   S.staff.manager.lic = 'A級'; S.staff.manager.years = 2;
   S.companies = initCompanies();
+  S.academy = initAcademy();
   S.teams = [{name:S.club, isMe:true}];
   for(let i=1;i<DIVS[1].teams;i++) S.teams.push(genTeam(1));
   startSeason();
@@ -804,6 +806,8 @@ function advance(){
   refreshMarket(2);
   fireDueEvents(false);
   const cupLines = fireCup(false);
+  const acLine = academyWeek(true);
+  if(S.round===nr()-4 && acad().u18.some(p=>p.grade===3)) S.inbox.push(mkRep('ama', `育成コーチ ${S.staff.youth?S.staff.youth.name:''}`, 'U-18の3年生の進路を決める時期です', `シーズン終了時に、U-18の3年生のうち「トップ昇格」を選んだ選手がプロ契約になります。\n${acad().u18.filter(p=>p.grade===3).map(p=>`・${p.name}（${p.pos}・能力${Math.round(p.ovr)}）`).join('\n')}\n「チーム」→「下部組織」で決めてください。`, [['acview','下部組織を見る'],['ok','了解']]));
   generateReports();
   weeklyBids();
   if(S.round%4===3) refreshStaffMarket(3);
@@ -813,7 +817,7 @@ function advance(){
   S.visitsLeft = salesTeam().length; S.watchLeft = watchPerWeek();
   if(S.trust<=0){ S.over='fired'; }
   save();
-  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, cup:cupLines});
+  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, cup:cupLines, ac:acLine});
 }
 
 function standings(){
@@ -871,16 +875,8 @@ function endSeason(){
   S.players = S.players.filter(p=>!retired.includes(p));
   report.retired = retired.map(p=>p.name);
   // ユース昇格
-  const ys = []; const b = DIVS[1].base;
-  for(let i=0;i<youthCount(S.fac.youth);i++){
-    const age = RI(16,18);
-    const lvl = S.fac.youth + S.youthBonus*0.5 + staffAb('youth')/40;
-    const ovr = b[0] - 8 + lvl*3 + R(-4,4) + econ()*2;
-    const p = makePlayer(randPos(), ovr, age, ovr + R(12, 22+lvl*4));
-    S.players.push(p); ys.push(p);
-  }
+  report.youth = academySeasonEnd(report.lines);
   S.youthBonus = 0;
-  report.youth = ys.map(p=>`${p.name}（${p.pos}）`);
   report.joined = prospectsSeasonEnd(report.lines);
   staffSeasonEnd(report.lines);
   companiesSeasonEnd(rank, report.lines);
@@ -1213,7 +1209,7 @@ const REPORTS = {
     if(!(p.inj>0)) return `${p.name}はすでに回復していた。`;
     if(k==='hurt'){ p.playHurt = true; return `${p.name}は痛み止めを打って出場可能に。ただし本来の動きはできず、悪化のリスクがある。`; }
     return `${p.name}は完治まで休ませることにした。`; } },
-  ama:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='ama'; } return 'スカウトの報告を確認した。'; } },
+  ama:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='ama'; } if(k==='acview'){ ui.tab='team'; ui.view='academy'; } return 'スカウトの報告を確認した。'; } },
 };
 function generateReports(){
   if(S.inbox.length>=4) return;
@@ -1316,13 +1312,21 @@ function runAmaEvent(e){
   const n = RI(2,3), picked = [];
   const tags = [...AMA_TAGS].sort(()=>Math.random()-0.5);
   for(let i=0;i<n;i++){ const pr = genProspect(e.kind, i===0?a:i===1?b:pick(pool), tags[i]); S.prospects.push(pr); picked.push(pr); }
+  if(e.kind==='大学'){ // ユース出身で大学に進んだ選手が、4年生になって戻ってくる
+    const a2 = acad(); const due = (a2.obs||[]).filter(o=>o.back===S.season).sort((x,y)=>y.pot-x.pot);
+    for(const o of due.slice(0,2)){
+      const pr = genProspect('大学', o.school, 'ユース出身'); Object.assign(pr, {name:o.name, pos:o.pos, role:o.role, ovr:Math.min(o.pot, o.ovr+R(8,16)), pot:o.pot, ob:true});
+      setEstimate(pr, noiseLevel()/2); S.prospects.push(pr); picked.push(pr);
+    }
+    a2.obs = (a2.obs||[]).filter(o=>!due.slice(0,2).includes(o) && o.back>=S.season);
+  }
   addNews(`【アマチュア】${text}`);
   S.inbox.push(mkRep('ama', scFrom(), `${e.name}で活躍した選手をリストアップしました`,
     `${text}\n${picked.map(p=>`・${p.name}（${p.school} ${p.grade}・${p.pos}）— ${p.tag}${p.hot?'【他クラブも注目】':''}`).join('\n')}\n視察で実力を見極めてからオファーしましょう。`,
     [['view','スカウトリストを見る'],['ok','了解']]));
 }
 function interest(pr){
-  const v = 52 + econ()*11 - Math.max(0,pr.pot-50)*1.1 + (pr.national?-5:15) + Math.min(10,S.fans/1500) + pr.seen*8 - (pr.hot?15:0);
+  const v = 52 + econ()*11 - Math.max(0,pr.pot-50)*1.1 + (pr.national?-5:15) + (pr.ob?20:0) + Math.min(10,S.fans/1500) + pr.seen*8 - (pr.hot?15:0);
   return clamp(Math.round(v),5,95);
 }
 function prospectFee(pr){ return Math.round((200 + Math.max(0,(pr.plo+pr.phi)/2-40)*25) * Math.sqrt(DIV_MULT[S.div])); }
@@ -1379,8 +1383,9 @@ function register2(id){
 }
 function amateursSeasonEnd(lines){
   for(const p of S.players.filter(x=>x.amateur)){
+    if(p.acGrade && p.acGrade<3){ p.acGrade++; continue; } // ユースの2種登録は3年生までアマチュアのまま
     lines.push(`${p.amateur}だった${p.name}がプロ契約を結んだ（年俸${yen(p.proSalary)}）。`);
-    p.salary = p.proSalary; delete p.proSalary; delete p.amateur; p.contract = 3; p.newPro = true;
+    p.salary = p.proSalary; delete p.proSalary; delete p.amateur; delete p.acGrade; p.contract = 3; p.newPro = true;
   }
 }
 function prospectsSeasonEnd(lines){
@@ -1784,6 +1789,7 @@ function advanceOff(){
   const before = {money:S.money, fans:S.fans};
   expireReports();
   const w = S.offWeek;
+  academyWeek(false);
   const lines = [...offTraining(w), ...OFF_EVENTS[w](w)];
   NAT_EVENTS.filter(e=>e.off===w).forEach(runNatEvent);
   payOffWeek();
@@ -2460,7 +2466,7 @@ const ZONE_NOTE = [
 
 // ===================== メニュー（4つのグループと、その中の画面） =====================
 const GROUPS = [
-  {k:'team',   name:'チーム',     ic:'squad',    views:[['squad','選手'],['tactics','作戦・練習']],
+  {k:'team',   name:'チーム',     ic:'squad',    views:[['squad','選手'],['tactics','作戦・練習'],['academy','下部組織']],
    st:()=>`${S.players.length}人・負傷${S.players.filter(p=>p.inj>0).length}・${S.formation}`, badge:()=>S.players.filter(p=>p.expiring).length},
   {k:'gm',     name:'編成・人事', ic:'transfer', views:[['market','移籍市場'],['ama','高校・大学'],['foreign','海外スカウト'],['staffTeam','スタッフ'],['staffHire','スタッフ採用']],
    st:()=>`市場${S.market.length}・学生${S.prospects.filter(p=>p.status==='none').length}・監督${S.staff.manager?S.staff.manager.abil:'空席'}`, badge:()=>S.foreignCands.length + (licenseIssues().some(x=>x.includes('監督'))?1:0)},
@@ -2486,6 +2492,7 @@ function renderView(v){
   switch(v){
     case 'squad': return renderSquad();
     case 'tactics': return renderTactics();
+    case 'academy': return renderAcademy();
     case 'market': return renderMarket();
     case 'ama': return renderAma();
     case 'foreign': return renderForeign();
@@ -2766,6 +2773,127 @@ function renderOffChoice(){
     <p class="small muted" style="margin:6px 0 0">選ばずに次の週へ進むと、いちばん下の選択肢になります。</p></div>`;
 }
 
+// ===================== 下部組織（U-18・U-15） =====================
+const AC_LEAGUES = [ // U-18 のリーグ（上位2チーム昇格・下位2チーム降格）
+  {name:'プリンスリーグ北信越2部', base:24},
+  {name:'プリンスリーグ北信越1部', base:30},
+  {name:'高円宮杯プレミアリーグWEST', base:37},
+];
+function acAge(team, g){ return team==='U18' ? 15+g : 12+g; }
+function acPlayer(team, g, q){
+  const yl = S.fac.youth + staffAb('youth')/40 + (S.academy?.rep||40)/40;
+  const base = team==='U18' ? 20 + g*4 : 9 + g*3;
+  const ovr = base + yl*1.5 + R(-4,4) + (q||0);
+  const pot = ovr + R(22, 38 + yl*3);
+  const p = makePlayer(randPos(), ovr, acAge(team,g), pot);
+  p.salary = 0; p.contract = 0; p.team = team; p.grade = g;
+  return p;
+}
+function initAcademy(){
+  const a = {u18:[], u15:[], league:0, rep:40, tbl:null};
+  for(let g=1; g<=3; g++){ for(let i=0;i<4;i++){ a.u18.push(acPlayer('U18', g)); a.u15.push(acPlayer('U15', g)); } }
+  return a;
+}
+function acad(){ if(!S.academy) S.academy = initAcademy(); return S.academy; }
+function acStrength(list){ const top = [...list].sort((a,b)=>b.ovr-a.ovr).slice(0,11); return top.length ? top.reduce((s,p)=>s+p.ovr,0)/top.length + S.fac.youth*1.2 : 15; }
+function acNewTable(){
+  const a = acad(), L = AC_LEAGUES[a.league];
+  const used = new Set();
+  const opp = () => { let n; do{ n = pick([...SCHOOLS, ...CITY_LOCAL.map(c=>`${c}ユース`), `${pick(CITY_NATION)} ${pick(SUFFIX)} U-18`]); }while(used.has(n)); used.add(n); return n; };
+  a.tbl = [{name:`${S.club} U-18`, me:true, pts:0, gd:0, p:0}];
+  for(let i=0;i<9;i++) a.tbl.push({name:opp(), str:L.base + R(-4,5), pts:0, gd:0, p:0});
+}
+// 毎週：育成と、シーズン中はU-18のリーグ戦1試合
+function academyWeek(inSeason){
+  const a = acad();
+  const yM = (0.8 + 0.15*S.fac.youth) * (0.8 + staffAb('youth')/250) * (1 + a.league*0.12) * (S.mentor===S.season?1.1:1);
+  for(const p of [...a.u18, ...a.u15]) p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.012*yM*(inSeason?wk():0.6)*R(0.5,1.5));
+  if(!inSeason) return null;
+  if(!a.tbl) acNewTable();
+  if(a.tbl[0].p >= 18) return null;
+  const ms = acStrength(a.u18);
+  const idx = [...a.tbl.keys()].sort(()=>Math.random()-0.5);
+  let line = null;
+  for(let k=0;k<idx.length;k+=2){
+    const A = a.tbl[idx[k]], B = a.tbl[idx[k+1]];
+    const sa = A.me ? ms : A.str, sb = B.me ? ms : B.str;
+    const ga = poisson(lamN(sa, sb, 1)), gb = poisson(lamN(sb, sa, 1));
+    A.p++; B.p++; A.gd += ga-gb; B.gd += gb-ga;
+    if(ga>gb) A.pts+=3; else if(gb>ga) B.pts+=3; else { A.pts++; B.pts++; }
+    if(A.me) line = `U-18 vs ${B.name} ${ga}-${gb}`; if(B.me) line = `U-18 vs ${A.name} ${gb}-${ga}`;
+  }
+  return line;
+}
+function acRank(){ const t = acad().tbl; if(!t) return null; const s = [...t].sort((x,y)=>y.pts-x.pts||y.gd-x.gd); return s.findIndex(x=>x.me)+1; }
+// シーズン終了時：3年生の進路、進級、新入団、U-18リーグの昇降格
+function academySeasonEnd(lines){
+  const a = acad(), promoted = [];
+  a.obs = (a.obs||[]).filter(o=>o.back>=S.season);
+  // U-18 リーグ
+  if(a.tbl){
+    const r = acRank();
+    if(r<=2 && a.league<AC_LEAGUES.length-1){ a.league++; a.rep = clamp(a.rep+10,0,100); lines.push(`U-18は${r}位で${AC_LEAGUES[a.league].name}へ昇格！`); }
+    else if(r>=9 && a.league>0){ a.league--; a.rep = clamp(a.rep-6,0,100); lines.push(`U-18は${r}位で${AC_LEAGUES[a.league].name}へ降格…`); }
+    else lines.push(`U-18は${AC_LEAGUES[a.league].name}で${r}位。`);
+    if(r===1) a.rep = clamp(a.rep+5,0,100);
+  }
+  // U-18 3年生：トップ昇格 or 進学
+  for(const p of a.u18.filter(x=>x.grade===3)){
+    if(p.promote){
+      const q = makePlayer(p.pos, p.ovr, 18, p.pot); Object.assign(q, {name:p.name, role:p.role, mor:80, contract:3, from:`${S.club} U-18`, homegrown:true});
+      q.salary = Math.round(calcSalary(q.ovr)*0.8); S.players.push(q); promoted.push(`${q.name}（${q.pos}）`);
+    } else {
+      const uni = pick(UNIS);
+      if(p.pot >= 55) (a.obs = a.obs || []).push({name:p.name, pos:p.pos, role:p.role, ovr:p.ovr, pot:p.pot, back:S.season+4, school:uni});
+      lines.push(`U-18の${p.name}は${uni}へ進学する。`);
+    }
+  }
+  a.u18 = a.u18.filter(x=>x.grade<3);
+  a.u18.forEach(p=>{ p.grade++; p.age = acAge('U18', p.grade); });
+  // U-15 3年生 → U-18へ（残さない選手は高校へ）
+  const up = a.u15.filter(x=>x.grade===3 && x.keep!==false);
+  a.u15.filter(x=>x.grade===3 && x.keep===false).forEach(p=>lines.push(`U-15の${p.name}は地元の高校へ進学する。`));
+  a.u15 = a.u15.filter(x=>x.grade<3);
+  a.u15.forEach(p=>{ p.grade++; p.age = acAge('U15', p.grade); });
+  up.forEach(p=>{ p.team='U18'; p.grade=1; p.age=acAge('U18',1); delete p.keep; a.u18.push(p); });
+  // 新入団：U-15（セレクション）と、外部からU-18へ
+  const n15 = 3 + S.fac.youth + (S.youthBonus?1:0), n18 = 1 + Math.floor(a.rep/40);
+  const q = (a.rep-40)/10 + S.youthBonus*0.5;
+  for(let i=0;i<n15;i++) a.u15.push(acPlayer('U15', 1, q));
+  for(let i=0;i<n18;i++) a.u18.push(acPlayer('U18', 1, q));
+  lines.push(`U-15に${n15}人、U-18に外部から${n18}人が新しく入団した。`);
+  a.tbl = null;
+  return promoted;
+}
+function acFind(id){ const a = acad(); return a.u18.find(p=>p.id===id) || a.u15.find(p=>p.id===id); }
+function acTogglePromote(id){ const p = acFind(id); if(!p || p.team!=='U18' || p.grade!==3) return; p.promote = !p.promote; save(); render(); }
+function acToggleKeep(id){ const p = acFind(id); if(!p || p.team!=='U15' || p.grade!==3) return; p.keep = p.keep===false ? true : false; save(); render(); }
+function acRegister2(id){
+  const a = acad(), p = acFind(id); if(!p || p.team!=='U18') return;
+  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  confirmBox(`${p.name}（U-18 ${p.grade}年）を2種登録しますか？ ユース在籍のまま、トップチームの試合に出場できます（年俸なし）。`, ()=>{
+    a.u18 = a.u18.filter(x=>x!==p);
+    p.amateur = '2種登録'; p.acGrade = p.grade; p.proSalary = Math.round(calcSalary(p.ovr)*0.8); p.salary = 0; p.from = `${S.club} U-18`; p.homegrown = true; p.mor = 75;
+    S.players.push(p); addNews(`U-18の${p.name}を2種登録。ユースからトップチームの一員に！`);
+    save(); render();
+  });
+}
+function renderAcademy(){
+  const a = acad(), r = acRank();
+  const row = (p, team) => `<tr><td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td><td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${p.promote?'<span class="tag xi">昇格内定</span>':''}${p.keep===false?'<span class="tag rest">退団予定</span>':''}</div></td>
+      <td class="num">${p.grade}年</td><td class="num"><span class="ovr">${Math.round(p.ovr)}</span><div class="pstars">${stars(p)}</div></td>
+      <td class="acbtns">${team==='U18' ? `${p.grade===3?`<button class="btn" data-act="acPromote" data-arg="${p.id}">${p.promote?'昇格取消':'トップ昇格'}</button>`:''}<button class="btn" data-act="acReg2" data-arg="${p.id}">2種登録</button>`
+                         : p.grade===3 ? `<button class="btn" data-act="acKeep" data-arg="${p.id}">${p.keep===false?'U-18へ上げる':'上げない'}</button>` : ''}</td></tr>`;
+  const table = (list, team) => `<table class="sticky"><thead><tr><th>Pos</th><th>名前</th><th class="num">学年</th><th class="num">能力</th><th></th></tr></thead><tbody>${[...list].sort((x,y)=>y.grade-x.grade||y.ovr-x.ovr).map(p=>row(p,team)).join('')}</tbody></table>`;
+  return `<div class="infobar"><span>U-18：${AC_LEAGUES[a.league].name}${r?` <b>${r}位</b>`:''}</span><span>評判 <b>${Math.round(a.rep)}</b></span><span>ユース施設Lv${S.fac.youth}</span>
+      <details><summary>説明</summary>下部組織はU-18（高校年代）とU-15（中学年代）。毎週、施設・育成コーチ・所属リーグのレベルに応じて成長します。<br>・U-18の3年生は「トップ昇格」を選んだ選手だけがシーズン終了時にプロ契約。選ばなかった選手は大学へ進学し、数年後に大学で成長して再会できることも。<br>・U-18の選手は「2種登録」でユース在籍のままトップの試合に出せます。<br>・U-15の3年生は基本的にU-18へ上がります。<br>・U-18が上位に入るとプリンスリーグ→プレミアリーグへ昇格し、成長が早まり評判も上がります。評判が高いほど良い子が入団します。</details></div>
+    <div class="card-scroll" data-keep="academy">
+      <h3 class="grp">U-18（${a.u18.length}人）</h3><div class="scroll">${table(a.u18,'U18')}</div>
+      <h3 class="grp">U-15（${a.u15.length}人）</h3><div class="scroll">${table(a.u15,'U15')}</div>
+      ${a.tbl?`<h3 class="grp">${AC_LEAGUES[a.league].name} 順位</h3><table><tr><th>#</th><th>チーム</th><th class="num">試</th><th class="num">差</th><th class="num">勝点</th></tr>${[...a.tbl].sort((x,y)=>y.pts-x.pts||y.gd-x.gd).map((t,i)=>`<tr class="${t.me?'me':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.p}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td><td class="num"><b>${t.pts}</b></td></tr>`).join('')}</table>`:''}
+    </div>`;
+}
+
 // ===================== 旧セーブ互換 =====================
 function migrate(s){
   if(!s.v || s.v<2){ // 旧版は金額が実際の約1/10だったので補正
@@ -2789,6 +2917,7 @@ function migrate(s){
   }
   s.v = Math.max(s.v||0, 4);
   s.supp ??= {mood:55};
+  if(!s.academy){ S = s; s.academy = initAcademy(); }
   if(s.phase==='off' && s.offChoice===undefined){ S = s; makeOffChoice(); }
   if(!s.cup) s.cup = {next: 99, alive:false, log:[]}; // 途中のシーズンは天皇杯なし（次のシーズンから参加）
   s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
@@ -2982,7 +3111,7 @@ function renderSquad(){
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
       <td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td>
-      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.listed?'<span class="tag inj">放出候補</span>':''}${p.captain?'<span class="tag xi">主将</span>':''}</div></td>
+      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.listed?'<span class="tag inj">放出候補</span>':''}${p.captain?'<span class="tag xi">主将</span>':''}${p.homegrown?'<span class="tag" title="下部組織出身">生え抜き</span>':''}</div></td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span><div class="pstars">${stars(p)}</div></td>
       <td class="pstate"><div class="bar ${p.cond>70?'':'gold'}" title="調子 ${Math.round(p.cond)}"><i style="width:${p.cond}%"></i></div><span title="士気 ${Math.round(p.mor??60)}">${moraleFace(p.mor??60)}</span></td>
@@ -3258,6 +3387,7 @@ function showMatch(m, fin, d){
       </div>
       ${m.ratings&&m.ratings[0]?`<p class="small" style="margin:8px 0 0">MVP：<b>${esc(m.ratings[0].p.name)}</b>（評価 ${m.ratings[0].r.toFixed(1)}）</p>
         <details class="small"><summary>出場選手の評価</summary><div class="kv">${m.ratings.map(x=>`<span>${esc(x.p.name)}${x.g?`（${x.g}得点）`:''}</span><span class="v ${x.r>=7?'plus':x.r<5.5?'minus':''}">${x.r.toFixed(1)}</span>`).join('')}</div></details>`:''}
+      ${d.ac?`<p class="small muted" style="margin:6px 0 0">${esc(d.ac)}</p>`:''}
       ${d.cup&&d.cup.length?`<div class="warn">${d.cup.map(esc).join('<br>')}</div>`:''}
       ${d.ev?`<div class="warn">${esc(d.ev)}</div>`:''}
       ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}`;
@@ -3283,7 +3413,7 @@ function showSeasonEnd(){
     ${rep.cup&&rep.cup.length?`<h3 class="pdh">天皇杯</h3><ul class="news">${rep.cup.map(l=>`<li>${esc(l.replace('【天皇杯】',''))}</li>`).join('')}</ul>`:''}
     ${rep.lines.length?`<ul class="small" style="padding-left:18px">${rep.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:''}
     ${rep.retired.length?`<p class="small"><b>引退：</b>${rep.retired.map(esc).join('、')}</p>`:''}
-    <p class="small"><b>ユース昇格：</b>${rep.youth.map(esc).join('、')}</p>
+    <p class="small"><b>ユースからトップ昇格：</b>${rep.youth.length?rep.youth.map(esc).join('、'):'なし'}</p>
     ${rep.joined.length?`<p class="small"><b>高校から入団：</b>${rep.joined.map(esc).join('、')}</p>`:''}
     <p class="small muted">新シーズンは${DIVS[S.div].name}。開幕までの${OFF_WEEKS}週間はオフシーズン（契約更改・トライアウト・キャンプ）です。</p>
     ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}
@@ -3336,6 +3466,9 @@ const ACTIONS = {
   reg2(a){ ui.flash=a; register2(a); },
   player(a){ showPlayer(a); },
   offPick(a){ pickOffChoice(a); },
+  acPromote(a){ acTogglePromote(a); },
+  acKeep(a){ acToggleKeep(a); },
+  acReg2(a){ acRegister2(a); },
   role(a){ const [id,r]=a.split('|'); changeRole(id,r); },
   stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
