@@ -818,7 +818,8 @@ function endSeason(){
     // 昇格・降格した他クラブを入れ替える（上がったチームの代わりは下から、落ちたチームの代わりは上から）
     const upR = new Set(zn.up||[]), dnR = new Set(zn.dn||[]);
     const keep = st.filter((t,k)=>t.isMe || (!upR.has(k+1) && !dnR.has(k+1))).map(t=>S.teams[t.i]);
-    const nextTeams = keep.map(t=>{ if(!t.isMe){ const dr = R(-3,3); t.str+=dr; t.att+=dr+R(-1,1); t.def+=dr+R(-1,1); } return t; });
+    const mid = (DIVS[S.div].base[0]+DIVS[S.div].base[1])/2;
+    const nextTeams = keep.map(t=>{ if(!t.isMe){ const dr = R(-3,3) + (mid - t.str)*0.2; // 戦力は毎年少し入れ替わり、リーグの平均に寄っていく t.str+=dr; t.att+=dr+R(-1,1); t.def+=dr+R(-1,1); } return t; });
     while(nextTeams.length < DIVS[S.div].teams) nextTeams.push(genTeam(S.div, R(-2,2)));
     S.teams = [me, ...nextTeams.filter(t=>!t.isMe)].slice(0, DIVS[S.div].teams);
   }
@@ -2231,7 +2232,7 @@ function miniLeague(post, label, opps){
   return tbl.findIndex(t=>t.me)+1;
 }
 const REGIONS_JP = ['北海道','東北','関東','東海','関西','中国','四国','九州'];
-function regionalChamp(){ const s = DIVS[1].base[1] + R(-4,3); return fakeOpp(`${pick(REGIONS_JP)}代表 ${pick(CITY_NATION)} ${pick(SUFFIX)}`, s); }
+function regionalChamp(){ const s = DIVS[1].base[1] + R(-8,1); return fakeOpp(`${pick(REGIONS_JP)}代表 ${pick(CITY_NATION)} ${pick(SUFFIX)}`, s); }
 // 昇格・降格の判定。戻り値：moved（+1昇格 / -1降格 / 0残留）
 function postseason(st, rank, report){
   const d = S.div, n = st.length, post = report.post, L = report.lines;
