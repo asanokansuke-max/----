@@ -540,6 +540,12 @@ function seasonFanGain(res){
   return changeFans(-0.015, 0);
 }
 
+function offPitchInjury(scene){
+  const c = S.players.filter(p=>!(p.inj>0) && !p.loan); if(!c.length) return null;
+  const p = pick(c);
+  injure(p, 'random');
+  return `${p.name}が${scene}、${injLabel(p)}（全治${p.inj}週）。`;
+}
 const EVENTS = [
   {w:1, ok:()=>month(S.round)<=3||month(S.round)>=11, f:()=>{S.snow=true; return '大雪で練習場が雪に埋もれた…次週の練習効果はなし。';}},
   {w:1.2, f:()=>{const v=Math.round(R(500,2000)*DIV_MULT[S.div]); earn(v); return `金沢の老舗和菓子店がスポンサーに名乗り！ ${yen(v)}の支援。`;}},
@@ -547,8 +553,13 @@ const EVENTS = [
   {w:1, f:()=>{const d=changeFans(0.025,15); return `兼六園ライトアップとのコラボ企画が好評。ファン +${d}人`;}},
   {w:0.8, f:()=>{const d=changeFans(0.02,15); return `金沢21世紀美術館でクラブ展示を開催。ファン +${d}人`;}},
   {w:0.8, f:()=>{const d=changeFans(0.015,10); return `選手たちが近江町市場で海鮮丼を食べる姿がSNSでバズる。ファン +${d}人`;}},
-  {w:1.2, f:()=>{const c=S.players.filter(p=>p.inj===0); if(!c.length) return null; const p=pick(c); injure(p,'random'); return `${p.name}が雪道で転倒し、${injLabel(p)}（全治${p.inj}週）。`;}},
-  {w:0.8, f:()=>{const v=Math.round(R(300,1000)*Math.sqrt(DIV_MULT[S.div])); spend(v); return `雷雨でスタジアムの照明が故障。修理費 ${yen(v)}。`;}},
+  // 練習外のアクシデント（季節に合わせた内容）
+  {w:0.6, ok:()=>month(S.round)<=3||month(S.round)>=11, f:()=>offPitchInjury('雪道で足を滑らせて転倒し')},
+  {w:0.6, ok:()=>month(S.round)>=6&&month(S.round)<=7, f:()=>offPitchInjury('梅雨の雨でぬかるんだ練習場で足を滑らせ')},
+  {w:0.4, f:()=>offPitchInjury(pick(['自宅の階段で足を踏み外し','子どもと公園で遊んでいて足をひねり','移動のバスを降りる際に段差で足をひねり']))},
+  {w:1, ok:()=>month(S.round)>=7&&month(S.round)<=8, f:()=>{S.players.forEach(p=>p.cond=clamp(p.cond-8,30,100)); return '連日の猛暑で選手たちが夏バテ気味。全員のコンディションが下がった。';}},
+  {w:0.5, ok:()=>month(S.round)>=7&&month(S.round)<=8, f:()=>{const c=S.players.filter(p=>!(p.inj>0)&&!p.loan); if(!c.length) return null; const p=pick(c); p.cond=clamp(p.cond-30,30,100); p.restOnce=true; return `${p.name}が練習中に熱中症の症状を訴え、大事を取って今週は休養。`;}},
+  {w:0.8, ok:()=>month(S.round)>=5&&month(S.round)<=9, f:()=>{const v=Math.round(R(300,1000)*Math.sqrt(DIV_MULT[S.div])); spend(v); return `${month(S.round)>=7?'夏の':''}雷雨でスタジアムの照明が故障。修理費 ${yen(v)}。`;}},
   {w:0.8, f:()=>{S.trust=clamp(S.trust-3,0,100); return '北國の地元紙が辛口のクラブ批評を掲載。フロントの信頼 -3';}},
   {w:2, ok:()=>month(S.round)===6, f:()=>{const d=changeFans(0.05,30); return `百万石まつりの行列にクラブで参加！ ファン +${d}人`;}},
   {w:0.9, f:()=>{const c=S.players.filter(p=>p.age<=22 && p.ovr<p.pot); if(!c.length) return null; const p=pick(c); p.ovr=Math.min(p.pot,p.ovr+2.5); return `若手 ${p.name} が練習で覚醒の兆し！ 能力UP`;}},
