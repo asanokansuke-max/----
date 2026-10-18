@@ -190,6 +190,7 @@ td.pcell .pname{text-decoration:underline;text-decoration-color:var(--line);text
 .spin{width:28px;height:28px;margin:0 auto;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.rshort{font-size:9.5px;color:var(--muted);margin-top:2px;white-space:nowrap}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -276,6 +277,60 @@ const CITY_LOCAL = ['富山','高岡','福井','敦賀','長野','松本','上�
 const CITY_NATION = ['札幌','函館','青森','盛岡','秋田','山形','福島','水戸','宇都宮','前橋','大宮','千葉','柏','町田','相模原','静岡','浜松','沼津','甲府','岐阜','四日市','奈良','和歌山','姫路','岡山','福山','鳥取','松江','山口','徳島','高松','松山','高知','北九州','佐賀','長崎','大分','熊本','宮崎','鹿児島','那覇','いわき','八戸','藤枝','今治','草津'];
 const SUFFIX = ['FC','SC','ユナイテッド','シティ','スターズ','ウェーブ','ファルコンズ','ブレイブ','フェニックス','オーシャンズ','ライジング','グランデ','ヴィクトリー','ドラゴンズ','ユニオン','アスレティック','レインボー','ウィングス','サンダース','クレスト'];
 
+// ===================== ポジションごとの役割 =====================
+// att/def：その選手がスタメンにいるときの攻撃・守備への上乗せ。tac：相性の良い戦術
+const ROLES = {
+  GK:{ stopper:{name:'シュートストッパー', short:'セーブ型', def:1.0, tac:['defend','counter'], desc:'反応速度とセービングでゴールを守る'},
+       sweeper:{name:'スイーパーキーパー', short:'足元型', def:0.4, att:0.4, tac:['attack','balance'], desc:'高い位置を取り、足元の技術で攻撃の起点にもなる'} },
+  DF:{ cb:{name:'ストッパー', short:'ストッパー', def:1.2, att:-0.3, tac:['defend'], desc:'空中戦と対人の強さで相手FWを潰す'},
+       cover:{name:'カバーリング', short:'カバー', def:0.8, tac:['counter','defend'], desc:'読みとスピードで裏のスペースを消す'},
+       build:{name:'ビルドアップ型CB', short:'組立CB', def:0.3, att:0.6, tac:['balance','attack'], desc:'正確な縦パスで後方から攻撃を組み立てる'},
+       osb:{name:'攻撃的サイドバック', short:'攻撃SB', att:1.0, def:-0.3, tac:['attack','counter'], desc:'積極的な攻撃参加でクロスを供給する'},
+       dsb:{name:'守備的サイドバック', short:'守備SB', def:0.8, tac:['defend','balance'], desc:'サイドの守備を堅実にこなす'} },
+  MF:{ anchor:{name:'アンカー', short:'アンカー', def:1.2, att:-0.2, tac:['defend','counter'], desc:'中盤の底で相手の攻撃の芽を摘む'},
+       b2b:{name:'ボックス・トゥ・ボックス', short:'B2B', att:0.5, def:0.5, tac:['balance'], desc:'攻守両面でピッチを上下動する'},
+       regista:{name:'司令塔', short:'司令塔', att:1.0, tac:['balance','attack'], desc:'視野の広さと配球で試合を組み立てる'},
+       wing:{name:'サイドアタッカー', short:'サイド', att:0.9, def:-0.2, tac:['counter','attack'], desc:'サイドを駆け上がり、突破とクロスで崩す'},
+       ah:{name:'トップ下', short:'トップ下', att:1.2, def:-0.4, tac:['attack'], desc:'ゴール前で決定的な仕事をする'} },
+  FW:{ striker:{name:'ストライカー', short:'点取り屋', att:1.2, tac:['attack','balance'], desc:'ゴール前の嗅覚で得点を量産する'},
+       post:{name:'ポストプレーヤー', short:'ポスト', att:0.8, def:0.2, tac:['defend','balance'], desc:'前線でボールを収め、味方の上がりを待つ'},
+       speed:{name:'スピードスター', short:'快速', att:0.9, tac:['counter'], desc:'快足で裏へ抜け出す'},
+       press:{name:'ハードワーカー', short:'ハードワーク', att:0.4, def:0.6, tac:['defend','counter'], desc:'前線からの守備で相手のビルドアップを阻む'} },
+};
+// フォーメーションごとに欲しい役割（いればボーナス）
+const FORM_KEYS = {
+  '4-4-2':{pos:'MF', roles:['regista','b2b'], att:1, def:0.5, label:'中盤に司令塔かB2B'},
+  '4-3-3':{pos:'FW', roles:['speed','striker'], att:1.5, def:0, label:'前線に快速か点取り屋'},
+  '3-5-2':{pos:'MF', roles:['wing'], att:1, def:0.5, label:'中盤にサイドアタッカー'},
+  '5-3-2':{pos:'DF', roles:['cover','cb'], att:0, def:1.5, label:'守備陣にカバーかストッパー'},
+};
+function pickRole(pos){ return pick(Object.keys(ROLES[pos])); }
+function roleOf(p){ const r = ROLES[p.pos]?.[p.role]; return r || null; }
+function roleShort(p){ return roleOf(p)?.short || ''; }
+function roleEffect(xi){
+  let att = 0, def = 0, fit = 0;
+  for(const s of xi){
+    if(s.pen || s.p.ghost) continue;
+    const r = roleOf(s.p); if(!r) continue;
+    const learn = s.p.roleNew>0 ? 0.5 : 1;
+    const match = r.tac.includes(S.tactic) ? 1.5 : 1;
+    if(match>1) fit++;
+    att += (r.att||0) * match * learn * 0.35;
+    def += (r.def||0) * match * learn * 0.35;
+  }
+  const k = FORM_KEYS[S.formation];
+  const keyOk = k && xi.some(s=>!s.pen && s.slot===k.pos && k.roles.includes(s.p.role));
+  if(keyOk){ att += k.att; def += k.def; }
+  // 平均的な噛み合いで0になるよう基準値を引く（相手チームとの公平さを保つ）
+  return {att: att-2.3, def: def-2.0, fit, keyOk, key:k};
+}
+function changeRole(id, role){
+  const p = S.players.find(x=>x.id===id); if(!p || !ROLES[p.pos][role] || p.role===role) return;
+  p.role = role; p.roleNew = 4;
+  addNews(`${p.name}を${ROLES[p.pos][role].name}として起用する方針に。慣れるまで約4週間かかる。`);
+  save(); render(); showPlayer(id);
+}
+
 // ===================== ユーティリティ =====================
 const R = (a,b)=>a+Math.random()*(b-a);
 const RI = (a,b)=>Math.floor(R(a,b+1));
@@ -311,7 +366,7 @@ function playerValue(p){
 function makePlayer(pos, ovr, age, pot, foreign){
   ovr = clamp(ovr,12,95);
   return {id:uid(), name:genName(foreign), pos, age, ovr, pot:clamp(Math.max(pot,ovr),12,97),
-          cond:100, inj:0, goals:0, apps:0, sg:0, sa:0, rest:false, mor:65, salary:calcSalary(ovr), foreign:!!foreign, contract:RI(1,3)};
+          cond:100, inj:0, goals:0, apps:0, sg:0, sa:0, rest:false, mor:65, salary:calcSalary(ovr), foreign:!!foreign, contract:RI(1,3), role:pickRole(pos)};
 }
 function randPos(){ const r=Math.random()*12; return r<1.2?'GK':r<5.2?'DF':r<9?'MF':'FW'; }
 
@@ -423,9 +478,10 @@ function teamRating(xi){
   const GK=avg(g.GK), DF=avg(g.DF), MF=avg(g.MF), FW=avg(g.FW);
   const m = S.staff.manager;
   const mb = m ? (m.abil-45)/10 + (m.style===S.tactic?1.5:0) : -3;
-  const att = FW*0.5 + MF*0.38 + DF*0.12 + f.att + mb;
-  const def = DF*0.48 + GK*0.27 + MF*0.25 + f.def + mb;
-  return {att, def, ovr:(att+def)/2};
+  const re = roleEffect(xi);
+  const att = FW*0.5 + MF*0.38 + DF*0.12 + f.att + mb + re.att;
+  const def = DF*0.48 + GK*0.27 + MF*0.25 + f.def + mb + re.def;
+  return {att, def, ovr:(att+def)/2, roles:re};
 }
 function lam(att, def, home, mul){ return clamp(1.25*Math.exp((att-def)/13)*(home?1.12:0.9)*mul, 0.12, 4.8); }
 
@@ -448,6 +504,7 @@ function applyTraining(){
   const injured = [];
   for(const p of S.players){
     if(p.loan) continue;
+    if(p.roleNew>0) p.roleNew--;
     if(p.inj>0 && !p.playHurt){ healWeek(p); p.cond = clamp(p.cond+10,30,100); continue; }
     if(p.playHurt) healWeek(p);
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
@@ -868,6 +925,16 @@ function hireStaff(id){
   if(cur) confirmBox(`現${STAFF_ROLES[role].name}の${cur.name}を解任し、${st.name}を招聘しますか？（契約金＋違約金 ${yen(fee)}・成功見込み ${Math.round(hireChance(st)*100)}%）`, doHire);
   else doHire();
 }
+function installStaff(st, fee){
+  const role = st.role, cur = role==='sales' ? null : S.staff[role];
+  spend(fee + (cur ? fireCost(cur) : 0));
+  S.staffMarket = S.staffMarket.filter(x=>x!==st);
+  if(role==='sales') S.staff.sales.push(st);
+  else { if(cur) addNews(`${STAFF_ROLES[role].name}の${cur.name}と契約を解除（違約金 ${yen(fireCost(cur))}）。`); S.staff[role] = st; }
+  if(role==='manager'){ S.players.forEach(p=>p.mor=clamp((p.mor??60)+8,0,100)); addNews(`新監督に${st.name}が就任！「${st.bio}」。チームは新体制で心機一転。`); }
+  else addNews(`${STAFF_ROLES[role].name}に${st.name}を招聘。（${st.bio}）`);
+  save(); render();
+}
 function fireStaff(id){
   const st = allStaff().find(x=>x.id===id); if(!st) return;
   const c = fireCost(st);
@@ -1090,7 +1157,7 @@ function genProspect(kind, school, tag){
   const ovr = (hs ? R(25,41) : R(33,51)) + S.div*2.5 + bonus;
   const pot = ovr + (hs ? R(10,32) : R(3,16));
   const pos = tag==='得点王'?'FW' : tag==='守備の要'?pick(['DF','DF','GK']) : tag==='注目のドリブラー'?pick(['MF','FW']) : randPos();
-  const pr = {id:uid(), name:genName(false), pos, age:hs?18:22, kind, school, grade:hs?'3年':'4年', tag, ovr, pot,
+  const pr = {id:uid(), name:genName(false), pos, role:pickRole(pos), age:hs?18:22, kind, school, grade:hs?'3年':'4年', tag, ovr, pot,
               seen:0, status:'none', hot: pot>60 && Math.random()<0.6};
   setEstimate(pr, noiseLevel());
   return pr;
@@ -1152,7 +1219,7 @@ function offerProspect(id){
   });
 }
 function joinAmateur(pr, type){
-  const p = makePlayer(pr.pos, pr.ovr, pr.age, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=78;
+  const p = makePlayer(pr.pos, pr.ovr, pr.age, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=78; if(pr.role) p.role=pr.role;
   p.proSalary = pr.proSal || Math.round(p.salary*0.8); p.salary = 0; p.amateur = type; // アマチュア登録中は年俸なし
   S.players.push(p); pr.status = 'joined';
   return p;
@@ -1176,7 +1243,7 @@ function prospectsSeasonEnd(lines){
   const joined = [];
   for(const pr of S.prospects){
     if(pr.status==='signed' && pr.kind==='高校'){
-      const p = makePlayer(pr.pos, pr.ovr, 18, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=75; p.salary=pr.proSal || Math.round(p.salary*0.8); p.contract=3;
+      const p = makePlayer(pr.pos, pr.ovr, 18, pr.pot); if(pr.role) p.role=pr.role; p.name=pr.name; p.from=pr.school; p.mor=75; p.salary=pr.proSal || Math.round(p.salary*0.8); p.contract=3;
       S.players.push(p); joined.push(`${p.name}（${pr.school}・${p.pos}）`);
     }
   }
@@ -1406,7 +1473,7 @@ function renderForeign(){
       ${t?'':`<div class="regions">${Object.entries(REGIONS).map(([k,g])=>`<button class="btn" data-act="dispatch" data-arg="${k}" ${S.money<tripCost(k)?'disabled':''}>${g.name}<br><span class="small muted">${yen(tripCost(k))}</span></button>`).join('')}</div>`}
       <details><summary>行き先の特徴</summary>${Object.values(REGIONS).map(g=>`${g.name}：${g.desc}`).join('<br>')}<br>能力が高いスカウトほど見積もりが正確で、当たりを引きやすくなります。</details></div>`;
   return head + `<div class="card-scroll" data-keep="foreign"><div class="mk">${S.foreignCands.map(p=>`<div class="card" data-id="${p.id}">
-      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(p.pos)} <b>${esc(p.name)}</b></span><span class="tag">${REGIONS[p.region].name}</span></div>
+      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(p.pos)} <b>${esc(p.name)}</b> <span class="small muted">${esc(roleShort(p))}</span></span><span class="tag">${REGIONS[p.region].name}</span></div>
       <p class="small muted" style="margin:6px 0">「${esc(p.bio)}」</p>
       <div class="kv">
         <span>年齢</span><span class="v">${p.age}歳</span>
@@ -1654,6 +1721,8 @@ function showPlayer(id){
       <div><span class="small muted">調子</span><div><b>${Math.round(p.cond)}</b></div>${bar(p.cond, p.cond>70?'':'gold')}</div>
       <div><span class="small muted">士気</span><div><b>${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</b></div>${bar(p.mor??60,'gold')}</div>
     </div>
+    <h3 class="pdh">役割</h3>${(()=>{ const r=roleOf(p); if(!r) return ''; return `<p class="small" style="margin:0"><b>${r.name}</b>${p.roleNew>0?`<span class="muted">（転向中・慣れるまであと${p.roleNew}週）</span>`:''}<br>${r.desc}<br><span class="muted">合う戦術：${r.tac.map(t=>TACTICS[t].name).join('・')}${r.tac.includes(S.tactic)?' <span class="plus">✓今の戦術に合っている</span>':''}</span></p>
+      <details class="small" style="margin-top:4px"><summary>役割を変える</summary><div class="seg">${Object.entries(ROLES[p.pos]).filter(([k])=>k!==p.role).map(([k,v])=>`<button data-act="role" data-arg="${p.id}|${k}">${v.name}</button>`).join('')}</div><span class="muted">変えると約4週間は効果が半分になります。</span></details>`; })()}
     <h3 class="pdh">状態</h3><p class="small" style="margin:0">${state}</p>${medical}
     <h3 class="pdh">成績</h3>
     <div class="kv"><span>今季</span><span class="v">${p.sa}試合 ${p.sg}得点</span><span>通算</span><span class="v">${p.apps}試合 ${p.goals}得点</span></div>
@@ -1772,11 +1841,20 @@ function negoTarget(n){
   if(n.kind==='foreign') return S.foreignCands.find(x=>x.id===n.id);
   if(n.kind==='prospect') return S.prospects.find(x=>x.id===n.id);
   if(n.kind==='renew') return S.players.find(x=>x.id===n.id);
+  if(n.kind==='staff') return S.staffMarket.find(x=>x.id===n.id);
 }
 function openNego(kind, id){
   const n = {kind, id, patience:3, log:[], pending:false, counter:null};
   const p = negoTarget(n); if(!p) return;
-  if(kind==='market'){
+  if(kind==='staff'){
+    const cur = p.role==='sales' ? null : S.staff[p.role];
+    if(p.role==='sales' && salesTeam().length>=MAX_SALES) return toast(`営業担当は最大${MAX_SALES}人です。`);
+    n.askFee = Math.round(p.salary*0.3); n.askSal = p.salary; n.years = true; n.staff = true;
+    n.feeOpts = [0.7,1,1.5]; n.salOpts = [0.9,1,1.15,1.3]; n.feeLabel = '契約金'; n.party = `${STAFF_ROLES[p.role].name}候補 ${p.name}`;
+    n.extra = cur ? fireCost(cur) : 0;
+    if(cur) n.log.push({who:'info', t:`合意すると現${STAFF_ROLES[p.role].name}の${cur.name}は解任になり、違約金${yen(n.extra)}がかかる。`});
+    if(hireChance(p)<0.6) n.log.push({who:'info', t:`実績のある人物で、${DIVS[S.div].short}のクラブからの話には慎重なようだ。`});
+  } else if(kind==='market'){
     if(S.players.length>=26) return toast('選手登録は26人までです。');
     if(p.foreign && foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
     n.askFee = p.fee; n.askSal = p.salary; n.feeFixed = !!p.loanFrom || p.fee===0; n.years = !p.loanFrom;
@@ -1799,8 +1877,8 @@ function openNego(kind, id){
     n.askFee = 0; n.askSal = renewAsk(p); n.feeFixed = true; n.years = true;
     n.feeOpts = [1]; n.salOpts = [0.9,1,1.15]; n.party = '本人と代理人';
   }
-  n.offer = {fee:1, sal:1, years: p.age>=33 ? 1 : 2};
-  n.snap = {name:p.name, pos:p.pos, age:p.age, school:p.school, est: p.lo!==undefined ? `推定能力 ${p.lo}〜${p.hi}` : `能力 ${Math.round(p.ovr)}`};
+  n.offer = {fee:1, sal:1, years: p.age>=33 && kind!=='staff' ? 1 : 2};
+  n.snap = {roleName: kind==='staff' ? STAFF_ROLES[p.role].name : '', name:p.name, pos:kind==='staff'?null:p.pos, age:p.age, school:p.school, est: kind==='staff' ? `能力 ${p.abil}${p.lic?`・${p.lic}`:''}${p.style?`・得意戦術 ${TACTICS[p.style].name}`:''}` : p.lo!==undefined ? `推定能力 ${p.lo}〜${p.hi}` : `能力 ${Math.round(p.ovr)}`};
   if(kind!=='prospect' && kind!=='renew' && Math.random()<0.3){
     n.rival = pick(CITY_NATION)+' '+pick(SUFFIX); n.askSal = Math.round(n.askSal*1.1);
     n.log.push({who:'info', t:`${n.rival}も獲得に動いているようだ。本人の希望年俸は${yen(n.askSal)}に上がっている。`});
@@ -1820,6 +1898,8 @@ function negoChance(n, t){
   let club = 1, pl;
   if(n.kind==='prospect'){
     pl = clamp(interest(p)/100 + (fr-1)*0.18 + (sr-1)*0.7, 0.03, 0.97);
+  } else if(n.kind==='staff'){
+    pl = clamp(hireChance(p)*0.75 + (sr-1)*1.6 + (fr-1)*0.35 + (t.years-2)*0.04, 0.03, 0.97);
   } else if(n.kind==='renew'){
     pl = clamp(renewChance(p)*0.7 + (sr-1)*2.2 + (p.age>=30 ? (t.years-1)*0.08 : 0), 0.03, 0.97);
   } else {
@@ -1836,7 +1916,7 @@ function renderNego(){
   const feel = NEGO_FEEL(Math.min(ch.club, ch.pl) * R(0.85,1.15));
   const est = n.snap.est;
   const opt = (key, vals, fmt) => `<div class="seg">${vals.map(v=>`<button class="${n.offer[key]===v&&!n.counter?'on':''}" data-act="negoSet" data-arg="${key}|${v}">${fmt(v)}</button>`).join('')}</div>`;
-  const money = S.money >= t.fee;
+  const money = S.money >= t.fee + (n.extra||0);
   const logHtml = n.log.map(l=>`<li class="nl-${l.who}">${l.who==='me'?'<b>GM：</b>':l.who==='them'?`<b>${esc(n.party)}：</b>`:''}${esc(l.t)}</li>`).join('');
   const body = n.pending ? `<div class="nego-wait"><div class="spin"></div><p>${esc(n.pending)}</p></div>`
     : n.done ? `<h2 style="text-align:center;color:var(--${n.done==='ok'?'win':'loss'})">${n.done==='ok'?'🤝 合意！':'交渉決裂…'}</h2><div class="row"><button class="btn primary" data-act="negoClose">閉じる</button></div>`
@@ -1844,11 +1924,11 @@ function renderNego(){
           <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="negoCounter" ${S.money<n.counter.fee?'disabled':''}>この条件をのむ</button><button class="btn" data-act="negoRetry">条件を考え直す</button></div></div>`
         : `${!n.feeFixed?`<div class="small muted">${n.feeLabel||'移籍金'}（希望 ${yen(n.askFee)}）</div>${opt('fee', n.feeOpts, v=>`${yen(Math.round(n.askFee*v))}`)}`:n.askFee?`<div class="small muted">${n.kind==='market'&&negoTarget(n).loanFrom?'レンタル料':'移籍金'}：${yen(n.askFee)}（固定）</div>`:''}
           <div class="small muted" style="margin-top:6px">年俸（希望 ${yen(n.askSal)}${n.kind==='prospect'?'・来季からのプロ契約':''}）</div>${opt('sal', n.salOpts, v=>`${yen(Math.round(n.askSal*v))}`)}
-          ${n.years?`<div class="small muted" style="margin-top:6px">契約年数</div>${opt('years', p.age>=33?[1]:[1,2,3], v=>`${v}年`)}`:''}
+          ${n.years?`<div class="small muted" style="margin-top:6px">契約年数</div>${opt('years', p.age>=33&&n.kind!=='staff'?[1]:[1,2,3], v=>`${v}年`)}`:''}
           <p class="small" style="margin:8px 0 0">GMの手応え：<b class="${feel[1]}">${feel[0]}</b>　交渉の余地：${'●'.repeat(n.patience)}${'○'.repeat(Math.max(0,3-n.patience))}</p>
           <div class="row"><button class="btn" data-act="negoQuit">交渉をやめる</button><button class="btn primary" data-act="negoSubmit" ${money?'':'disabled'}>この条件で提示する${money?'':'（資金不足）'}</button></div>`}`;
   openModal(`<div class="small muted">交渉相手：${esc(n.party)}</div>
-    <div style="display:flex;align-items:center;gap:8px;margin:4px 0">${posTag(p.pos)}<h2 style="margin:0">${esc(p.name)}</h2></div>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0">${n.snap.pos?posTag(n.snap.pos):`<span class="tag">${esc(n.snap.roleName)}</span>`}<h2 style="margin:0">${esc(p.name)}</h2></div>
     <p class="small muted" style="margin:0 0 8px">${p.age}歳・${est}${p.school?`・${esc(p.school)}`:''}</p>
     ${logHtml?`<ul class="nego-log">${logHtml}</ul>`:''}
     ${body}`);
@@ -1857,7 +1937,7 @@ function renderNego(){
 function negoSubmit(){
   const n = ui.nego; if(!n || n.pending) return;
   const t = negoTerms(n);
-  if(S.money < t.fee) return;
+  if(S.money < t.fee + (n.extra||0)) return;
   n.log.push({who:'me', t:`${t.fee?`${n.feeLabel||'移籍金'} ${yen(t.fee)}・`:''}年俸 ${yen(t.sal)}${t.years?`・${t.years}年契約`:''}でどうでしょう。`});
   n.pending = pick(NEGO_WAIT); renderNego();
   setTimeout(()=>{ if(ui.nego!==n) return; n.pending = pick(NEGO_WAIT.filter(x=>x!==n.pending)); renderNego(); }, 900);
@@ -1886,9 +1966,10 @@ function negoResolve(n, t){
 }
 function negoFinish(n, t){
   const p = negoTarget(n);
-  if(S.money < t.fee){ n.log.push({who:'info', t:'資金が足りず、契約できなかった。'}); n.done='ng'; return renderNego(); }
+  if(S.money < t.fee + (n.extra||0)){ n.log.push({who:'info', t:'資金が足りず、契約できなかった。'}); n.done='ng'; return renderNego(); }
   n.done = 'ok'; renderNego();
-  if(n.kind==='market'){ p.fee = t.fee; p.salary = t.sal; if(t.years) p.contract = t.years; signPlayer(p.id); }
+  if(n.kind==='staff'){ p.salary = t.sal; p.years = t.years; installStaff(p, t.fee); }
+  else if(n.kind==='market'){ p.fee = t.fee; p.salary = t.sal; if(t.years) p.contract = t.years; signPlayer(p.id); }
   else if(n.kind==='foreign'){ p.fee = t.fee; p.salary = t.sal; p.contract = t.years; ui.nego = null; signForeign(p.id); return; }
   else if(n.kind==='prospect'){
     spend(t.fee); p.status = 'signed'; p.proSal = t.sal;
@@ -1907,6 +1988,7 @@ function negoFail(n){
   else if(n.kind==='foreign'){ S.foreignCands = S.foreignCands.filter(x=>x!==p); addNews(`${p.name}の代理人との交渉は決裂した。`); }
   else if(n.kind==='prospect'){ p.status='declined'; addNews(`${p.name}（${p.school}）はオファーを断り、${p.kind==='高校'?pick(['大学進学','J1クラブ入り','J2クラブ入り']):pick(['J1クラブ入り','J2クラブ入り'])}を選んだ。`); }
   else if(n.kind==='renew'){ p.refused = true; addNews(`${p.name}は契約更新を拒否。「新しい環境で挑戦したい」`); }
+  else if(n.kind==='staff'){ S.staffMarket = S.staffMarket.filter(x=>x!==p); addNews(`${p.name}（${STAFF_ROLES[p.role].name}候補）との交渉は決裂した。`); }
   save(); render();
 }
 
@@ -1929,6 +2011,10 @@ function migrate(s){
   }
   s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
   s.visitsLeft ??= 1; s.watchLeft ??= 1; s.mentor ??= 0; s.cfSeason ??= 0;
+  s.players.forEach(p=>{ if(!p.role) p.role = pickRole(p.pos); });
+  (s.market||[]).forEach(p=>{ if(!p.role) p.role = pickRole(p.pos); });
+  (s.foreignCands||[]).forEach(p=>{ if(!p.role) p.role = pickRole(p.pos); });
+  (s.prospects||[]).forEach(p=>{ if(!p.role) p.role = pickRole(p.pos); });
   s.players.forEach(p=>{ if(p.inj>0 && !p.injury) p.injury = {id:'bruise', name:'負傷', short:'負傷', part:'', total:p.inj}; p.mor ??= 60; if(p.contract===undefined && !p.amateur && !p.loanFrom) p.contract = RI(1,3); });
   if(!s.staffMarket.length){ S = s; refreshStaffMarket(); }
   return s;
@@ -2106,7 +2192,7 @@ function renderSquad(){
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th class="num">契約</th><th></th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}">
-      <td>${posTag(p.pos)}</td>
+      <td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td>
       <td class="pcell" data-act="player" data-arg="${p.id}"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.expiring?'<span class="tag inj">満了</span>':''}</div></td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
@@ -2132,6 +2218,7 @@ function renderTactics(){
     <span>${TRAINING[S.training].name}</span><span>攻 <b>${rt.att.toFixed(1)}</b> / 守 <b>${rt.def.toFixed(1)}</b></span>
     <details><summary>今週の方針</summary>チケット：${TICKET[S.ticket].name}・広報活動：${PR[S.pr].name}${m?`<br>監督 ${esc(m.name)} の得意戦術は「${TACTICS[m.style].name}」。合わせると戦力が上がります。`:''}</details>
   </div>
+  <div class="infobar" style="margin-top:0">${(()=>{ const re=rt.roles; return `<span>役割の噛み合い <b>${re.fit}</b>/11人</span><span class="${re.keyOk?'plus':'minus'}">${re.keyOk?'✓':'✗'} ${re.key.label}</span><details><summary>役割とは</summary>選手にはポジションごとに役割（アンカー、司令塔、ポストプレーヤーなど）があります。今の戦術に合う役割の選手が多いほど、また陣形に欲しい役割の選手がいるとボーナスが付きます。役割は選手の詳細から変えられます。<br>スタメンの役割：${getLineup().filter(s=>!s.p.ghost).map(s=>`${esc(s.p.name)}（${esc(roleShort(s.p))}）`).join('、')}</details>`; })()}</div>
   <div class="card-scroll" data-keep="tactics"><div class="grid g2" style="margin-top:0">
     <div class="card"><h3>フォーメーション</h3>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}
 </div>
@@ -2156,7 +2243,7 @@ function renderMarket(){
       const up = p.ovr - worst;
       return `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-          <span>${posTag(p.pos)} <b>${esc(p.name)}</b></span>${p.loanFrom?'<span class="tag xi">レンタル</span>':p.free?'<span class="tag xi">フリー</span>':p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
+          <span>${posTag(p.pos)} <b>${esc(p.name)}</b> <span class="small muted">${esc(roleShort(p))}</span></span>${p.loanFrom?'<span class="tag xi">レンタル</span>':p.free?'<span class="tag xi">フリー</span>':p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
         ${p.loanFrom?`<div class="small muted" style="margin-top:4px">${esc(p.loanFrom)}（${p.loanDiv}）の有望株。今季終了まで期限付き移籍</div>`:p.bio?`<div class="small muted" style="margin-top:4px">${esc(p.bio)}</div>`:''}
         <div class="kv" style="margin-top:8px">
           <span>年齢</span><span class="v">${p.age}歳</span>
@@ -2261,7 +2348,7 @@ function renderStaff(){
           <span>契約</span><span class="v">${st.years}年</span>
           <span>就任の見込み</span><span class="v">${Math.round(hireChance(st)*100)}%</span>
         </div>
-        <div class="row"><button class="btn primary" data-act="hire" data-arg="${st.id}">招聘する（契約金 ${yen(Math.round(st.salary*0.3))}）</button></div>
+        <div class="row"><button class="btn primary" data-act="nego" data-arg="staff|${st.id}">招聘の交渉をする</button></div>
       </div>`).join('') || '<p class="muted small">この役職の候補者は今いません。数週後にまた確認しましょう。</p>'}</div></div>
     </div>`;
 }
@@ -2279,7 +2366,7 @@ function renderAma(){
       <details><summary>説明</summary>大会で活躍した選手をスカウトがリストアップします。<br>${upcoming.map(e=>`第${e.r+1}節後：${e.name}`).join('<br>')||'今季の大会は終了しました。'}<br>・視察すると推定能力の幅が約半分に狭まり、入団の見込みも上がります（バーの幅が実力の見積もり）。<br>・高校生は内定後に<b>2種登録</b>すれば、今季から試合に出せます。<br>・大学生は内定すると<b>特別指定選手</b>として今季から出場できます。<br>・どちらもアマチュアなので今季は年俸なし。来季からプロ契約になります。<br>・精度はスカウト網とチーフスカウトで上がります。</details>
     </div>
     <div class="card-scroll" data-keep="ama"><div class="mk">${S.prospects.map(pr=>`<div class="card" data-id="${pr.id}">
-      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b></span>${st[pr.status]}</div>
+      <div style="display:flex;justify-content:space-between;gap:6px;align-items:center"><span>${posTag(pr.pos)} <b>${esc(pr.name)}</b> <span class="small muted">${esc(pr.role?ROLES[pr.pos][pr.role].short:'')}</span></span>${st[pr.status]}</div>
       <div class="small muted" style="margin:4px 0">${esc(pr.school)} ${pr.grade}・${pr.age}歳</div>
       <div><span class="tag">${esc(pr.tag)}</span> ${pr.hot?'<span class="tag inj">他クラブも注目</span>':''}</div>
       <div class="kv" style="margin-top:8px">
@@ -2457,6 +2544,7 @@ const ACTIONS = {
   release(a){ releasePlayer(a); },
   reg2(a){ ui.flash=a; register2(a); },
   player(a){ showPlayer(a); },
+  role(a){ const [id,r]=a.split('|'); changeRole(id,r); },
   stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
   nego(a){ const [k,id]=a.split('|'); ui.flash=id; openNego(k,id); },
