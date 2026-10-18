@@ -224,6 +224,7 @@ table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .tile .st{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tile .badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--loss);color:#fff;font-size:10.5px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px}
 .matchcard{padding:10px 14px}
+.matchcard.special{border:2px solid var(--gold)}
 .matchcard h3{margin-bottom:6px}
 .svgi{width:20px;height:20px;display:block}
 .fac .ic .svgi{width:28px;height:28px;color:var(--gold)}
@@ -636,8 +637,8 @@ function startSeason(){
   S.fin = {income:0, expense:0};
   if(S.ledger) S.lastLedger = S.ledger;
   S.ledger = {in:{}, out:{}};
-  S.matchLog = [];
-  S.players.forEach(p=>{p.sg=0; p.sa=0; p.rSum=0; p.rN=0; syncAt(p); p.at0 = {...p.at};});
+  S.matchLog = []; S.post = null;
+  S.players.forEach(p=>{p.cg=0; p.sg=0; p.sa=0; p.rSum=0; p.rN=0; syncAt(p); p.at0 = {...p.at};});
   cupReset(); S.rival = undefined;
   computeTarget(); // 目標順位 = 戦力順位
 }
@@ -756,26 +757,77 @@ function pickScorer(xi){
   for(const x of w){ r-=x.w; if(r<=0) return x.p; }
   return w[0].p;
 }
-// ===================== リーグ戦以外の試合（天皇杯・ポストシーズン・練習試合）の観戦 =====================
-// 結果は先に決まっていて、試合の流れをあとから見せる
-function queueMatch(o){
-  ui.mq = ui.mq || [];
-  const xi = getLineup(true), evs = [];
-  for(let i=0;i<o.gu;i++){ const p = pickScorer(xi); evs.push({m:RI(1,90), us:true, text:`ゴール！ ${p.name} ${pick(GOAL_LINES)}`}); }
-  for(let i=0;i<o.go;i++) evs.push({m:RI(1,90), us:false, text:`${o.opp} ${pick(OPP_LINES)}`});
-  [...FLAVOR].sort(()=>Math.random()-0.5).slice(0,RI(2,4)).forEach(t=>evs.push({m:RI(1,90), flavor:t}));
-  evs.sort((x,y)=>x.m-y.m);
-  ui.mq.push({...o, events:evs});
+// ===================== リーグ戦以外の試合（天皇杯・昇格争い・練習試合） =====================
+// リーグ戦と同じように、メンバー・戦術・調子で戦う。一発勝負は延長戦・PK戦まで
+function playSpecial(opp, where, tie, opts){
+  opts = opts || {};
+  const rot = [];
+  if(opts.rotate){ // ターンオーバー：主力のフィールドプレーヤー6人を休ませる
+    getLineup().filter(s=>!s.p.ghost && s.slot!=='GK').sort((a,b)=>b.p.ovr-a.p.ovr).slice(0,6).forEach(s=>{ s.p.restOnce = true; rot.push(s.p); });
+  }
+  const xi = getLineup(), rt = teamRating(xi), t = TACTICS[S.tactic];
+  rot.forEach(p=>p.restOnce = false);
+  let own = t.own, opm = t.opp;
+  if(t.counter){ const stronger = opp.str > rt.ovr; own = stronger?1.08:0.9; opm = stronger?0.85:0.95; }
+  const home = where==='home', away = where==='away';
+  const fu = (home ? 1.12*suppHomeBoost() : away ? 0.9 : 1) * own, fo = (home ? 0.9 : away ? 1.12 : 1) * opm;
+  const events = [];
+  const goals = (n, us, m0, m1) => { for(let i=0;i<n;i++){
+    if(us){ const p = pickScorer(xi); events.push({m:RI(m0,m1), us:true, p, text:`ゴール！ ${p.name} ${pick(GOAL_LINES)}`}); }
+    else events.push({m:RI(m0,m1), us:false, text:`${opp.name} ${pick(OPP_LINES)}`}); } };
+  let gu = poisson(lamN(rt.att, opp.def+R(-3,3), fu)), go = poisson(lamN(opp.att+R(-3,3), rt.def, fo));
+  goals(gu, true, 1, 90); goals(go, false, 1, 90);
+  [...FLAVOR].sort(()=>Math.random()-0.5).slice(0,RI(3,5)).forEach(f=>events.push({m:RI(1,89), flavor:f}));
+  let et = false, pk = null, win = gu>go;
+  if(gu===go && tie==='pk'){
+    et = true; events.push({m:90.5, flavor:'90分を終えて同点。延長戦に突入！'});
+    const eu = poisson(lamN(rt.att, opp.def, fu)*0.3), eo = poisson(lamN(opp.att, rt.def, fo)*0.3);
+    goals(eu, true, 91, 120); goals(eo, false, 91, 120); gu += eu; go += eo;
+    if(gu===go){ pk = penalties(xi, opp); win = pk.win; } else win = gu>go;
+  } else if(gu===go && tie==='higher') win = home; // 昇格プレーオフ：引き分けは上位チームが勝ち抜け
+  else if(gu===go) win = null;
+  const ids = new Set(xi.map(s=>s.p.id)), hurt = [];
+  for(const p of S.players){
+    if(p.loan) continue;
+    if(ids.has(p.id)){
+      p.cond = clamp(p.cond - (opts.friendly ? 8 : et ? 24 : 18), 30, 100);
+      if(!opts.friendly){ afterMatchInjury(p); if(!(p.inj>0) && Math.random()<0.02*injuryRisk(p)){ hurt.push([p, injure(p, Math.random()<0.6?'contact':'muscle')]); } }
+      if(rot.length) p.mor = clamp((p.mor??60)+3, 0, 100); // 出番をもらった控え組は燃える
+    } else if(rot.includes(p)) p.cond = clamp(p.cond+6, 30, 100);
+  }
+  hurt.forEach(([p,scene])=>events.push({m:RI(10,89), text:`負傷：${p.name}が${scene}。そのまま交代（${injLabel(p)}・全治${p.inj}週）`, inj:true}));
+  events.sort((x,y)=>x.m-y.m);
+  events.filter(e=>e.us && e.p && !e.p.ghost).forEach(e=>{ e.p.cg = (e.p.cg||0) + (opts.friendly?0:1); });
+  const res = gu>go ? 'W' : gu<go ? 'L' : 'D';
+  const ratings = opts.friendly ? null : rateMatch(xi, gu, go, events);
+  let fin = null;
+  if(home && !opts.friendly){
+    const att = Math.round(clamp(S.fans*R(0.45,0.7)*(opts.big?1.6:1)*(0.9+supp().mood/500), 150, CAP[S.fac.stadium-1]));
+    const ticket = Math.round(att*DIVS[S.div].ticket/10000); earn(ticket, 'ticket'); fin = {att, ticket};
+  }
+  return {opp, where, tie, gu, go, events, res, win, et, pk, xi, ratings, fin, rot:rot.length, rating:rt};
 }
-function runQueue(then){
-  if(ui.mq && ui.mq.length){ ui.mqThen = then; showExtraMatch(ui.mq.shift()); }
-  else { ui.mqThen = null; then && then(); }
+// PK戦：キッカーはシュートと冷静さ、相手のキックはこちらのGKの反応とキャッチングで決まる
+function penalties(xi, opp){
+  const ab = p => p.at ? (p.at.sho+p.at.com)/2 : p.ovr;
+  const kickers = xi.filter(s=>!s.p.ghost && s.slot!=='GK').map(s=>s.p).sort((a,b)=>ab(b)-ab(a));
+  const gk = xi.find(s=>s.slot==='GK')?.p, keep = gk ? (gk.at ? (gk.at.ref+gk.at.han)/2 : gk.ovr) : 20;
+  const pu = k => clamp(0.75 + (ab(k)-opp.str)/90, 0.55, 0.92), po = clamp(0.75 + (opp.str-keep)/90, 0.55, 0.92);
+  const kicks = []; let us = 0, them = 0;
+  for(let r=0; r<30; r++){
+    const k = kickers[r % Math.max(1,kickers.length)] || {name:'ユース'};
+    const a = Math.random() < pu(k); us += a; kicks.push({us:true, name:k.name, ok:a, n:r+1});
+    if(r<5 && (us > them + 5-r || them > us + 4-r)) break;
+    const b = Math.random() < po; them += b; kicks.push({us:false, name:`${r+1}人目`, ok:b, n:r+1});
+    if(r<5 ? (us > them + 4-r || them > us + 4-r) : us!==them) break;
+  }
+  return {us, them, win: us>them, kicks};
 }
-function showExtraMatch(m){
+function noteOf(m){ return m.pk ? `（延長・PK ${m.pk.us}-${m.pk.them}）` : m.et ? '（延長）' : m.tie==='higher' && m.gu===m.go ? (m.win ? '（引き分け・上位で勝ち抜け）' : '（引き分け・相手が上位で敗退）') : ''; }
+function showSpecial(m){
   const usHome = m.where!=='away';
-  const homeName = usHome ? S.club : m.opp, awayName = usHome ? m.opp : S.club;
-  const res = m.gu>m.go ? 'W' : m.gu<m.go ? 'L' : 'D';
-  const left = ui.mq.length;
+  const homeName = usHome ? S.club : m.opp.name, awayName = usHome ? m.opp.name : S.club;
+  const end = m.et ? 120 : 90;
   openModal(`
     <div class="small muted" style="text-align:center">${esc(m.title)}・${m.where==='home'?'ホーム':m.where==='away'?'アウェイ':'中立地'}</div>
     <div class="score"><div class="t">${esc(homeName)}</div><div class="n" id="sc">0 - 0</div><div class="t">${esc(awayName)}</div></div>
@@ -783,30 +835,63 @@ function showExtraMatch(m){
     <ul class="log" id="log"></ul>
     <div id="after"></div>
     <div class="row" id="mrow"><button class="btn" data-act="skip">スキップ</button></div>`);
-  let min = 0, hs = 0, as = 0; const evs = [...m.events];
+  let min = 0, hs = 0, as = 0, ki = 0, pu = 0, pt = 0; const evs = [...m.events], kicks = m.pk ? [...m.pk.kicks] : [];
   const $log = document.getElementById('log'), $sc = document.getElementById('sc'), $clk = document.getElementById('clk');
+  const add = (html, cls) => { $log.insertAdjacentHTML('beforeend', `<li class="${cls||''}">${html}</li>`); $log.scrollTop = $log.scrollHeight; };
   const step = ()=>{
-    min++;
-    while(evs.length && evs[0].m<=min){
-      const e = evs.shift();
-      if(!e.flavor){ if(e.us===usHome) hs++; else as++; }
-      $log.insertAdjacentHTML('beforeend', `<li class="${e.flavor?'':(e.us?'goal us':'goal them')}"><span class="m">${e.m}'</span>${esc(e.text||e.flavor)}</li>`);
-      $sc.textContent = `${hs} - ${as}`; $log.scrollTop = $log.scrollHeight;
+    if(min < end){
+      min++;
+      while(evs.length && evs[0].m<=min){
+        const e = evs.shift();
+        if(!e.flavor && !e.inj){ if(e.us===usHome) hs++; else as++; }
+        add(`<span class="m">${Math.ceil(e.m)}'</span>${esc(e.text||e.flavor)}`, e.flavor||e.inj ? '' : (e.us?'goal us':'goal them'));
+        $sc.textContent = `${hs} - ${as}`;
+      }
+      $clk.textContent = min>=end ? (kicks.length ? 'PK戦' : '試合終了') : min>90 ? `延長 ${min}分` : `${min}分`;
+      if(min===end && kicks.length){ add('<span class="m">PK</span>PK戦へ。', ''); clearInterval(playTimer); playTimer = setInterval(step, 650); }
+      if(min===end && !kicks.length){ clearInterval(playTimer); playTimer = null; finish(); }
+      return;
     }
-    $clk.textContent = min>=90 ? '試合終了' : `${min}分`;
-    if(min>=90){ clearInterval(playTimer); playTimer = null; finish(); }
+    const k = kicks.shift();
+    if(k){ if(k.ok){ if(k.us) pu++; else pt++; }
+      add(`<span class="m">PK${k.n}</span>${k.us ? esc(k.name) : esc(m.opp.name)+' '+k.name}　${k.ok?'<b>成功</b>':'<b class="minus">失敗</b>'}`, k.us ? (k.ok?'goal us':'') : (k.ok?'goal them':''));
+      $clk.textContent = `PK戦 ${usHome?pu:pt} - ${usHome?pt:pu}`; }
+    if(!kicks.length){ clearInterval(playTimer); playTimer = null; finish(); }
   };
   const finish = ()=>{
-    if(m.note){ $log.insertAdjacentHTML('beforeend', `<li><span class="m">90+</span>${esc(m.note.replace(/[（）]/g,''))}</li>`); $log.scrollTop = $log.scrollHeight; }
-    const word = m.win===true ? (m.final ? '優勝！' : '勝ち抜け！') : m.win===false ? (res==='W' ? '勝利' : '敗退…') : {W:'勝利！',D:'引き分け',L:'敗戦…'}[res];
-    const col = m.win===true || (m.win==null && res==='W') ? 'win' : m.win===false || res==='L' ? 'loss' : 'draw';
-    document.getElementById('after').innerHTML = `<h2 style="text-align:center;color:var(--${col})">${word}</h2>${m.after?`<p class="small" style="text-align:center;margin:0">${esc(m.after)}</p>`:''}`;
-    document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="extraDone">${left?`次の試合へ（あと${left}試合）`:'続ける'}</button>`;
+    const word = m.win===true ? (m.final ? '優勝！' : m.winWord || '勝ち抜け！') : m.win===false ? (m.loseWord || '敗退…') : {W:'勝利！',D:'引き分け',L:'敗戦…'}[m.res];
+    const col = m.win===true || (m.win==null && m.res==='W') ? 'win' : m.win===false || m.res==='L' ? 'loss' : 'draw';
+    document.getElementById('after').innerHTML = `
+      <h2 style="text-align:center;color:var(--${col})">${word}</h2>
+      ${m.pk?`<p class="small" style="text-align:center;margin:-6px 0 6px">PK戦 ${m.pk.us}-${m.pk.them}</p>`:''}
+      ${m.after?`<div class="warn">${m.after.split('\n').map(esc).join('<br>')}</div>`:''}
+      ${m.table||''}
+      ${m.lines?`<ul class="small" style="padding-left:18px">${m.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:''}
+      <div class="kv">
+        ${m.fin?`<span>観客数</span><span class="v">${m.fin.att.toLocaleString()}人</span><span>チケット収入</span><span class="v">${yen(m.fin.ticket)}</span>`:''}
+        ${m.rot?`<span>メンバー</span><span class="v">ターンオーバー（主力${m.rot}人を温存）</span>`:''}
+        ${m.d?`<span>資金の増減</span><span class="v">${m.d.dm>=0?'<span class="plus">+':'<span class="minus">'}${yen(m.d.dm)}</span></span><span>ファン</span><span class="v ${m.d.df>=0?'plus':'minus'}">${m.d.df>=0?'+':''}${m.d.df}人</span>`:''}
+      </div>
+      ${m.ratings&&m.ratings[0]?`<p class="small" style="margin:8px 0 0">MVP：<b>${esc(m.ratings[0].p.name)}</b>（評価 ${m.ratings[0].r.toFixed(1)}）</p>
+        <details class="small"><summary>出場選手の評価</summary><div class="kv">${m.ratings.map(x=>`<span>${esc(x.p.name)}${x.g?`（${x.g}得点）`:''}</span><span class="v ${x.r>=7?'plus':x.r<5.5?'minus':''}">${x.r.toFixed(1)}</span>`).join('')}</div></details>`:''}`;
+    document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="${m.offWeek?'close':'matchDone'}">続ける</button>`;
   };
-  ui.finishMatch = ()=>{ if(playTimer){ clearInterval(playTimer); playTimer = null; } while(min<90) step(); };
+  ui.finishMatch = ()=>{ if(playTimer){ clearInterval(playTimer); playTimer = null; } while(min<end || kicks.length){ step(); if(playTimer){ clearInterval(playTimer); playTimer = null; } } };
   playTimer = setInterval(step, 35);
 }
-
+// 次の公式戦（リーグ戦・天皇杯・昇格争い）
+function nextFixture(){
+  if(!S || isOff()) return null;
+  const c = S.cup, ci = c && c.alive && c.next < CUP.length ? c.next : -1;
+  if(S.round < nr()){
+    if(ci>=0 && cupTime(ci) <= roundDate(S.round).getTime()) return {kind:'cup', i:ci};
+    return {kind:'league'};
+  }
+  if(ci>=0) return {kind:'cup', i:ci};
+  if(!S.post) S.post = planPost();
+  if(!S.post.done && S.post.queue.length) return {kind:'post', q:S.post.queue[0]};
+  return {kind:'end'};
+}
 function playOurMatch(h,a){
   const home = h===0; const oi = home?a:h; const opp = S.teams[oi];
   const xi = getLineup(); const rt = teamRating(xi); const t = TACTICS[S.tactic];
@@ -941,8 +1026,11 @@ function payWeekly(home, derby){
 function advance(){
   if(S && !S.over) ui.tab = 'home'; // 日程を進めたらホームに戻る
   if(S && !S.over && isOff()) return advanceOff();
-  if(!S || S.over || S.round>=nr()) return;
-  ui.mq = [];
+  if(!S || S.over) return;
+  const fx = nextFixture();
+  if(fx.kind==='cup') return advanceCup(fx.i);
+  if(fx.kind==='post') return advancePost();
+  if(fx.kind==='end') return showSeasonEnd();
   const before = {money:S.money, fans:S.fans};
   expireReports();
   applyTraining();
@@ -961,7 +1049,6 @@ function advance(){
   const ev = randomEvent();
   refreshMarket(2);
   fireDueEvents(false);
-  const cupLines = fireCup(false);
   const acLine = academyWeek(true);
   if(S.round===nr()-4 && acad().u18.some(p=>p.grade===3)) S.inbox.push(mkRep('ama', `育成コーチ ${S.staff.youth?S.staff.youth.name:''}`, 'U-18の3年生の進路を決める時期です', `シーズン終了時に、U-18の3年生のうち「トップ昇格」を選んだ選手がプロ契約になります。\n${acad().u18.filter(p=>p.grade===3).map(p=>`・${p.name}（${p.pos}・能力${Math.round(p.ovr)}）`).join('\n')}\n「チーム」→「下部組織」で決めてください。`, [['acview','下部組織を見る'],['ok','了解']]));
   generateReports();
@@ -973,7 +1060,7 @@ function advance(){
   S.visitsLeft = salesTeam().length; S.watchLeft = watchPerWeek();
   if(S.trust<=0){ S.over='fired'; }
   save();
-  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, cup:cupLines, ac:acLine});
+  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, ac:acLine});
 }
 
 function standings(){
@@ -992,9 +1079,13 @@ function endSeason(){
   let champion = false;
   report.post = [];
   fireDueEvents(true);
-  report.cup = fireCup(true);
+  fireCup(true);
+  report.cup = S.cup ? [...S.cup.log] : [];
   if(S.cup && S.cup.best!==undefined) report.cupBest = S.cup.best;
-  const moved = postseason(st, rank, report);
+  let moved;
+  if(S.post && S.post.done){ moved = S.post.moved; report.post = S.post.log; report.lines.push(...S.post.lines); }
+  else moved = postseason(st, rank, report); // 画面を通さずに進めた場合
+  S.post = null;
   if(d===TOP && rank===1){ champion=true; S.champion++; }
   const zn = zones(d, st.length);
   // 信頼
@@ -1901,8 +1992,8 @@ const OFF_EVENTS = [
     if(j1) spend(Math.round(300*(1+econ()*0.3)), 'other');
     const lv = j1 ? TOP : clamp(S.div + RI(0,1), 1, TOP);
     const opp = fakeOpp(`${genTeam(lv).name}（${DIVS[lv].short}）`, (DIVS[lv].base[0]+DIVS[lv].base[1])/2);
-    const m = quickMatch(opp, 'home');
-    queueMatch({title:'プレシーズンマッチ', opp:opp.name, where:'home', gu:m.gu, go:m.go});
+    const m = playSpecial(opp, 'home', null, {friendly:true});
+    ui.offMatch = Object.assign(m, {title:`プレシーズンマッチ${j1?'（J1クラブ招待）':''}`, badge:'プレシーズン', friendly:true});
     if(j1) boostMor(S.players, m.gu>=m.go ? 6 : 2);
     const att = Math.round(Math.min(CAP[S.fac.stadium-1], S.fans * R(0.5, 0.8) * (j1?1.6:1)));
     const inc = Math.round(att * DIVS[S.div].ticket * 0.8 / 10000); earn(inc, 'ticket');
@@ -1920,9 +2011,8 @@ function campDay(last){
   const c = CAMPS[S.camp||'home']; const lines = [];
   const lv = Math.min(TOP, S.div+1);
   const opp = `${genTeam(lv).name}（${DIVS[lv].short}）`;
-  const my = teamRating(getLineup(true)).ovr, os = DIVS[lv].base[0] + R(-2,4);
-  const gu = poisson(lam(my, os, true, 1)), go = poisson(lam(os, my, false, 0.9));
-  queueMatch({title:`${c.name} 練習試合`, opp, where:'neutral', gu, go});
+  const m = playSpecial(fakeOpp(opp, DIVS[lv].base[0] + R(-2,4)), 'neutral', null, {friendly:true}), gu = m.gu, go = m.go;
+  ui.offMatch = Object.assign(m, {title:`${c.name} 練習試合${last?'（キャンプ最終戦）':''}`, badge:'練習試合', friendly:true});
   lines.push(`${c.name}：練習試合 vs ${opp} ${gu}-${go}${gu>go?'。手応えのある勝利':gu<go?'。課題が見えた':''}。`);
   if(S.camp==='thai' && !last){ S.companies.forEach(co=>{ if(co.size>=2) co.rel=clamp(co.rel+4,0,100); }); lines.push('タイ遠征が地元経済紙で取り上げられ、企業の関心が高まった（関係+4）。'); }
   if(S.camp==='okinawa' && Math.random()<0.5){ const f=changeFans(0.01,10); lines.push(`沖縄まで駆けつけたサポーターと交流。ファン +${f}人。`); }
@@ -1945,7 +2035,7 @@ function computeTarget(){
 function advanceOff(){
   if(S.offChoice && !S.offChoice.picked){ const o = OFF_DECISIONS[S.offChoice.w].opts(S.offChoice); if(o.length) pickOffChoice(o[o.length-1][0]); }
   const before = {money:S.money, fans:S.fans};
-  ui.mq = [];
+  ui.offMatch = null;
   expireReports();
   const w = S.offWeek;
   academyWeek(false);
@@ -1974,7 +2064,8 @@ function advanceOff(){
     addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
   }
   save();
-  runQueue(()=>showOffWeek(w, lines, {dm:S.money-before.money, df:S.fans-before.fans}, kickoff));
+  if(ui.offMatch){ const m = ui.offMatch; ui.offMatch = null; Object.assign(m, {offWeek:true, lines:lines.filter(l=>!l.includes(' vs ')), d:{dm:S.money-before.money, df:S.fans-before.fans}}); return showSpecial(m); }
+  showOffWeek(w, lines, {dm:S.money-before.money, df:S.fans-before.fans}, kickoff);
 }
 function showOffWeek(w, lines, d, kickoff){
   const P = OFF_PLAN[w];
@@ -2529,7 +2620,6 @@ function postMatch(post, label, opp, where, tieRule){
     else if(tieRule==='pk'){ win = Math.random()<0.5; note = `（PK戦 ${win?'勝利':'敗戦'}）`; }
   }
   post.push({label, opp:opp.name, where, gu:m.gu, go:m.go, res: m.gu>m.go?'W':m.gu<m.go?'L':'D', win, note});
-  queueMatch({title:label, opp:opp.name, where, gu:m.gu, go:m.go, note, win: tieRule ? win : undefined});
   return {win, ...m};
 }
 // 総当たりのミニリーグ（地域CL）
@@ -2550,8 +2640,104 @@ function miniLeague(post, label, opps){
   return tbl.findIndex(t=>t.me)+1;
 }
 const REGIONS_JP = ['北海道','東北','関東','東海','関西','中国','四国','九州'];
-function regionalChamp(){ const s = DIVS[1].base[1] + R(-8,1); return fakeOpp(`${pick(REGIONS_JP)}代表 ${pick(CITY_NATION)} ${pick(SUFFIX)}`, s); }
+const REGION_CITY = {北海道:['札幌','旭川','函館','帯広','釧路'], 東北:['盛岡','秋田','山形','仙台','八戸','郡山'], 関東:['前橋','つくば','船橋','川越','厚木','小山'], 東海:['浜松','豊橋','岐阜','四日市','沼津'], 関西:['姫路','奈良','和歌山','大津','東大阪'], 中国:['倉敷','福山','松江','鳥取','下関'], 四国:['高知','松山','今治','高松','徳島'], 九州:['佐賀','宮崎','鹿児島','北九州','沖縄']};
+function regionalChamp(){ const s = DIVS[1].base[1] + R(-8,1), r = pick(REGIONS_JP); return fakeOpp(`${r}代表 ${pick(REGION_CITY[r])} ${pick(SUFFIX)}`, s); }
 // 昇格・降格の判定。戻り値：moved（+1昇格 / -1降格 / 0残留）
+// ===================== 昇格・残留をかけた試合を1試合ずつ戦う =====================
+function planPost(){
+  const st = standings(), rank = st.findIndex(t=>t.isMe)+1, d = S.div, n = st.length;
+  const P = {rank, queue:[], log:[], lines:[], moved:0, done:false, seeds: st.slice(0,6).map(t=>({name:t.name, str:t.str}))};
+  const issues = licenseIssues(), licOK = d<TOP && issues.length===0;
+  const noLic = ()=>P.lines.push(`昇格の権利を得ましたが、${DIVS[d+1].name}のクラブライセンス基準（${issues.join('・')}）を満たさず昇格できませんでした…`);
+  const fin = v => { P.moved = v; P.done = true; return P; };
+  const single = (label, o, where, onWin, onLose, winLine, loseLine) => { P.queue.push({type:'single', label, opp:o, where, tie:'pk', onWin, onLose, winLine, loseLine, big:true}); return P; };
+  if(d===0){
+    if(rank===1) return fin(1);
+    if(rank===2) return single('北信越リーグ入れ替え戦', fakeOpp(`${pick(CITY_LOCAL)} ${pick(SUFFIX)}（1部7位）`, DIVS[1].base[0]+R(0,4)), 'neutral', 1, 0, '入れ替え戦に勝利！ 北信越1部へ昇格！', '入れ替え戦に敗れ、昇格ならず…');
+    return fin(0);
+  }
+  if(d===1){
+    const zensha = rank===2 && Math.random()<0.35;
+    if(rank===1 || zensha){
+      if(zensha) P.lines.push('全国社会人サッカー選手権で勝ち上がり、地域チャンピオンズリーグの出場権を獲得！');
+      if(!licOK){ noLic(); return fin(0); }
+      clRound(P, 1); return P;
+    }
+    if(rank===n) return fin(-1);
+    if(rank===n-1) return single('北信越リーグ入れ替え戦', fakeOpp(`${pick(CITY_LOCAL)} ${pick(SUFFIX)}（2部2位）`, DIVS[0].base[1]+R(-2,2)), 'neutral', 0, -1, '入れ替え戦に勝利し、1部残留！', '入れ替え戦に敗れ、北信越2部へ降格…');
+    return fin(0);
+  }
+  if(d===2){
+    if(rank<=2 && !licOK){ noLic(); return fin(rank>=n-1?-1:0); }
+    if(rank===1) return fin(1);
+    if(rank===2) return single('J3・JFL入れ替え戦', fakeOpp(`${pick(CITY_NATION)} ${pick(SUFFIX)}（J3 19位）`, DIVS[3].base[0]+R(0,3)), 'away', 1, 0, '入れ替え戦を制してJ3昇格！ ついにJリーグへ！', '入れ替え戦に敗れ、J3昇格はならず…');
+    return fin(rank>=n-1 ? -1 : 0);
+  }
+  if(d===3 || d===4){
+    const nm = d===3 ? 'J2昇格プレーオフ' : 'J1昇格プレーオフ';
+    if(rank<=6 && !licOK){ noLic(); return fin(0); }
+    if(rank<=2) return fin(1);
+    if(rank<=6){ const os = 9-rank; P.queue.push({type:'po', semi:true, nm, label:`${nm} 準決勝`, opp:fakeOpp(P.seeds[os-1].name, P.seeds[os-1].str), oppSeed:os, where: rank<os?'home':'away', tie:'higher', big:true}); return P; }
+    if(d===3){
+      if(rank===n) return fin(-1);
+      if(rank===n-1) return single('J3・JFL入れ替え戦', fakeOpp(`${pick(CITY_NATION)}${pick(['製鉄','電機','自動車'])} FC（JFL 2位）`, DIVS[2].base[1]+R(-3,1)), 'home', 0, -1, '入れ替え戦に勝利し、J3残留！', '入れ替え戦に敗れ、JFLへ降格…');
+      return fin(0);
+    }
+    return fin(rank>=n-2 ? -1 : 0);
+  }
+  return fin(rank>=n-2 ? -1 : 0);
+}
+function clRound(P, r){
+  const name = r===1 ? '地域CL 1次ラウンド' : '地域CL 決勝ラウンド';
+  const opps = [regionalChamp(), regionalChamp(), regionalChamp()]; if(r===2) opps.forEach(o=>{ o.att+=2; o.def+=2; o.str+=2; });
+  P.cl = {r, name, tbl:[{name:S.club, me:true, pts:0, gd:0, p:0}, ...opps.map(o=>({name:o.name, o, pts:0, gd:0, p:0}))]};
+  opps.forEach((o,i)=>P.queue.push({type:'cl', label:`${name} 第${i+1}戦`, opp:o, where:'neutral', tie:null, big:r===2}));
+}
+function clTable(P){
+  const t = [...P.cl.tbl].sort((x,y)=>y.pts-x.pts||y.gd-x.gd);
+  return `<table style="margin-top:6px"><tr><th>#</th><th>${esc(P.cl.name)}</th><th class="num">試合</th><th class="num">勝点</th><th class="num">得失</th></tr>${t.map((x,i)=>`<tr class="${x.me?'me':''}"><td>${i+1}</td><td>${esc(x.name)}</td><td class="num">${x.p}</td><td class="num">${x.pts}</td><td class="num">${x.gd>0?'+':''}${x.gd}</td></tr>`).join('')}</table>`;
+}
+function postAfter(q, m){
+  const P = S.post, done = (v, line) => { P.moved = v; P.done = true; P.queue = []; P.lines.push(line); return line; };
+  if(q.type==='single') return done(m.win ? q.onWin : q.onLose, m.win ? q.winLine : q.loseLine);
+  if(q.type==='po'){
+    if(!m.win) return done(0, `${q.nm}は${q.semi?'準決勝':'決勝'}で敗退…`);
+    if(q.semi){
+      const other = q.oppSeed===6||P.rank===3 ? [4,5] : [3,6], f = other[Math.random()<0.55?0:1];
+      P.queue.push({type:'po', nm:q.nm, label:`${q.nm} 決勝`, opp:fakeOpp(P.seeds[f-1].name, P.seeds[f-1].str), where: P.rank<f?'home':'away', tie:'higher', big:true});
+      return `決勝進出！ 決勝の相手は${P.seeds[f-1].name}（${f}位）。${P.rank<f?'ホームで戦える。':'アウェイでの一戦。'}`;
+    }
+    return done(1, `${q.nm}を制して昇格！`);
+  }
+  // 地域CL
+  const T = P.cl.tbl, me = T[0], o = T.find(x=>x.o && x.o.name===q.opp.name);
+  me.p++; o.p++; me.gd += m.gu-m.go; o.gd += m.go-m.gu;
+  if(m.gu>m.go) me.pts+=3; else if(m.gu<m.go) o.pts+=3; else { me.pts++; o.pts++; }
+  // 同じ節の相手同士の試合
+  const others = T.slice(1).filter(x=>x!==o && x.p<me.p);
+  if(others.length>=2){ const [x,y] = others; const gx = poisson(lamN(x.o.att, y.o.def, 1)), gy = poisson(lamN(y.o.att, x.o.def, 1)); x.p++; y.p++; x.gd+=gx-gy; y.gd+=gy-gx; if(gx>gy) x.pts+=3; else if(gy>gx) y.pts+=3; else { x.pts++; y.pts++; } }
+  if(P.queue.some(x=>x.type==='cl')) return `${P.cl.name}：残り${P.queue.filter(x=>x.type==='cl').length}試合`;
+  const g = [...T].sort((x,y)=>y.pts-x.pts||y.gd-x.gd).findIndex(x=>x.me)+1;
+  if(P.cl.r===1){
+    if(g!==1) return done(0, `地域CLは1次ラウンド${g}位で敗退…`);
+    P.lastTable = clTable(P); clRound(P, 2);
+    return '1次ラウンドを1位で突破！ 決勝ラウンドへ（4チーム中上位2チームがJFL昇格）。';
+  }
+  return g<=2 ? done(1, `地域CL決勝ラウンド${g}位！ JFL昇格を決めた！`) : done(0, `地域CL決勝ラウンドは${g}位。あと一歩でJFL昇格を逃した…`);
+}
+function advancePost(){
+  const P = S.post, q = P.queue.shift();
+  const m = playSpecial(q.opp, q.where, q.tie, {big:q.big});
+  const after = postAfter(q, m);
+  P.log.push({label:q.label, opp:q.opp.name, where:q.where, gu:m.gu, go:m.go, res:m.res, win:m.win, note:noteOf(m)});
+  addNews(`【${q.label}】vs ${q.opp.name} ${m.gu}-${m.go}${noteOf(m)}`);
+  const promo = P.done && P.moved===1, rel = P.done && P.moved===-1;
+  if(q.type==='cl') m.win = null; // 総当たりは1試合ごとの勝ち負けで表示
+  Object.assign(m, {title:q.label, badge:q.type==='cl'?'地域CL':q.type==='po'?'プレーオフ':'入れ替え戦', after,
+    winWord: q.type==='single' && q.onWin===0 ? '残留！' : promo ? '昇格！' : '勝ち抜け！', loseWord: rel ? '降格…' : '敗退…',
+    table: q.type==='cl' ? (P.cl.r===2 && P.lastTable && !P.cl.tbl[0].p ? P.lastTable : clTable(P)) : ''});
+  save(); showSpecial(m);
+}
 function postseason(st, rank, report){
   const d = S.div, n = st.length, post = report.post, L = report.lines;
   const issues = licenseIssues(), licOK = d<TOP && issues.length===0;
@@ -2804,35 +2990,53 @@ const CUP = [
 const ISHIKAWA = ['小松','七尾','輪島','加賀','白山','能美','珠洲','羽咋','野々市','かほく','津幡','内灘'];
 function cupTime(i){ return new Date(2026 + S.season, CUP[i].m-1, CUP[i].d).getTime(); }
 function cupReset(){ S.cup = {next: S.div>=4 ? 3 : 0, alive:true, log:[]}; }
+const PREF_CITY = {富山:['富山','高岡','魚津','射水'], 福井:['福井','敦賀','鯖江','坂井'], 岐阜:['岐阜','大垣','多治見','高山'], 滋賀:['大津','草津','彦根','長浜'], 長野:['長野','松本','上田','飯田']};
 function cupOpp(i){
   if(i<=1) return fakeOpp(`${pick(ISHIKAWA)} ${pick(SUFFIX)}`, DIVS[1].base[0] + R(-3,8));
-  if(i===2) return fakeOpp(`${pick(CITY_NATION)} ${pick(SUFFIX)}（${pick(['富山','福井','岐阜','滋賀','長野'])}県代表）`, DIVS[1].base[1] + R(-6,5));
+  if(i===2){ const pf = pick(Object.keys(PREF_CITY)); return fakeOpp(`${pick(PREF_CITY[pf])} ${pick(SUFFIX)}（${pf}県代表）`, DIVS[1].base[1] + R(-6,5)); }
   if(i===3){ const d = Math.random()<0.5 ? 4 : 5; const b = DIVS[d].base; return fakeOpp(`${genTeam(d).name}（${DIVS[d].short}）`, (b[0]+b[1])/2 + R(-3,3)); }
   const b = DIVS[5].base; return fakeOpp(`${genTeam(5).name}（J1）`, (b[0]+b[1])/2 + (i-4)*1.5 + R(-3,4));
 }
-function playCupRound(i){
+function cupWhere(i){ return i>=3 && i<=6 ? (S.div>=4 ? 'home' : 'away') : 'neutral'; } // 本戦はJ1・J2クラブの本拠地で行われることが多い
+function cupNextOpp(){ const c = S.cup; if(!c.opp || c.oppFor!==c.next){ c.opp = cupOpp(c.next); c.oppFor = c.next; } return c.opp; }
+function cupTitle(i){ return CUP[i].name.startsWith('天皇杯') ? CUP[i].name : `天皇杯 ${CUP[i].name}`; }
+// 天皇杯の結果を反映（試合の中身は playSpecial か quickMatch）
+function cupApply(i, opp, gu, go, win, note){
   const c = S.cup, R_ = CUP[i];
-  const opp = cupOpp(i);
-  const where = i===3 && S.div<4 ? 'away' : 'neutral';
+  const upset = win && opp.str > teamRating(getLineup(true)).ovr + 5;
+  const line = `【天皇杯】${R_.name} vs ${opp.name} ${gu}-${go}${note} ${win ? (R_.final ? '天皇杯優勝！！' : upset ? '大金星！' : '勝利') : '敗退'}`;
+  c.log.push(line); addNews(line);
+  const after = [];
+  c.opp = null;
+  if(win){
+    if(R_.prize){ earn(R_.prize * (R_.final?3:1), 'prize'); after.push(`賞金 ${yen(R_.prize * (R_.final?3:1))}`); }
+    if(upset){ changeFans(0.05, 50); S.trust = clamp(S.trust+4,0,100); supp().mood = clamp(supp().mood+8,0,100); after.unshift('格上を倒す大金星！ 金沢の街が沸いている（ファン・信頼・サポーターの熱量アップ）'); }
+    if(R_.final){ S.cupWins = (S.cupWins||0)+1; changeFans(0.2, 300); S.trust = clamp(S.trust+20,0,100); after.unshift('天皇杯を制覇！ クラブの歴史に名を刻んだ！'); }
+    c.next = i+1; if(c.next>=CUP.length) c.alive = false;
+    if(c.alive){ const o = cupNextOpp(), nx = CUP[c.next]; const t = `${cupTitle(c.next)}（${nx.m}/${nx.d}）の相手は ${o.name} に決まった。`; after.push(t); addNews(`【天皇杯】抽選の結果、${t}`); }
+  } else {
+    c.alive = false;
+    if(i>=6 && R_.prize){ earn(Math.round(R_.prize*0.5), 'prize'); after.push(`ベスト8以上の賞金 ${yen(Math.round(R_.prize*0.5))}`); } // ベスト8以上で敗退しても賞金
+    after.push(`天皇杯は${R_.name.replace('天皇杯 ','')}で姿を消した。`);
+  }
+  c.best = Math.max(c.best??-1, win ? i+1 : i);
+  return {line, after:after.join('\n')};
+}
+// 画面を通さずに天皇杯を消化する（取りこぼし用）
+function playCupRound(i){
+  const opp = cupNextOpp(), where = cupWhere(i);
   const m = quickMatch(opp, where);
   let win = m.gu>m.go, note = '';
   if(m.gu===m.go){ win = Math.random()<0.5; note = `（延長・PK戦 ${win?'勝利':'敗戦'}）`; }
-  const upset = win && opp.str > teamRating(getLineup(true)).ovr + 5;
-  const line = `【天皇杯】${R_.name} vs ${opp.name} ${m.gu}-${m.go}${note} ${win ? (R_.final ? '天皇杯優勝！！' : upset ? '大金星！' : '勝利') : '敗退'}`;
-  queueMatch({title:R_.name.startsWith('天皇杯') ? R_.name : `天皇杯 ${R_.name}`, opp:opp.name, where, gu:m.gu, go:m.go, note, win, final:!!R_.final, after: win && upset ? '格上を倒す大金星！' : ''});
-  c.log.push(line); addNews(line);
   getLineup(true).forEach(s=>{ if(!s.p.ghost) s.p.cond = clamp(s.p.cond-10, 30, 100); });
-  if(win){
-    if(R_.prize) earn(R_.prize * (R_.final?3:1), 'prize');
-    if(upset){ changeFans(0.05, 50); S.trust = clamp(S.trust+4,0,100); supp().mood = clamp(supp().mood+8,0,100); }
-    if(R_.final){ S.cupWins = (S.cupWins||0)+1; changeFans(0.2, 300); S.trust = clamp(S.trust+20,0,100); }
-    c.next = i+1; if(c.next>=CUP.length) c.alive = false;
-  } else {
-    c.alive = false;
-    if(i>=6 && R_.prize) earn(Math.round(R_.prize*0.5), 'prize'); // ベスト8以上で敗退しても賞金
-  }
-  c.best = Math.max(c.best??-1, win ? i+1 : i);
-  return line;
+  return cupApply(i, opp, m.gu, m.go, win, note).line;
+}
+function advanceCup(i){
+  const opp = cupNextOpp(), where = cupWhere(i);
+  const m = playSpecial(opp, where, 'pk', {rotate:S.cupRotate, big:i>=5});
+  const r = cupApply(i, opp, m.gu, m.go, m.win, noteOf(m));
+  Object.assign(m, {title:cupTitle(i), badge:'天皇杯', final:!!CUP[i].final, after:r.after});
+  save(); showSpecial(m);
 }
 function fireCup(all){
   if(!S.cup) cupReset();
@@ -3148,7 +3352,7 @@ function renderTitle(){
 
 function render(){
   if(!S){ renderTitle(); return; }
-  const nm = nextMatch();
+  const nm = nextMatch(), fx = nextFixture();
   const ni = S.inbox.length;
   normalizeNav();
   const G = groupOf(ui.tab);
@@ -3197,16 +3401,41 @@ function render(){
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
   f.innerHTML = `<div class="footer-inner">
-    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">報告${ni}件</a>　`:''}${isOff() ? `${S.offChoice&&!S.offChoice.picked?'<b class="minus">決断待ち</b>　':''}オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
-    ${isOff() ? `<button class="go" data-act="advance">${S.offWeek>=OFF_WEEKS-1?'開幕へ ▶':'次の週へ ▶'}</button>` : nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
+    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">報告${ni}件</a>　`:''}${isOff() ? `${S.offChoice&&!S.offChoice.picked?'<b class="minus">決断待ち</b>　':''}オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : fx && fx.kind==='cup' ? `<b>${esc(cupTitle(fx.i))}</b> vs ${esc(cupNextOpp().name)}` : fx && fx.kind==='post' ? `<b>${esc(fx.q.label)}</b> vs ${esc(fx.q.opp.name)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
+    ${isOff() ? `<button class="go" data-act="advance">${S.offWeek>=OFF_WEEKS-1?'開幕へ ▶':'次の週へ ▶'}</button>` : fx && fx.kind==='cup' ? `<button class="go" data-act="advance">天皇杯へ ▶</button>` : fx && fx.kind==='post' ? `<button class="go" data-act="advance">決戦へ ▶</button>` : nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
   </div>`;
 }
 
+function specialCard(fx, rt){
+  const opp = fx.kind==='cup' ? cupNextOpp() : fx.q.opp;
+  const oppO = (opp.att+opp.def)/2, diff = rt.ovr - oppO;
+  const word = diff>6?'格下':diff>2?'やや格下':diff>-2?'互角':diff>-6?'やや格上':'格上';
+  const where = fx.kind==='cup' ? cupWhere(fx.i) : fx.q.where;
+  const title = fx.kind==='cup' ? cupTitle(fx.i) : fx.q.label;
+  const date = fx.kind==='cup' ? `${CUP[fx.i].m}/${CUP[fx.i].d}・` : '';
+  const tie = fx.kind==='cup' || fx.q.tie==='pk' ? '一発勝負。90分で決着がつかなければ延長戦、それでも同点ならPK戦。' : fx.q.tie==='higher' ? '一発勝負。延長戦はなく、引き分けならリーグ戦の上位チームが勝ち抜け。' : '4チームの総当たり。順位で次に進めるかが決まる。';
+  const stake = fx.kind==='cup' ? (CUP[fx.i].prize ? `勝てば賞金 ${yen(CUP[fx.i].prize*(CUP[fx.i].final?3:1))}。` : oppO > rt.ovr+5 ? '勝てば大金星。' : '')
+    : fx.q.type==='single' ? (fx.q.onWin===1 ? '勝てば昇格。' : '負ければ降格。') : fx.q.type==='po' ? '勝ち上がれば昇格。' : '';
+  return `<div class="card matchcard special" style="margin-top:12px"><h3><span class="tag xi">${fx.kind==='cup'?'天皇杯':fx.q.type==='cl'?'地域CL':fx.q.type==='po'?'プレーオフ':'入れ替え戦'}</span> ${esc(title)}</h3>
+    <p class="small muted" style="margin:0 0 6px">${date}${where==='home'?'ホーム（金沢）':where==='away'?'アウェイ':'中立地'}</p>
+    <div class="vs"><div class="side"><div class="nm">${esc(S.club)}</div><div class="small muted">総合 ${rt.ovr.toFixed(1)}</div></div>
+    <div class="x">VS</div>
+    <div class="side"><div class="nm">${esc(opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}</div></div></div>
+    <p class="small" style="text-align:center;margin:8px 0 0">相手は<b>${word}</b>。${stake}</p>
+    <p class="small muted" style="text-align:center;margin:2px 0 0">${tie}</p>
+    ${fx.kind==='post' && fx.q.type==='cl' ? clTable(S.post) : ''}
+    ${fx.kind==='cup' ? `<div class="seg" style="justify-content:center;margin-top:8px"><button class="${S.cupRotate?'':'on'}" data-act="cupRot" data-arg="0">主力で臨む</button><button class="${S.cupRotate?'on':''}" data-act="cupRot" data-arg="1">ターンオーバー</button></div>
+      <p class="small muted" style="text-align:center;margin:4px 0 0">${S.cupRotate?'主力6人を休ませ、控え組にチャンスを与える（主力の調子が回復・控えの士気が上がる）。':'ベストメンバーで勝ちにいく。主力の疲労はたまる。'}</p>` : ''}
+  </div>`;
+}
 function renderHome(){
   const nm = nextMatch(); const xi=getLineup(); const rt=teamRating(xi);
   const rank = myRank(); const st = standings();
+  const fx = nextFixture();
   let match = '';
-  if(nm){
+  if(fx && (fx.kind==='cup' || fx.kind==='post')){
+    match = specialCard(fx, rt);
+  } else if(nm){
     const oppO = (nm.opp.att+nm.opp.def)/2;
     const diff = rt.ovr - oppO;
     const word = diff>6?'格下':diff>2?'やや格下':diff>-2?'互角':diff>-6?'やや格上':'格上';
@@ -3552,7 +3781,6 @@ function showMatch(m, fin, d){
       ${m.ratings&&m.ratings[0]?`<p class="small" style="margin:8px 0 0">MVP：<b>${esc(m.ratings[0].p.name)}</b>（評価 ${m.ratings[0].r.toFixed(1)}）</p>
         <details class="small"><summary>出場選手の評価</summary><div class="kv">${m.ratings.map(x=>`<span>${esc(x.p.name)}${x.g?`（${x.g}得点）`:''}</span><span class="v ${x.r>=7?'plus':x.r<5.5?'minus':''}">${x.r.toFixed(1)}</span>`).join('')}</div></details>`:''}
       ${d.ac?`<p class="small muted" style="margin:6px 0 0">${esc(d.ac)}</p>`:''}
-      ${d.cup&&d.cup.length?`<div class="warn">今週は天皇杯の試合もあります（続けると観戦）</div>`:''}
       ${d.ev?`<div class="warn">${esc(d.ev)}</div>`:''}
       ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}`;
     document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="matchDone">続ける</button>`;
@@ -3563,7 +3791,7 @@ function showMatch(m, fin, d){
 
 function showSeasonEnd(){
   const rep = endSeason();
-  runQueue(()=>seasonEndModal(rep));
+  seasonEndModal(rep);
 }
 function seasonEndModal(rep){
   const head = rep.champion ? 'J1優勝！ 金沢から日本一へ！' : rep.moved===1 && rep.div===1 ? 'JFL昇格！ 全国リーグへ！' : rep.moved===1 ? `${DIVS[rep.div+1].name}へ昇格！` : rep.moved===-1 ? `${DIVS[rep.div-1].name}へ降格…` : `${DIVS[rep.div].name} 残留`;
@@ -3606,8 +3834,8 @@ const ACTIONS = {
   national(){ buyNational(); },
   advance(){ advance(); },
   skip(){ ui.finishMatch && ui.finishMatch(); },
-  matchDone(){ closeModal(); runQueue(()=>{ render(); if(S.over) showGameOver(); else if(S.round>=nr()) showSeasonEnd(); }); },
-  extraDone(){ closeModal(); const t = ui.mqThen; runQueue(t); },
+  matchDone(){ closeModal(); render(); if(S.over) showGameOver(); else if(nextFixture()?.kind==='end') showSeasonEnd(); },
+  cupRot(a){ S.cupRotate = a==='1'; save(); render(); },
   season(){ showSeasonEnd(); },
   seasonDone(){ closeModal(); render(); if(S.over) showGameOver(); },
   set(a){ const [k,v]=a.split(':'); S[k]=v; save(); render(); },
