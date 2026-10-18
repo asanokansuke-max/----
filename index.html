@@ -250,6 +250,9 @@ ol.rank{margin:0;padding:0;list-style:none}
 ol.rank li{display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px dashed var(--line);font-size:13.5px}
 ol.rank .rk{width:18px;color:var(--muted);font-variant-numeric:tabular-nums}
 ol.rank li span:nth-child(2){flex:1;min-width:0}
+.decide{border:1.5px solid var(--gold)}
+.decide.done{border-color:var(--line);opacity:.85}
+.dopts{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -565,6 +568,7 @@ function teamRating(xi){
   const m = S.staff.manager;
   const mb = m ? (m.abil-45)/10 + (m.style===S.tactic?1.5:0) : -3;
   const re = roleEffect(xi);
+  if(S.tacBonus===S.season){ re.att += 0.8; re.def += 0.8; } // キャンプで戦術を浸透させた
   const att = FW*0.5 + MF*0.38 + DF*0.12 + f.att + mb + re.att;
   const def = DF*0.48 + GK*0.27 + MF*0.25 + f.def + mb + re.def;
   return {att, def, ovr:(att+def)/2, roles:re};
@@ -748,11 +752,13 @@ function genCandidate(kind){
   const b = DIVS[S.div].base; const mid=(b[0]+b[1])/2;
   const sc = S.fac.scout;
   const foreign = Math.random()<0.12;
-  const age = kind==='free' ? RI(25,34) : RI(18,33);
-  let ovr = mid + (sc-1)*3 + R(-13,7) + (foreign?4:0);
+  const fz = isOff() && S.focus ? S.focus : null; // オフの補強方針
+  const age = kind==='free' ? RI(25,34) : fz==='young' ? RI(18,22) : fz==='ready' ? RI(28,33) : RI(18,33);
+  let ovr = mid + (sc-1)*3 + R(-13,7) + (foreign?4:0) + (fz==='ready'?4:0);
   if(Math.random()<0.08) ovr += R(5,10); // 掘り出し物
   const pot = age<=21 ? ovr+R(4,16+sc*2) : age<=25 ? ovr+R(1,8+sc) : age<=28 ? ovr+R(0,3) : ovr;
-  const p = makePlayer(randPos(), ovr, age, pot, foreign);
+  const pos = fz==='att' && Math.random()<0.75 ? pick(['FW','MF']) : fz==='def' && Math.random()<0.75 ? pick(['DF','DF','GK']) : randPos();
+  const p = makePlayer(pos, ovr, age, pot, foreign);
   p.fee = Math.round(playerValue(p) * (foreign?1.15:1));
   if(kind==='free'){ p.fee = 0; p.free = true; p.salary = Math.round(p.salary*1.35); p.bio = pick(FREE_BIOS); }
   return p;
@@ -900,7 +906,8 @@ function endSeason(){
   startSeason();
   refreshMarket(6);
   for(let i=0;i<3;i++) S.market.push(genCandidate('free')); // オフの契約満了組
-  S.phase = 'off'; S.offWeek = 0; S.camp = null;
+  S.phase = 'off'; S.offWeek = 0; S.camp = null; S.focus = null; S.declare = null; S.declareUp = false; S.preOpp = null;
+  makeOffChoice();
   addNews(`オフシーズンに入った。開幕は${OFF_WEEKS}週後。`);
   if(S.trust<=0) S.over='fired';
   save();
@@ -1729,10 +1736,13 @@ const OFF_EVENTS = [
   w=>campDay(),
   w=>campDay(true),
   w=>{ // プレシーズンマッチ
-    const lv = clamp(S.div + RI(0,1), 1, TOP);
+    const j1 = S.preOpp==='j1';
+    if(j1) spend(Math.round(300*(1+econ()*0.3)), 'other');
+    const lv = j1 ? TOP : clamp(S.div + RI(0,1), 1, TOP);
     const opp = fakeOpp(`${genTeam(lv).name}（${DIVS[lv].short}）`, (DIVS[lv].base[0]+DIVS[lv].base[1])/2);
     const m = quickMatch(opp, 'home');
-    const att = Math.round(Math.min(CAP[S.fac.stadium-1], S.fans * R(0.5, 0.8)));
+    if(j1) boostMor(S.players, m.gu>=m.go ? 6 : 2);
+    const att = Math.round(Math.min(CAP[S.fac.stadium-1], S.fans * R(0.5, 0.8) * (j1?1.6:1)));
     const inc = Math.round(att * DIVS[S.div].ticket * 0.8 / 10000); earn(inc, 'ticket');
     const f = changeFans(0.02, 20);
     return [`プレシーズンマッチ vs ${opp.name} ${m.gu}-${m.go}。ファン感謝デーには${att.toLocaleString()}人が来場（収入 ${yen(inc)}・ファン +${f}人）。`];
@@ -1770,6 +1780,7 @@ function computeTarget(){
   if(S.div===1 && S.season===1) S.target = Math.max(S.target, 6);
 }
 function advanceOff(){
+  if(S.offChoice && !S.offChoice.picked){ const o = OFF_DECISIONS[S.offChoice.w].opts(S.offChoice); if(o.length) pickOffChoice(o[o.length-1][0]); }
   const before = {money:S.money, fans:S.fans};
   expireReports();
   const w = S.offWeek;
@@ -1779,6 +1790,7 @@ function advanceOff(){
   refreshMarket(3);
   weeklyBids();
   S.offWeek++;
+  makeOffChoice();
   checkTrip();
   S.visitsLeft = salesTeam().length;
   lines.forEach(l=>addNews(l));
@@ -1789,6 +1801,10 @@ function advanceOff(){
     S.sponsor = Math.round(DIVS[S.div].sponsor*0.8 + S.fans*2);
     prospectsKickoff();
     computeTarget();
+    if(S.declareUp) S.target = Math.max(1, S.target-1);
+    if(S.declare==='bold'){ S.target = Math.max(1, S.target-1); S.trust = clamp(S.trust+5,0,100); changeFans(0.02,20); }
+    if(S.declare==='modest'){ S.target = Math.min(S.teams.length-1, S.target+1); S.trust = clamp(S.trust-2,0,100); }
+    S.offChoice = null; S.focus = null;
     S.players.forEach(p=>{ p.cond = Math.max(p.cond, 90); });
     addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
   }
@@ -1949,7 +1965,7 @@ function injuryRisk(p){
   const ageF = p.age>=33 ? 1.5 : p.age>=30 ? 1.25 : 1;
   const re = p.reRisk && tick() < p.reRisk.until ? p.reRisk.mult : 1;
   const med = (1 - (S.fac.medical-1)*0.12) * (1.15 - staffAb('physical')/250);
-  return condF * ageF * re * med;
+  return condF * ageF * re * med * (S.fitSeason===S.season ? 0.85 : 1);
 }
 function injLabel(p){ return p.injury ? (p.injury.part ? `${p.injury.part}の${p.injury.name}` : p.injury.name) : '負傷'; }
 function injure(p, cause){
@@ -2661,6 +2677,95 @@ function cupStatus(){
   return c.log.length ? c.log[c.log.length-1].replace('【天皇杯】','') : '—';
 }
 
+// ===================== オフシーズンの「今週の決断」 =====================
+// 各週ひとつ、GMが選ぶ決断。選ばずに週を進めると、いちばん下の選択肢になる。
+const FOCUS = {att:'攻撃陣（FW・MF）', def:'守備陣（DF・GK）', young:'若手の有望株', ready:'即戦力のベテラン'};
+const OFF_DECISIONS = [
+  { // 12月上旬：補強方針
+    title:'今オフの補強方針を決める', body:()=>'移籍市場に並ぶ選手の傾向が、ここで決めた方針に寄っていきます。',
+    opts:()=>[['att','攻撃陣を厚くする','FW・MFの候補が増える'],['def','守備を固める','DF・GKの候補が増える'],['young','若手を集める','伸びしろのある若手が増える'],['ready','即戦力を狙う','能力の高いベテランが増える']],
+    apply:k=>{ S.focus = k; S.market.forEach(p=>p.stale=true); refreshMarket(6); return `補強方針を「${FOCUS[k]}」に決定。移籍市場の顔ぶれが入れ替わった。`; } },
+  { // 12月中旬：目玉選手
+    title:'移籍市場の目玉選手', body:d=>{ const p = S.market.find(x=>x.id===d.fid); return p ? `${p.name}（${p.pos}・${p.age}歳・能力${Math.round(p.ovr)}）が移籍先を探しています。他クラブも狙っている注目株です。移籍金は約${yen(p.fee)}。` : '目玉選手はすでに移籍先が決まった。'; },
+    init:d=>{ const p = genCandidate('normal'); p.ovr += 7; p.pot = Math.max(p.pot, p.ovr+2); p.salary = calcSalary(p.ovr); p.fee = playerValue(p); p.featured = true; S.market.unshift(p); d.fid = p.id; },
+    opts:()=>[['go','獲得に動く（交渉へ）','交渉画面が開く'],['skip','今回は見送る','']],
+    apply:(k,d)=>{ if(k==='go'){ setTimeout(()=>openNego('market', d.fid), 0); return '目玉選手との交渉を始める。'; } return '目玉選手の獲得は見送った。'; } },
+  { // 12月下旬：トライアウト
+    title:'合同トライアウトで光った選手', body:()=>'トライアウトでスカウトの目に留まった3人です。移籍金はかからず、年俸も安く1年契約で獲得できます（1人まで）。',
+    init:d=>{ d.list = [0,1,2].map(()=>{ const p = genCandidate('free'); p.salary = Math.round(p.salary*0.5); p.ovr += R(-2,4); p.bio='合同トライアウト参加'; return p; }); },
+    opts:d=>[...d.list.map(p=>[p.id, `${p.name}（${p.pos}・${p.age}歳・能力${Math.round(p.ovr)}）`, `年俸 ${yen(p.salary)}・${roleShort(p)}`]), ['skip','誰も獲らない','']],
+    apply:(k,d)=>{ const p = d.list.find(x=>x.id===k); if(!p) return 'トライアウトからの獲得は見送った。';
+      if(S.players.length>=26) return '登録枠がいっぱいで獲得できなかった。';
+      delete p.fee; p.free = false; p.contract = 1; p.cond = 85; S.players.push(p); return `トライアウト組から${p.name}を獲得！「拾ってくれたクラブに恩返しを」`; } },
+  { // 1月上旬：スローガン
+    title:'新体制発表会で掲げるスローガン', body:()=>'今季のクラブスローガンを発表します。チームの雰囲気や評価に影響します。',
+    opts:()=>[['jump','「昇格」を正面から掲げる','フロントの信頼+5。ただし目標順位が1つ上がる'],['unite','「結束」','選手全員の士気が上がる'],['grow','「育成」','今季は若手の成長が早まる'],['fans','「金沢とともに」','ファンが増える']],
+    apply:k=>{
+      if(k==='jump'){ S.trust = clamp(S.trust+5,0,100); S.declareUp = true; return 'スローガンは「昇格」。サポーターから大きな拍手が起きた。'; }
+      if(k==='unite'){ boostMor(S.players, 6); return 'スローガンは「結束」。選手たちの表情が引き締まった。'; }
+      if(k==='grow'){ S.mentor = S.season; return 'スローガンは「育成」。若手が伸び伸びとプレーできる環境に。'; }
+      const f = changeFans(0.03, 40); return `スローガンは「金沢とともに」。地元メディアでも好意的に報じられた（ファン +${f}人）。`; } },
+  { // 1月中旬：自主トレ
+    title:'若手の自主トレ方針', body:()=>'年明けの自主トレ期間、若手選手の過ごし方をクラブとして提案します。',
+    opts:()=>[['abroad',`海外で自主トレ（${yen(Math.round(200*(1+econ()*0.4)))}）`,'若手が大きく伸びる'],['join','ベテランとの合同自主トレを勧める','若手が少し伸び、士気も上がる'],['rest','しっかり休ませる','調子とけがのリスクを優先']],
+    apply:k=>{ const kids = S.players.filter(p=>p.age<=23 && !p.loan);
+      if(k==='abroad'){ spend(Math.round(200*(1+econ()*0.4)),'camp'); kids.forEach(p=>p.ovr=Math.min(p.pot, p.ovr+Math.max(0,p.pot-p.ovr)*0.06)); return `若手${kids.length}人がスペインで自主トレ。たくましくなって帰ってきた。`; }
+      if(k==='join'){ kids.forEach(p=>{ p.ovr=Math.min(p.pot, p.ovr+Math.max(0,p.pot-p.ovr)*0.03); p.mor=clamp((p.mor??60)+4,0,100); }); return '若手がベテランの自主トレに参加。プロの準備の仕方を学んだ。'; }
+      S.players.forEach(p=>p.cond=100); return '若手にはしっかり休んでもらった。全員が万全の状態で始動を迎える。'; } },
+  { // 1月下旬：キャプテン
+    title:'今季のキャプテンを指名する', body:()=>'チームの顔となるキャプテンを決めます。人選でチームの雰囲気が変わります。',
+    init:d=>{ d.cands = [...S.players].filter(p=>!p.loan && !p.amateur).sort((a,b)=>(b.age*0.6+(b.mor??60)*0.3+b.ovr*0.3)-(a.age*0.6+(a.mor??60)*0.3+a.ovr*0.3)).slice(0,3).map(p=>p.id); },
+    opts:d=>[...d.cands.map(id=>{ const p=S.players.find(x=>x.id===id); return p ? [id, `${p.name}（${p.pos}・${p.age}歳）`, p.age>=30?'経験豊富なベテラン':p.age<=24?'若きリーダー。本人も成長する':'チームの中心選手'] : null; }).filter(Boolean)],
+    apply:(k)=>{ const p = S.players.find(x=>x.id===k); if(!p) return 'キャプテンは昨季のまま。';
+      S.players.forEach(x=>x.captain=false); p.captain = true; p.mor = clamp((p.mor??60)+12,0,100); boostMor(S.players.filter(x=>x!==p), 3);
+      if(p.age<=24) p.ovr = Math.min(p.pot, p.ovr+1.5);
+      return `今季のキャプテンは${p.name}に決定。「金沢のために全力で戦います」`; } },
+  { // 2月上旬：キャンプ前半のテーマ
+    title:'キャンプ前半のテーマ', body:()=>'キャンプ前半の練習で何を重視するかを決めます。',
+    opts:()=>[['phys','フィジカル強化','全員の調子が整い、今季のけがが少し減る'],['tac','戦術の浸透','役割の転向が完了し、今季の戦力が少し上がる'],['youth','若手のテスト','若手に多く出番を与え、成長させる']],
+    apply:k=>campTheme(k) },
+  { // 2月中旬：キャンプ後半のテーマ
+    title:'キャンプ後半のテーマ', body:()=>'仕上げの1週間。前半と同じテーマを続けることもできます。',
+    opts:()=>[['phys','フィジカル強化','調子を整え、けがを減らす'],['tac','戦術の浸透','今季の戦力が少し上がる'],['youth','若手のテスト','若手を成長させる']],
+    apply:k=>campTheme(k) },
+  { // 2月下旬：プレシーズンマッチの相手
+    title:'プレシーズンマッチの相手を決める', body:()=>'ホームで行うプレシーズンマッチ（ファン感謝デー）の対戦相手です。',
+    opts:()=>[['j1',`J1クラブを招待（招待料 ${yen(Math.round(300*(1+econ()*0.3)))}）`,'観客が大きく増え、選手も刺激を受ける'],['local','近隣のクラブと','費用はかからず、手堅く仕上げられる']],
+    apply:k=>{ S.preOpp = k; return k==='j1' ? 'J1クラブとのプレシーズンマッチが決まった！チケットの売れ行きも好調。' : '近隣クラブとのプレシーズンマッチに決まった。'; } },
+  { // 3月上旬：開幕宣言
+    title:'開幕前の記者会見での宣言', body:()=>'キックオフイベントの記者会見で、今季の目標をどう語りますか？',
+    opts:()=>[['bold','「必ず昇格します」と強気に','ファンが増え信頼も上がるが、目標順位が上がる'],['normal','「一戦一戦、全力で」','特に影響なし'],['modest','「まずは足元を固めます」と控えめに','目標順位が下がるが、フロントの信頼は少し下がる']],
+    apply:k=>{ S.declare = k; return k==='bold' ? '強気の宣言に会場が沸いた！' : k==='modest' ? '控えめな宣言に、記者からは厳しい質問も。' : '落ち着いた宣言で会見を終えた。'; } },
+];
+function campTheme(k){
+  if(k==='phys'){ S.players.forEach(p=>p.cond=100); S.fitSeason = S.season; return 'フィジカル強化で体をいじめ抜いた。今季はけがが少し減りそうだ。'; }
+  if(k==='tac'){ S.players.forEach(p=>p.roleNew=0); S.tacBonus = S.season; return '戦術練習で連係が深まった。役割の転向も完了し、今季の戦力が上がった。'; }
+  const kids = S.players.filter(p=>p.age<=22 && !p.loan); kids.forEach(p=>{ p.ovr=Math.min(p.pot, p.ovr+Math.max(0,p.pot-p.ovr)*0.04); p.mor=clamp((p.mor??60)+5,0,100); });
+  return `若手${kids.length}人に練習試合で多く出番を与えた。手応えをつかんだ選手も。`;
+}
+function makeOffChoice(){
+  const w = S.offWeek, D = OFF_DECISIONS[w];
+  if(!D){ S.offChoice = null; return; }
+  const d = {w, picked:null, result:null};
+  if(D.init) D.init(d);
+  S.offChoice = d;
+}
+function pickOffChoice(k){
+  const d = S.offChoice; if(!d || d.picked) return;
+  const D = OFF_DECISIONS[d.w];
+  d.picked = k; d.result = D.apply(k, d);
+  addNews(`【決断】${d.result}`);
+  save(); render();
+}
+function renderOffChoice(){
+  const d = S.offChoice; if(!d) return '';
+  const D = OFF_DECISIONS[d.w];
+  if(d.picked) return `<div class="card decide done"><div class="rep-from">今週の決断（済）</div><h4>${esc(D.title)}</h4><p class="small" style="margin:0">${esc(d.result||'')}</p></div>`;
+  return `<div class="card decide"><div class="rep-from">今週の決断</div><h4>${esc(D.title)}</h4><p class="small" style="margin:0 0 8px">${esc(D.body(d))}</p>
+    <div class="dopts">${D.opts(d).map(([k,l,desc])=>`<button class="opt" data-act="offPick" data-arg="${k}"><b>${esc(l)}</b>${desc?`<span>${esc(desc)}</span>`:''}</button>`).join('')}</div>
+    <p class="small muted" style="margin:6px 0 0">選ばずに次の週へ進むと、いちばん下の選択肢になります。</p></div>`;
+}
+
 // ===================== 旧セーブ互換 =====================
 function migrate(s){
   if(!s.v || s.v<2){ // 旧版は金額が実際の約1/10だったので補正
@@ -2684,6 +2789,7 @@ function migrate(s){
   }
   s.v = Math.max(s.v||0, 4);
   s.supp ??= {mood:55};
+  if(s.phase==='off' && s.offChoice===undefined){ S = s; makeOffChoice(); }
   if(!s.cup) s.cup = {next: 99, alive:false, log:[]}; // 途中のシーズンは天皇杯なし（次のシーズンから参加）
   s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
   s.visitsLeft ??= 1; s.watchLeft ??= 1; s.mentor ??= 0; s.cfSeason ??= 0;
@@ -2800,7 +2906,7 @@ function render(){
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
   f.innerHTML = `<div class="footer-inner">
-    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">報告${ni}件</a>　`:''}${isOff() ? `オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
+    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">報告${ni}件</a>　`:''}${isOff() ? `${S.offChoice&&!S.offChoice.picked?'<b class="minus">決断待ち</b>　':''}オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
     ${isOff() ? `<button class="go" data-act="advance">${S.offWeek>=OFF_WEEKS-1?'開幕へ ▶':'次の週へ ▶'}</button>` : nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
   </div>`;
 }
@@ -2833,7 +2939,7 @@ function renderHome(){
   const repCard = S.inbox.length ? `<div class="reports" id="reports" style="grid-column:1/-1"><h3 class="grp">報告（${S.inbox.length}件）<span class="muted small">　返答しないまま2週進めると、いちばん下の選択肢で自動処理</span></h3><div class="grid g2" style="margin-top:0">${reportCards()}</div></div>` : '';
   return `${match}
   ${renderMenu()}
-  <div class="card-scroll" data-keep="home" style="margin-top:10px"><div class="grid g2" style="margin-top:0">${repCard}
+  <div class="card-scroll" data-keep="home" style="margin-top:10px"><div class="grid g2" style="margin-top:0">${isOff()?`<div style="grid-column:1/-1">${renderOffChoice()}</div>`:''}${repCard}
     <div class="card"><h3>クラブ状況</h3>
       <div class="kv">
         <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
@@ -2876,7 +2982,7 @@ function renderSquad(){
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
       <td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td>
-      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.listed?'<span class="tag inj">放出候補</span>':''}</div></td>
+      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.listed?'<span class="tag inj">放出候補</span>':''}${p.captain?'<span class="tag xi">主将</span>':''}</div></td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span><div class="pstars">${stars(p)}</div></td>
       <td class="pstate"><div class="bar ${p.cond>70?'':'gold'}" title="調子 ${Math.round(p.cond)}"><i style="width:${p.cond}%"></i></div><span title="士気 ${Math.round(p.mor??60)}">${moraleFace(p.mor??60)}</span></td>
@@ -3229,6 +3335,7 @@ const ACTIONS = {
   list(a){ toggleList(a); },
   reg2(a){ ui.flash=a; register2(a); },
   player(a){ showPlayer(a); },
+  offPick(a){ pickOffChoice(a); },
   role(a){ const [id,r]=a.split('|'); changeRole(id,r); },
   stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
