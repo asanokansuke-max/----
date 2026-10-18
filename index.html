@@ -181,6 +181,15 @@ td.pcell .pname{text-decoration:underline;text-decoration-color:var(--line);text
 .seg.scrollx{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;overscroll-behavior:none;margin-top:0}
 .seg.scrollx::-webkit-scrollbar{display:none}
 .seg.scrollx button{flex:none}
+.nego-log{list-style:none;margin:0 0 10px;padding:8px 10px;max-height:150px;overflow-y:auto;background:var(--panel2);border-radius:8px;font-size:13px;overscroll-behavior:none}
+.nego-log li{padding:3px 0}
+.nego-log .nl-me{color:var(--indigo)}
+.nego-log .nl-info{color:var(--muted);font-size:12px}
+.nego-wait{text-align:center;padding:14px 0}
+.nego-wait p{margin:10px 0 0;color:var(--muted)}
+.spin{width:28px;height:28px;margin:0 auto;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -617,6 +626,7 @@ function payWeekly(home){
 }
 
 function advance(){
+  if(S && !S.over) ui.tab = 'home'; // 日程を進めたらホームに戻る
   if(S && !S.over && isOff()) return advanceOff();
   if(!S || S.over || S.round>=ROUNDS) return;
   const before = {money:S.money, fans:S.fans};
@@ -1143,7 +1153,7 @@ function offerProspect(id){
 }
 function joinAmateur(pr, type){
   const p = makePlayer(pr.pos, pr.ovr, pr.age, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=78;
-  p.proSalary = Math.round(p.salary*0.8); p.salary = 0; p.amateur = type; // アマチュア登録中は年俸なし
+  p.proSalary = pr.proSal || Math.round(p.salary*0.8); p.salary = 0; p.amateur = type; // アマチュア登録中は年俸なし
   S.players.push(p); pr.status = 'joined';
   return p;
 }
@@ -1166,7 +1176,7 @@ function prospectsSeasonEnd(lines){
   const joined = [];
   for(const pr of S.prospects){
     if(pr.status==='signed' && pr.kind==='高校'){
-      const p = makePlayer(pr.pos, pr.ovr, 18, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=75; p.salary=Math.round(p.salary*0.8);
+      const p = makePlayer(pr.pos, pr.ovr, 18, pr.pot); p.name=pr.name; p.from=pr.school; p.mor=75; p.salary=pr.proSal || Math.round(p.salary*0.8); p.contract=3;
       S.players.push(p); joined.push(`${p.name}（${pr.school}・${p.pos}）`);
     }
   }
@@ -1404,7 +1414,7 @@ function renderForeign(){
         <span>年俸</span><span class="v">${yen(p.salary)}/年</span>
         <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
       </div>
-      <div class="row"><button class="btn" data-act="dropForeign" data-arg="${p.id}">見送る</button><button class="btn primary" data-act="signForeign" data-arg="${p.id}" ${S.money<p.fee||foreignCount()>=FOREIGN_MAX||S.players.length>=26?'disabled':''}>獲得する</button></div>
+      <div class="row"><button class="btn" data-act="dropForeign" data-arg="${p.id}">見送る</button><button class="btn primary" data-act="nego" data-arg="foreign|${p.id}" ${S.money<p.fee||foreignCount()>=FOREIGN_MAX||S.players.length>=26?'disabled':''}>獲得する</button></div>
     </div>`).join('') || `<p class="muted small">${fs?'まだ候補はいません。派遣すると2〜3週で候補を連れて帰ってきます。':'海外スカウトを雇うと、ここに候補が並びます。'}</p>`}</div></div>`;
 }
 
@@ -1655,7 +1665,7 @@ function showPlayer(id){
       ${p.loanFrom||p.amateur?'':`<span>市場価値</span><span class="v">${yen(playerValue(p))}</span>`}
     </div>
     ${p.expiring && !p.refused ? `<div class="warn">契約更新の条件：年俸 ${yen(renewAsk(p))}${renewChance(p)<1?`・本人の士気が低く、合意できる見込みは約${Math.round(renewChance(p)*100)}%`:''}
-      <div class="row" style="justify-content:flex-start">${years.map(y=>`<button class="btn primary" data-act="renew" data-arg="${p.id}|${y}">${y}年契約で更新</button>`).join('')}</div></div>` : ''}
+      <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="nego" data-arg="renew|${p.id}">契約更新の交渉をする</button></div></div>` : ''}
     <div class="row">
       ${p.inj>0&&p.playHurt?`<button class="btn" data-act="stopHurt" data-arg="${p.id}">強行出場をやめる</button>`:''}
       <button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用する':'休ませる'}</button>
@@ -1752,6 +1762,152 @@ function afterMatchInjury(p){
     const add = RI(2,4); p.inj += add; p.injury.total += add; p.playHurt = false;
     addNews(`${p.name}が強行出場で${injLabel(p)}を悪化させた。全治が${add}週間延びた…`);
   }
+}
+
+// ===================== 交渉（オファーの駆け引き） =====================
+const NEGO_WAIT = ['代理人が電話をかけている…','相手クラブの強化部長が渋い顔で資料を見ている…','本人が家族と相談している…','「少し考えさせてください」と席を外した…','代理人がメモを取りながら黙り込んでいる…','沈黙が続く…'];
+const NEGO_FEEL = v => v>=0.75 ? ['好感触', 'plus'] : v>=0.45 ? ['五分五分', ''] : v>=0.2 ? ['渋い', 'minus'] : ['かなり厳しい', 'minus'];
+function negoTarget(n){
+  if(n.kind==='market') return S.market.find(x=>x.id===n.id);
+  if(n.kind==='foreign') return S.foreignCands.find(x=>x.id===n.id);
+  if(n.kind==='prospect') return S.prospects.find(x=>x.id===n.id);
+  if(n.kind==='renew') return S.players.find(x=>x.id===n.id);
+}
+function openNego(kind, id){
+  const n = {kind, id, patience:3, log:[], pending:false, counter:null};
+  const p = negoTarget(n); if(!p) return;
+  if(kind==='market'){
+    if(S.players.length>=26) return toast('選手登録は26人までです。');
+    if(p.foreign && foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
+    n.askFee = p.fee; n.askSal = p.salary; n.feeFixed = !!p.loanFrom || p.fee===0; n.years = !p.loanFrom;
+    n.feeOpts = n.feeFixed ? [1] : [0.8,0.9,1,1.1]; n.salOpts = [0.9,1,1.15,1.3];
+    n.appeal = (S.div-1)*0.05 + (p.local?0.15:0);
+    n.party = p.loanFrom ? `${p.loanFrom}（親クラブ）と本人` : p.free ? '本人（フリー）' : '所属クラブと本人';
+  } else if(kind==='foreign'){
+    if(S.players.length>=26) return toast('選手登録は26人までです。');
+    if(foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
+    n.askFee = p.fee; n.askSal = p.salary; n.years = true;
+    n.feeOpts = [0.8,0.9,1,1.1]; n.salOpts = [0.9,1,1.15,1.3]; n.appeal = 0.15; n.party = '代理人';
+  } else if(kind==='prospect'){
+    if(p.status!=='none') return;
+    if(p.kind==='大学' && S.players.length>=26) return toast('選手登録は26人までです。');
+    n.askFee = prospectFee(p); n.askSal = Math.round(calcSalary((p.lo+p.hi)/2)*0.8); n.years = false;
+    n.feeOpts = [0.7,1,1.5]; n.salOpts = [0.9,1,1.2]; n.feeLabel = '支度金'; n.party = `本人と${p.kind==='高校'?'家族・監督':'大学の監督'}`;
+    n.patience = 2;
+  } else if(kind==='renew'){
+    if(!p.expiring || p.refused) return;
+    n.askFee = 0; n.askSal = renewAsk(p); n.feeFixed = true; n.years = true;
+    n.feeOpts = [1]; n.salOpts = [0.9,1,1.15]; n.party = '本人と代理人';
+  }
+  n.offer = {fee:1, sal:1, years: p.age>=33 ? 1 : 2};
+  n.snap = {name:p.name, pos:p.pos, age:p.age, school:p.school, est: p.lo!==undefined ? `推定能力 ${p.lo}〜${p.hi}` : `能力 ${Math.round(p.ovr)}`};
+  if(kind!=='prospect' && kind!=='renew' && Math.random()<0.3){
+    n.rival = pick(CITY_NATION)+' '+pick(SUFFIX); n.askSal = Math.round(n.askSal*1.1);
+    n.log.push({who:'info', t:`${n.rival}も獲得に動いているようだ。本人の希望年俸は${yen(n.askSal)}に上がっている。`});
+  }
+  if(kind==='prospect' && p.hot) n.log.push({who:'info', t:`${pick(['J1','J2'])}のクラブも声をかけているらしい。`});
+  ui.nego = n; renderNego();
+}
+function negoTerms(n){
+  const o = n.offer;
+  const fee = n.counter?.fee ?? Math.round(n.askFee * o.fee);
+  const sal = n.counter?.sal ?? Math.round(n.askSal * o.sal);
+  return {fee, sal, years: n.years ? o.years : 0};
+}
+function negoChance(n, t){
+  const p = negoTarget(n);
+  const fr = n.askFee ? t.fee/n.askFee : 1, sr = t.sal/n.askSal;
+  let club = 1, pl;
+  if(n.kind==='prospect'){
+    pl = clamp(interest(p)/100 + (fr-1)*0.18 + (sr-1)*0.7, 0.03, 0.97);
+  } else if(n.kind==='renew'){
+    pl = clamp(renewChance(p)*0.7 + (sr-1)*2.2 + (p.age>=30 ? (t.years-1)*0.08 : 0), 0.03, 0.97);
+  } else {
+    if(!n.feeFixed) club = clamp((fr-0.75)/0.3, 0.02, 1);
+    pl = clamp(0.3 + (sr-0.95)*1.9 + n.appeal + (p.age>=30 ? (t.years-1)*0.07 : p.age<=23 ? (2-t.years)*0.03 : 0), 0.03, 0.97);
+  }
+  return {club, pl};
+}
+function renderNego(){
+  const n = ui.nego; if(!n) return;
+  const live = negoTarget(n), p = live || n.snap;
+  const t = live ? negoTerms(n) : {fee:0, sal:0, years:0};
+  const ch = live ? negoChance(n, t) : {club:0, pl:0};
+  const feel = NEGO_FEEL(Math.min(ch.club, ch.pl) * R(0.85,1.15));
+  const est = n.snap.est;
+  const opt = (key, vals, fmt) => `<div class="seg">${vals.map(v=>`<button class="${n.offer[key]===v&&!n.counter?'on':''}" data-act="negoSet" data-arg="${key}|${v}">${fmt(v)}</button>`).join('')}</div>`;
+  const money = S.money >= t.fee;
+  const logHtml = n.log.map(l=>`<li class="nl-${l.who}">${l.who==='me'?'<b>GM：</b>':l.who==='them'?`<b>${esc(n.party)}：</b>`:''}${esc(l.t)}</li>`).join('');
+  const body = n.pending ? `<div class="nego-wait"><div class="spin"></div><p>${esc(n.pending)}</p></div>`
+    : n.done ? `<h2 style="text-align:center;color:var(--${n.done==='ok'?'win':'loss'})">${n.done==='ok'?'🤝 合意！':'交渉決裂…'}</h2><div class="row"><button class="btn primary" data-act="negoClose">閉じる</button></div>`
+    : `${n.counter ? `<div class="warn"><b>逆提案</b>：${n.askFee&&!n.feeFixed||n.kind==='prospect'?`${n.feeLabel||'移籍金'} ${yen(n.counter.fee)}・`:''}年俸 ${yen(n.counter.sal)}${n.years?`・${n.offer.years}年契約`:''}
+          <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="negoCounter" ${S.money<n.counter.fee?'disabled':''}>この条件をのむ</button><button class="btn" data-act="negoRetry">条件を考え直す</button></div></div>`
+        : `${!n.feeFixed?`<div class="small muted">${n.feeLabel||'移籍金'}（希望 ${yen(n.askFee)}）</div>${opt('fee', n.feeOpts, v=>`${yen(Math.round(n.askFee*v))}`)}`:n.askFee?`<div class="small muted">${n.kind==='market'&&negoTarget(n).loanFrom?'レンタル料':'移籍金'}：${yen(n.askFee)}（固定）</div>`:''}
+          <div class="small muted" style="margin-top:6px">年俸（希望 ${yen(n.askSal)}${n.kind==='prospect'?'・来季からのプロ契約':''}）</div>${opt('sal', n.salOpts, v=>`${yen(Math.round(n.askSal*v))}`)}
+          ${n.years?`<div class="small muted" style="margin-top:6px">契約年数</div>${opt('years', p.age>=33?[1]:[1,2,3], v=>`${v}年`)}`:''}
+          <p class="small" style="margin:8px 0 0">GMの手応え：<b class="${feel[1]}">${feel[0]}</b>　交渉の余地：${'●'.repeat(n.patience)}${'○'.repeat(Math.max(0,3-n.patience))}</p>
+          <div class="row"><button class="btn" data-act="negoQuit">交渉をやめる</button><button class="btn primary" data-act="negoSubmit" ${money?'':'disabled'}>この条件で提示する${money?'':'（資金不足）'}</button></div>`}`;
+  openModal(`<div class="small muted">交渉相手：${esc(n.party)}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin:4px 0">${posTag(p.pos)}<h2 style="margin:0">${esc(p.name)}</h2></div>
+    <p class="small muted" style="margin:0 0 8px">${p.age}歳・${est}${p.school?`・${esc(p.school)}`:''}</p>
+    ${logHtml?`<ul class="nego-log">${logHtml}</ul>`:''}
+    ${body}`);
+  const lg = document.querySelector('.nego-log'); if(lg) lg.scrollTop = lg.scrollHeight;
+}
+function negoSubmit(){
+  const n = ui.nego; if(!n || n.pending) return;
+  const t = negoTerms(n);
+  if(S.money < t.fee) return;
+  n.log.push({who:'me', t:`${t.fee?`${n.feeLabel||'移籍金'} ${yen(t.fee)}・`:''}年俸 ${yen(t.sal)}${t.years?`・${t.years}年契約`:''}でどうでしょう。`});
+  n.pending = pick(NEGO_WAIT); renderNego();
+  setTimeout(()=>{ if(ui.nego!==n) return; n.pending = pick(NEGO_WAIT.filter(x=>x!==n.pending)); renderNego(); }, 900);
+  setTimeout(()=>{ if(ui.nego!==n) return; negoResolve(n, t); }, 1900);
+}
+function negoResolve(n, t){
+  n.pending = false;
+  const p = negoTarget(n);
+  const ch = negoChance(n, t);
+  const clubOk = Math.random() < ch.club, plOk = Math.random() < ch.pl;
+  if(clubOk && plOk){ n.log.push({who:'them', t:pick(['わかりました。その条件でお願いします！','ぜひ一緒に戦わせてください。','悪くない条件です。合意しましょう。'])}); return negoFinish(n, t); }
+  const insult = (n.askFee && !n.feeFixed && t.fee/n.askFee < 0.85 && !clubOk) || t.sal/n.askSal < 0.92 && !plOk && Math.random()<0.4;
+  n.patience -= insult ? 2 : 1;
+  if(n.patience <= 0){
+    n.log.push({who:'them', t:pick(['残念ですが、今回はお断りします。','ほかのクラブと話を進めることにしました。','条件が折り合いませんでした。'])});
+    n.done = 'ng'; negoFail(n); return renderNego();
+  }
+  // 逆提案は必ず今の提示より上の条件になる
+  const cf = !clubOk && n.askFee ? Math.max(Math.round(t.fee*R(1.05,1.12)), Math.round(n.askFee*R(1.0,1.08))) : t.fee;
+  const cs = !plOk ? Math.max(Math.round(t.sal*R(1.05,1.12)), Math.round(n.askSal*R(1.0,1.1))) : t.sal;
+  n.counter = {fee:cf, sal:cs};
+  const why = !clubOk && n.askFee && !n.feeFixed ? `${n.feeLabel||'移籍金'}が足りません。` : '';
+  const why2 = !plOk ? pick(['本人は年俸にもう少しこだわっています。','生活のこともあるので、年俸を上げてほしい。',n.kind==='prospect'?'進学と迷っています。もう少し誠意を見せてほしい。':'他にも話が来ているんです。']) : '';
+  n.log.push({who:'them', t:`${insult?'正直、その条件は失礼だと感じました。':''}${why}${why2}この条件なら考えます。`});
+  renderNego();
+}
+function negoFinish(n, t){
+  const p = negoTarget(n);
+  if(S.money < t.fee){ n.log.push({who:'info', t:'資金が足りず、契約できなかった。'}); n.done='ng'; return renderNego(); }
+  n.done = 'ok'; renderNego();
+  if(n.kind==='market'){ p.fee = t.fee; p.salary = t.sal; if(t.years) p.contract = t.years; signPlayer(p.id); }
+  else if(n.kind==='foreign'){ p.fee = t.fee; p.salary = t.sal; p.contract = t.years; ui.nego = null; signForeign(p.id); return; }
+  else if(n.kind==='prospect'){
+    spend(t.fee); p.status = 'signed'; p.proSal = t.sal;
+    if(p.kind==='大学'){ joinAmateur(p, '特別指定'); addNews(`🎓 ${p.school}の${p.name}が来季加入内定！特別指定選手として今季から試合に出られる。`); }
+    else addNews(`🎓 ${p.school}の${p.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
+    save(); render();
+  } else if(n.kind==='renew'){
+    p.salary = t.sal; p.contract = t.years; p.expiring = false; p.mor = clamp((p.mor??60)+5,0,100);
+    addNews(`${p.name}と${t.years}年契約で合意（年俸${yen(t.sal)}）。`); save(); render();
+  }
+  renderNego();
+}
+function negoFail(n){
+  const p = negoTarget(n); if(!p) return;
+  if(n.kind==='market'){ S.market = S.market.filter(x=>x!==p); addNews(`${p.name}との交渉は決裂。${n.rival||'他クラブ'}へ移籍した。`); }
+  else if(n.kind==='foreign'){ S.foreignCands = S.foreignCands.filter(x=>x!==p); addNews(`${p.name}の代理人との交渉は決裂した。`); }
+  else if(n.kind==='prospect'){ p.status='declined'; addNews(`${p.name}（${p.school}）はオファーを断り、${p.kind==='高校'?pick(['大学進学','J1クラブ入り','J2クラブ入り']):pick(['J1クラブ入り','J2クラブ入り'])}を選んだ。`); }
+  else if(n.kind==='renew'){ p.refused = true; addNews(`${p.name}は契約更新を拒否。「新しい環境で挑戦したい」`); }
+  save(); render();
 }
 
 // ===================== 旧セーブ互換 =====================
@@ -2010,7 +2166,7 @@ function renderMarket(){
           ${p.loanFrom?`<span>レンタル料</span><span class="v"><b>${yen(p.fee)}</b></span><span>買取オプション</span><span class="v">${yen(p.buyFee)}</span>`
             :`<span>移籍金</span><span class="v"><b>${p.free?'0円（フリー）':yen(p.fee)}</b></span>`}
         </div>
-        <div class="row"><button class="btn primary" data-act="sign" data-arg="${p.id}" ${S.money<p.fee||S.players.length>=26||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>獲得する</button></div>
+        <div class="row"><button class="btn primary" data-act="nego" data-arg="market|${p.id}" ${S.money<p.fee||S.players.length>=26||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>交渉する</button></div>
       </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div></div>`;
 }
 
@@ -2135,7 +2291,7 @@ function renderAma(){
         <span>視察</span><span class="v">${'●'.repeat(Math.min(pr.seen,3))}${'○'.repeat(Math.max(0,3-pr.seen))} ${pr.seen}回${pr.status==='none'&&pr.seen<3?`<br><span class="small muted">次の視察で幅 約${Math.max(1,Math.round((pr.hi-pr.lo)/2))}に</span>`:''}</span>
         ${pr.status==='none'?`<span>入団の見込み</span><span class="v">${interest(pr)}%</span><span>支度金</span><span class="v">${yen(prospectFee(pr))}</span>`:''}
       </div>
-      ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する（${yen(watchCost())}）</button><button class="btn primary" data-act="offer" data-arg="${pr.id}">オファー</button></div>`:''}
+      ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する（${yen(watchCost())}）</button><button class="btn primary" data-act="nego" data-arg="prospect|${pr.id}">オファー</button></div>`:''}
       ${pr.status==='signed'&&pr.kind==='高校'?`<div class="row"><button class="btn gold" data-act="reg2" data-arg="${pr.id}" ${S.players.length>=26?'disabled':''}>2種登録して今季から出場させる</button></div>`:''}
       ${pr.status==='joined'?'<p class="small plus" style="margin:8px 0 0">トップチームに合流済み（選手タブ）</p>':''}
     </div>`).join('') || '<p class="muted small">まだリストアップされた選手はいません。大会が終わるとスカウトから報告が届きます。</p>'}</div></div>`;
@@ -2303,6 +2459,13 @@ const ACTIONS = {
   player(a){ showPlayer(a); },
   stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
+  nego(a){ const [k,id]=a.split('|'); ui.flash=id; openNego(k,id); },
+  negoSet(a){ const [k,v]=a.split('|'); if(ui.nego){ ui.nego.offer[k]=+v; renderNego(); } },
+  negoSubmit(){ negoSubmit(); },
+  negoCounter(){ const n=ui.nego; if(!n||!n.counter) return; const t=negoTerms(n); n.log.push({who:'me', t:'その条件でお願いします。'}); n.log.push({who:'them', t:'ありがとうございます！'}); negoFinish(n,t); },
+  negoRetry(){ if(ui.nego){ ui.nego.counter=null; renderNego(); } },
+  negoQuit(){ ui.nego=null; closeModal(); render(); },
+  negoClose(){ ui.nego=null; closeModal(); render(); },
   dispatch(a){ dispatchScout(a); },
   signForeign(a){ signForeign(a); },
   dropForeign(a){ dropForeign(a); },
