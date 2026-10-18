@@ -1622,15 +1622,19 @@ function renderForeign(){
 }
 
 // ===================== オフシーズン =====================
-const OFF_WEEKS = 6;
+const OFF_WEEKS = 10;
 function yearWeeks(){ return nr() + OFF_WEEKS; } // 年俸・スポンサー料はこの週数で割って毎週やりとりする
 const OFF_PLAN = [
-  {label:'12月上旬', title:'契約更改・戦力外通告', desc:'主力との契約更改。構想外の選手には戦力外を通告できる（チーム）'},
+  {label:'12月上旬', title:'シーズン終了・契約更改', desc:'主力との契約更改が始まる。契約満了の選手は更新するか決める'},
+  {label:'12月中旬', title:'戦力外通告・移籍交渉', desc:'構想外の選手に戦力外を通告。他クラブとの移籍交渉が本格化'},
   {label:'12月下旬', title:'合同トライアウト', desc:'戦力外になった選手たちが集まる。フリーの選手が市場に増える'},
-  {label:'1月上旬',  title:'高校選手権・新体制発表会', desc:'冬の高校選手権。新体制発表会でファンにお披露目。キャンプ地の検討も'},
-  {label:'1月下旬',  title:'始動・キャンプ地決定', desc:'チーム始動。春季キャンプの行き先を決める'},
+  {label:'1月上旬',  title:'高校選手権・新体制発表会', desc:'冬の高校選手権。新体制発表会でファンにお披露目。キャンプ地を決める'},
+  {label:'1月中旬',  title:'自主トレ', desc:'選手たちが各自で体を作る時期。ベテランが若手を連れて合同自主トレも'},
+  {label:'1月下旬',  title:'チーム始動・メディカルチェック', desc:'チームが集合。全選手のメディカルチェックを行う'},
   {label:'2月上旬',  title:'春季キャンプ（前半）', desc:'キャンプで鍛える。練習試合も'},
-  {label:'2月下旬',  title:'春季キャンプ（後半）・開幕準備', desc:'仕上げの時期。この週が終わると開幕'},
+  {label:'2月中旬',  title:'春季キャンプ（後半）', desc:'戦術の仕上げ。主力組と控え組の序列も見えてくる'},
+  {label:'2月下旬',  title:'プレシーズンマッチ', desc:'ホームでファン感謝デーを兼ねたプレシーズンマッチ'},
+  {label:'3月上旬',  title:'開幕前イベント・最終調整', desc:'キックオフイベントで開幕ムードを盛り上げる。この週が終わると開幕'},
 ];
 const CAMPS = {
   okinawa: {name:'沖縄キャンプ', cost:2500, g:1.5, desc:'温暖で練習効果大。J1クラブとの練習試合も'},
@@ -1648,13 +1652,13 @@ function offTraining(w){
   const lines = [];
   for(const p of S.players){
     if(p.inj>0){ healWeek(p); if(p.inj>0) continue; }
-    if(w<=2){ p.cond = 100; continue; } // 12月〜1月上旬は休暇
-    const camp = w>=4 ? CAMPS[S.camp||'home'] : {g:0.5};
+    if(w<=3){ p.cond = 100; continue; } // 12月〜1月上旬は休暇
+    const camp = w===6||w===7 ? CAMPS[S.camp||'home'] : w===4 ? {g:0.35} : {g:0.5}; // 自主トレ→始動→キャンプ
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
     const facG = (0.8+0.15*S.fac.training) * (p.age<=23 ? 0.8+staffAb('youth')/250 : 1);
     p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*camp.g*ageF*facG*R(0.5,1.5));
     p.cond = clamp(p.cond - 4 + 8, 40, 100);
-    if(w>=4 && Math.random()<0.012*injuryRisk(p)){ injure(p, Math.random()<0.5?'muscle':'overuse'); lines.push(`キャンプ中に${p.name}が${injLabel(p)}（全治${p.inj}週）。`); }
+    if((w===6||w===7) && Math.random()<0.012*injuryRisk(p)){ injure(p, Math.random()<0.5?'muscle':'overuse'); lines.push(`キャンプ中に${p.name}が${injLabel(p)}（全治${p.inj}週）。`); }
   }
   return lines;
 }
@@ -1678,6 +1682,14 @@ const OFF_EVENTS = [
     }
     return lines;
   },
+  w=>{ // 戦力外通告・移籍交渉
+    const lines = ['戦力外通告と移籍交渉の時期。他クラブからの問い合わせが増えている。'];
+    const exp = S.players.filter(p=>p.expiring && !p.refused);
+    if(exp.length) lines.push(`まだ契約更新を決めていない満了選手が${exp.length}人。来週のトライアウトまでに決めないと退団します。`);
+    const c = ctxNow(); const stars = S.players.filter(p=>!p.loanFrom && !p.amateur && p.ovr>=c.avg+3 && !recentRep(p));
+    if(stars.length && Math.random()<0.6) makeBid(pick(stars), true);
+    return lines;
+  },
   w=>{ // 合同トライアウト
     const n = RI(3,5);
     for(let i=0;i<n;i++){ const p = genCandidate('free'); p.bio = '合同トライアウトに参加。再起をかける'; p.salary = Math.round(p.salary*0.6); S.market.push(p); }
@@ -1695,26 +1707,54 @@ const OFF_EVENTS = [
     lines.push('春季キャンプの行き先を決めましょう（ホームの報告）。');
     return lines;
   },
-  w=>{ // 始動
-    const lines = ['チームが始動。選手たちが金沢に戻ってきた。'];
-    if(S.camp) lines.push(`来週から${CAMPS[S.camp].name}へ出発する。`);
+  w=>{ // 自主トレ
+    const lines = ['選手たちは各地で自主トレ中。'];
+    const vets = S.players.filter(p=>p.age>=29 && !p.loan), kids = S.players.filter(p=>p.age<=22 && !p.loan);
+    if(vets.length && kids.length){
+      const v = pick(vets), k = pick(kids.filter(x=>x.pos===v.pos).concat(kids)); k.ovr = Math.min(k.pot, k.ovr+R(0.5,1.5)); k.mor = clamp((k.mor??60)+5,0,100);
+      lines.push(`${v.name}が${k.name}を連れて${pick(['沖縄','グアム','鹿児島','和歌山'])}で合同自主トレ。${k.name}は大きな刺激を受けた。`);
+    }
+    if(Math.random()<0.3){ const p = pick(S.players.filter(x=>!x.loan)); if(p){ p.cond = 70; lines.push(`${p.name}はオフに少し体重が増えてしまったようだ…（調子が下がった）`); } }
+    return lines;
+  },
+  w=>{ // 始動・メディカルチェック
+    const lines = ['チームが始動。選手たちが金沢に戻ってきた。全選手のメディカルチェックを実施。'];
+    const risky = S.players.filter(p=>!(p.inj>0) && !p.loan && (p.age>=31 || (p.hist||[]).length>=2));
+    if(risky.length && Math.random() < 0.5 - (S.fac.medical-1)*0.08){ const p = pick(risky); injure(p,'overuse'); lines.push(`メディカルチェックで${p.name}に${injLabel(p)}が見つかった。`); }
+    else lines.push('大きな問題は見つからなかった。');
+    if(S.camp) lines.push(S.camp==='home' ? '来週から金沢で春季キャンプ（調整）に入る。' : `来週から${CAMPS[S.camp].name}へ出発する。`);
     else if(S.inbox.some(r=>r.kind==='camp')) lines.push('キャンプ地がまだ決まっていません。決めないと金沢で調整になります（ホームの報告）。');
     return lines;
   },
   w=>campDay(),
   w=>campDay(true),
+  w=>{ // プレシーズンマッチ
+    const lv = clamp(S.div + RI(0,1), 1, TOP);
+    const opp = fakeOpp(`${genTeam(lv).name}（${DIVS[lv].short}）`, (DIVS[lv].base[0]+DIVS[lv].base[1])/2);
+    const m = quickMatch(opp, 'home');
+    const att = Math.round(Math.min(CAP[S.fac.stadium-1], S.fans * R(0.5, 0.8)));
+    const inc = Math.round(att * DIVS[S.div].ticket * 0.8 / 10000); earn(inc, 'ticket');
+    const f = changeFans(0.02, 20);
+    return [`プレシーズンマッチ vs ${opp.name} ${m.gu}-${m.go}。ファン感謝デーには${att.toLocaleString()}人が来場（収入 ${yen(inc)}・ファン +${f}人）。`];
+  },
+  w=>{ // 開幕前イベント
+    const f = changeFans(0.03, 30);
+    supp().mood = clamp(supp().mood + 5, 0, 100);
+    const lines = [`香林坊でキックオフイベントを開催。選手が新シーズンの抱負を語った（ファン +${f}人）。`];
+    return lines;
+  },
 ];
 function campDay(last){
   const c = CAMPS[S.camp||'home']; const lines = [];
   const lv = Math.min(TOP, S.div+1);
-  const opp = `${pick(CITY_NATION)} ${pick(SUFFIX)}（${DIVS[lv].short}）`;
+  const opp = `${genTeam(lv).name}（${DIVS[lv].short}）`;
   const my = teamRating(getLineup(true)).ovr, os = DIVS[lv].base[0] + R(-2,4);
   const gu = poisson(lam(my, os, true, 1)), go = poisson(lam(os, my, false, 0.9));
   lines.push(`${c.name}：練習試合 vs ${opp} ${gu}-${go}${gu>go?'。手応えのある勝利':gu<go?'。課題が見えた':''}。`);
   if(S.camp==='thai' && !last){ S.companies.forEach(co=>{ if(co.size>=2) co.rel=clamp(co.rel+4,0,100); }); lines.push('タイ遠征が地元経済紙で取り上げられ、企業の関心が高まった（関係+4）。'); }
   if(S.camp==='okinawa' && Math.random()<0.5){ const f=changeFans(0.01,10); lines.push(`沖縄まで駆けつけたサポーターと交流。ファン +${f}人。`); }
   if(S.camp==='home') lines.push('金沢は連日の雪。室内練習場を借りてしのいだ。');
-  if(last) lines.push('キャンプ打ち上げ。いよいよ開幕だ！');
+  if(last) lines.push('キャンプ打ち上げ。開幕まであと少し！');
   return lines;
 }
 function campResolve(k){
@@ -2191,8 +2231,8 @@ const NAT_EVENTS = [
   {m:7, d:30, kind:'高校', name:'日本クラブユース選手権', youth:true},
   {m:8, d:6,  kind:'高校', name:'全国高校総体（インターハイ）'},
   {m:9, d:5,  kind:'大学', name:'総理大臣杯 全日本大学トーナメント'},
-  {off:1, kind:'大学', name:'全日本大学選手権（インカレ）'},
-  {off:2, kind:'高校', name:'全国高校サッカー選手権'},
+  {off:2, kind:'大学', name:'全日本大学選手権（インカレ）'},
+  {off:3, kind:'高校', name:'全国高校サッカー選手権'},
 ];
 function natCost(){ return Math.round(600*(1+econ()*0.5)); }
 function natActive(){ return S.natSeason === S.season; }
@@ -2250,8 +2290,8 @@ function roundDate(r){
   const d = new Date(start); d.setDate(d.getDate() + Math.round(weeks * r / Math.max(1, nr()-1)) * 7);
   return d;
 }
-// オフの各週：12月上旬・下旬、1月上旬・下旬、2月上旬・下旬
-function offDate(w){ const y = 2026 + S.season; const [yy, m, n] = [[y-1,11,1],[y-1,11,3],[y,0,1],[y,0,3],[y,1,1],[y,1,3]][w]; return nthSaturday(yy, m, n); }
+// オフの各週：12月上旬〜3月上旬
+function offDate(w){ const y = 2026 + S.season; const [yy, m, n] = [[y-1,11,1],[y-1,11,2],[y-1,11,4],[y,0,1],[y,0,2],[y,0,4],[y,1,1],[y,1,2],[y,1,4],[y,2,1]][w]; return nthSaturday(yy, m, n); }
 function fmtDate(d){ return `${d.getMonth()+1}/${d.getDate()}(${WD[d.getDay()]})`; }
 function renderCalendar(){
   const months = {};
