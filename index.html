@@ -165,7 +165,7 @@ summary{cursor:pointer;color:var(--indigo);font-weight:600}
 .infobar .btn{padding:3px 10px;font-size:12px}
 .infobar .regions{flex-basis:100%;display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .infobar .regions .btn{line-height:1.3;padding:4px 2px}
-.pcell{white-space:normal!important;min-width:5.5em;max-width:7.5em}
+.pcell{white-space:normal!important;min-width:5em;max-width:6.5em}
 .pname{font-weight:600;line-height:1.3;word-break:keep-all;overflow-wrap:anywhere}
 .ptags{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
 .ptags .tag{font-size:9.5px;padding:0 4px;line-height:1.5}
@@ -177,7 +177,6 @@ summary{cursor:pointer;color:var(--indigo);font-weight:600}
 .pdgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
 .pdh{margin:14px 0 4px;font-size:13px;color:var(--muted)}
 td.pcell{cursor:pointer}
-td.pcell .pname{text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .seg.scrollx{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;overscroll-behavior:none;margin-top:0}
 .seg.scrollx::-webkit-scrollbar{display:none}
 .seg.scrollx button{flex:none}
@@ -190,6 +189,14 @@ td.pcell .pname{text-decoration:underline;text-decoration-color:var(--line);text
 .spin{width:28px;height:28px;margin:0 auto;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.prow{cursor:pointer}
+.prow:hover td{background:var(--panel2)}
+.pstars{line-height:1;margin-top:1px}
+.pstars .stars{font-size:9px}
+.pstate{white-space:nowrap}
+.pstate .bar{display:inline-block;width:32px;vertical-align:middle;margin-right:3px}
+table.sticky td,table.sticky th{padding:6px 4px}
+table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .rshort{font-size:9.5px;color:var(--muted);margin-top:2px;white-space:nowrap}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
@@ -705,6 +712,7 @@ function advance(){
   refreshMarket(2);
   AMA_EVENTS.filter(e=>e.r===S.round).forEach(runAmaEvent);
   generateReports();
+  weeklyBids();
   if(S.round%4===3) refreshStaffMarket(3);
   S.companies.forEach(c=>{ if(c.cool>0) c.cool--; });
   S.round++;
@@ -1035,11 +1043,11 @@ const REPORTS = {
     resolve(k){ const fw=S.players.filter(p=>p.pos==='FW'); if(k==='switch'){ S.tactic='balance'; boostMor(fw,8); return '戦術をバランス型に変更した。FW陣の士気が上がった。'; } boostMor(fw,-6); return '戦術を貫くことにした。FW陣は不満げだ。'; }
   },
   wantOut:{
-    make(c){ const ps=c.active.filter(p=>(p.mor??60)<15&&!recentRep(p)); if(!ps.length) return null; const p=pick(ps);
+    make(c){ const ps=c.active.filter(p=>(p.mor??60)<15&&!p.listed&&!recentRep(p)); if(!ps.length) return null; const p=pick(ps);
       return mkRep('wantOut',hcFrom(),`${p.name}が移籍を志願しています`,`${p.name}が正式に移籍を希望してきました。このままではチームの雰囲気にも影響しかねません。`,
-        [['sell',`売却に応じる（${yen(Math.round(playerValue(p)*0.8))}）`],['talk','慰留する'],['deny','要求を却下する']],{pid:p.id}); },
+        [['sell','移籍リストに載せる'],['talk','慰留する'],['deny','要求を却下する']],{pid:p.id}); },
     resolve(k,p){
-      if(k==='sell'){ if(S.players.length<=14){ p.mor=clamp(p.mor+5,0,100); return '登録人数が足りず、売却は見送った。'; } const v=Math.round(playerValue(p)*0.8); S.players=S.players.filter(x=>x!==p); earn(v); return `${p.name}を${yen(v)}で売却した。`; }
+      if(k==='sell'){ p.listed = true; p.mor = clamp(p.mor+15,0,100); return `${p.name}を移籍リストに載せた。他クラブからのオファーを待つ。`; }
       if(k==='talk'){ if(Math.random()<0.3+(staffAb('hc')+(S.staff.manager?.man||30))/300){ p.mor=45; return `慰留に成功。${p.name}は「もう一度ここで頑張る」と翻意した。`; } return `${p.name}の決意は固い…`; }
       boostMor(S.players.filter(x=>x!==p),-2); return `要求を却下。${p.name}の不満がチームに伝わっている。`; }
   },
@@ -1074,6 +1082,16 @@ const REPORTS = {
   },
   fscout:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='foreign'; } return '海外スカウトの報告を確認した。'; } },
   camp:{ make(){ return null; }, resolve(k){ return campResolve(k); } },
+  bid:{ make(){ return null; }, resolve(k,p,rep){
+    if(k==='ok') return sellTo(p, rep.amount, rep.club);
+    if(k==='up'){
+      const ask = Math.round(rep.amount*1.2);
+      if(Math.random() < clamp(1.25 - ask/playerValue(p), 0.15, 0.85)) return sellTo(p, ask, rep.club) + '（増額に成功）';
+      if(rep.up) p.mor = clamp((p.mor??60)-8,0,100);
+      return `${rep.club}は増額に応じず、獲得を断念した。${rep.up?`${p.name}は残念がっている。`:''}`;
+    }
+    if(rep.up){ p.mor = clamp((p.mor??60)-12,0,100); return `${rep.club}のオファーを断った。上のカテゴリーに行きたかった${p.name}は不満そうだ。`; }
+    return `${rep.club}のオファーを断った。`; } },
   surgery:{ make(){ return null; }, resolve(k,p,rep){
     if(!p.injury) return `${p.name}はすでに回復していた。`;
     if(k==='cons'){ p.inj = rep.cons; p.injury.total = rep.cons; p.injury.cons = true; p.reRisk = {id:p.injury.id, until:tick()+30, mult:3}; return `${p.name}は保存療法を選択。約${rep.cons}週間での復帰を目指す。再発に注意。`; }
@@ -1088,7 +1106,7 @@ function generateReports(){
   if(S.inbox.length>=4) return;
   const c = ctxNow();
   const chance = 0.4 + staffAb('hc')/220;
-  const kinds = Object.keys(REPORTS).filter(k=>!['ama','fscout','camp','surgery','hurt'].includes(k)).sort(()=>Math.random()-0.5);
+  const kinds = Object.keys(REPORTS).filter(k=>!['ama','fscout','camp','surgery','hurt','bid'].includes(k)).sort(()=>Math.random()-0.5);
   let made = 0, max = staffAb('hc')>=55 ? 2 : 1;
   for(const k of kinds){
     if(made>=max || Math.random()>chance) continue;
@@ -1586,16 +1604,6 @@ function campResolve(k){
   spend(campCost(k)); S.camp = k;
   return `春季キャンプは${CAMPS[k].name}に決定！`;
 }
-function releasePlayer(id){
-  const p = S.players.find(x=>x.id===id); if(!p) return;
-  if(S.players.length<=14) return toast('選手は最低14人必要です。');
-  confirmBox(`${p.name}（${p.age}歳・年俸${yen(p.salary)}）に戦力外を通告しますか？ 移籍金は入りませんが、年俸の負担がなくなります。`, ()=>{
-    S.players = S.players.filter(x=>x!==p);
-    addNews(`${p.name}に戦力外を通告。「${S.club}で過ごした日々に感謝します」とコメント。`);
-    if(p.age<=26 && p.ovr>=teamRating(getLineup(true)).ovr) boostMor(S.players,-2);
-    save(); render();
-  });
-}
 function computeTarget(){
   const my = teamRating(getLineup(true)).ovr;
   const better = S.teams.filter(t=>!t.isMe && t.str > my).length;
@@ -1609,6 +1617,7 @@ function advanceOff(){
   const lines = [...offTraining(w), ...OFF_EVENTS[w](w)];
   payOffWeek();
   refreshMarket(3);
+  weeklyBids();
   S.offWeek++;
   checkTrip();
   S.visitsLeft = salesTeam().length;
@@ -1731,15 +1740,15 @@ function showPlayer(id){
       <span>契約の種類</span><span class="v">${kind}</span>
       <span>年俸</span><span class="v">${p.amateur?'なし':yen(p.salary)}</span>
       <span>契約期間</span><span class="v">${contract}</span>
-      ${p.loanFrom||p.amateur?'':`<span>市場価値</span><span class="v">${yen(playerValue(p))}</span>`}
+      ${p.loanFrom||p.amateur?'':`<span>市場価値</span><span class="v">${yen(playerValue(p))}</span><span>移籍リスト</span><span class="v">${p.listed?'<span class="minus">登録中（オファー待ち）</span>':'未登録'}</span>`}
     </div>
     ${p.expiring && !p.refused ? `<div class="warn">契約更新の条件：年俸 ${yen(renewAsk(p))}${renewChance(p)<1?`・本人の士気が低く、合意できる見込みは約${Math.round(renewChance(p)*100)}%`:''}
       <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="nego" data-arg="renew|${p.id}">契約更新の交渉をする</button></div></div>` : ''}
     <div class="row">
       ${p.inj>0&&p.playHurt?`<button class="btn" data-act="stopHurt" data-arg="${p.id}">強行出場をやめる</button>`:''}
       <button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用する':'休ませる'}</button>
-      ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取（${yen(p.buyFee)}）</button>`:p.amateur?'':`<button class="btn" data-act="sell" data-arg="${p.id}">売却（${yen(Math.round(playerValue(p)*0.7))}）</button>`}
-      ${isOff()&&!p.loanFrom&&!p.amateur?`<button class="btn" data-act="release" data-arg="${p.id}">戦力外</button>`:''}
+      ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取（${yen(p.buyFee)}）</button>`:p.amateur?'':`<button class="btn" data-act="list" data-arg="${p.id}">${p.listed?'移籍リストから外す':'移籍リストに載せる'}</button>
+      <button class="btn" data-act="release" data-arg="${p.id}">${p.expiring?'契約を更新しない':`契約解除（違約金 ${yen(releaseCost(p))}）`}</button>`}
       <button class="btn primary" data-act="close">閉じる</button>
     </div>`);
 }
@@ -1992,6 +2001,65 @@ function negoFail(n){
   save(); render();
 }
 
+// ===================== 放出（移籍リスト・他クラブからのオファー・契約解除） =====================
+function releaseCost(p){ return p.expiring || p.amateur ? 0 : Math.round(p.salary * (p.contract||1) * 0.5); }
+function toggleList(id){
+  const p = S.players.find(x=>x.id===id); if(!p || p.loanFrom || p.amateur) return;
+  p.listed = !p.listed;
+  if(p.listed){
+    const wanted = (p.mor??60) < 30;
+    p.mor = clamp((p.mor??60) + (wanted ? 10 : -10), 0, 100);
+    addNews(`${p.name}を移籍リストに登録。${wanted ? '本人も新天地を望んでいた。' : '本人はショックを受けている。'}`);
+  } else addNews(`${p.name}を移籍リストから外した。`);
+  save(); render(); showPlayer(id);
+}
+function bidClub(p){
+  const up = p.ovr >= DIVS[Math.min(4,S.div+1)].base[0] && Math.random()<0.5;
+  const d = clamp(S.div + (up ? 1 : RI(-1,0)), 0, 4);
+  return {name: genTeam(d).name, div: d};
+}
+function makeBid(p, poach){
+  const club = poach ? {name: genTeam(Math.min(4,S.div+1)).name, div: Math.min(4,S.div+1)} : bidClub(p);
+  const v = playerValue(p);
+  const amount = Math.round(v * (poach ? R(0.9,1.4) : R(0.55,1.05)) / 10) * 10;
+  p.repT = tick();
+  S.inbox.push(mkRep('bid', '強化部', `${club.name}（${DIVS[club.div].short}）が${p.name}にオファー`,
+    `${club.name}が${p.name}（${p.pos}・${p.age}歳・能力${Math.round(p.ovr)}）の獲得に、移籍金${yen(amount)}を提示してきました。\n市場価値は約${yen(v)}、年俸は${yen(p.salary)}です。${poach ? '\n移籍リストには載せていませんが、相手は本気のようです。' : ''}${club.div>S.div ? '\n上のカテゴリーからの話で、本人は乗り気のようです。' : ''}`,
+    [['ok',`受け入れる（${yen(amount)}）`],['up',`増額を求める（${yen(Math.round(amount*1.2))}）`],['no','断る']],
+    {pid:p.id, amount, club:club.name, up:club.div>S.div}));
+}
+function weeklyBids(){
+  if(S.inbox.filter(r=>r.kind==='bid').length >= 2) return;
+  const window = isOff() || (month(S.round)>=7 && month(S.round)<=8); // 冬と夏の移籍期間はオファーが増える
+  const c = ctxNow();
+  for(const p of S.players.filter(x=>x.listed && !recentRep(x))){
+    const attract = clamp(0.25 + (p.ovr - c.avg)/40 + (p.age<=25?0.1:p.age>=32?-0.1:0), 0.08, 0.7);
+    if(Math.random() < attract * (window?1.6:0.8)) { makeBid(p, false); return; }
+  }
+  const stars = S.players.filter(x=>!x.listed && !x.loanFrom && !x.amateur && !recentRep(x) && x.ovr >= c.avg+5);
+  if(stars.length && Math.random() < (window?0.07:0.03)) makeBid(pick(stars), true);
+}
+function sellTo(p, amount, club){
+  if(S.players.length<=14) return '登録人数が最低の14人なので、売却できなかった。';
+  S.players = S.players.filter(x=>x!==p); earn(amount);
+  if(p.ovr >= teamRating(getLineup(true)).ovr+5 && !p.listed){ S.trust=clamp(S.trust-2,0,100); changeFans(-0.02,0); }
+  return `${p.name}を移籍金${yen(amount)}で${club}へ売却した。`;
+}
+function releasePlayer(id){
+  const p = S.players.find(x=>x.id===id); if(!p) return;
+  if(S.players.length<=14) return toast('選手は最低14人必要です。');
+  const cost = releaseCost(p);
+  if(S.money < cost) return toast(`違約金${yen(cost)}を払う資金がありません。`);
+  const msg = p.expiring ? `${p.name}と契約を更新せず、退団させますか？` : `${p.name}との契約を解除しますか？ 残り${p.contract}年の契約が残っているため、違約金${yen(cost)}がかかります。`;
+  confirmBox(msg, ()=>{
+    spend(cost);
+    S.players = S.players.filter(x=>x!==p);
+    addNews(p.expiring ? `${p.name}との契約を更新しないことを決定。「${S.club}で過ごした日々に感謝します」` : `${p.name}との契約を解除（違約金${yen(cost)}）。`);
+    if(p.age<=26 && p.ovr>=teamRating(getLineup(true)).ovr) boostMor(S.players,-2);
+    ui.detail = null; save(); render();
+  });
+}
+
 // ===================== 旧セーブ互換 =====================
 function migrate(s){
   if(!s.v || s.v<2){ // 旧版は金額が実際の約1/10だったので補正
@@ -2188,21 +2256,16 @@ function renderSquad(){
   const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
   return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
-  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>名前か「詳細」を押すと、能力・契約・状態の確認や、休養・売却・契約更新ができます。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、満了＝契約満了</details>
+  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の顔。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
-    <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th class="num">契約</th><th></th></tr></thead><tbody>
-    ${ps.map(p=>`<tr data-id="${p.id}">
+    <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
+    ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
       <td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td>
-      <td class="pcell" data-act="player" data-arg="${p.id}"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.expiring?'<span class="tag inj">満了</span>':''}</div></td>
+      <td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.listed?'<span class="tag inj">放出候補</span>':''}</div></td>
       <td class="num">${p.age}</td>
-      <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
-      <td>${stars(p)}</td>
-      <td style="min-width:60px"><div class="bar ${p.cond>70?'':'gold'}"><i style="width:${p.cond}%"></i></div></td>
-      <td class="num">${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</td>
-      <td class="num hide-s">${p.sg}<span class="muted small">/${p.goals}</span></td>
-      <td class="num hide-s">${p.amateur?'アマ':yen(p.salary)}</td>
+      <td class="num"><span class="ovr">${round1(p.ovr)}</span><div class="pstars">${stars(p)}</div></td>
+      <td class="pstate"><div class="bar ${p.cond>70?'':'gold'}" title="調子 ${Math.round(p.cond)}"><i style="width:${p.cond}%"></i></div><span title="士気 ${Math.round(p.mor??60)}">${moraleFace(p.mor??60)}</span></td>
       <td class="num small">${p.loanFrom||p.amateur?'—':p.expiring?'<span class="minus">満了</span>':`${p.contract??'-'}年`}</td>
-      <td><button class="btn" data-act="player" data-arg="${p.id}">詳細</button></td>
     </tr>`).join('')}
   </tbody></table></div></div>`;
 }
@@ -2542,6 +2605,7 @@ const ACTIONS = {
   crowdfund(){ crowdfund(); },
   buyout(a){ ui.flash=a; buyoutPlayer(a); },
   release(a){ releasePlayer(a); },
+  list(a){ toggleList(a); },
   reg2(a){ ui.flash=a; register2(a); },
   player(a){ showPlayer(a); },
   role(a){ const [id,r]=a.split('|'); changeRole(id,r); },
