@@ -756,6 +756,56 @@ function pickScorer(xi){
   for(const x of w){ r-=x.w; if(r<=0) return x.p; }
   return w[0].p;
 }
+// ===================== リーグ戦以外の試合（天皇杯・ポストシーズン・練習試合）の観戦 =====================
+// 結果は先に決まっていて、試合の流れをあとから見せる
+function queueMatch(o){
+  ui.mq = ui.mq || [];
+  const xi = getLineup(true), evs = [];
+  for(let i=0;i<o.gu;i++){ const p = pickScorer(xi); evs.push({m:RI(1,90), us:true, text:`ゴール！ ${p.name} ${pick(GOAL_LINES)}`}); }
+  for(let i=0;i<o.go;i++) evs.push({m:RI(1,90), us:false, text:`${o.opp} ${pick(OPP_LINES)}`});
+  [...FLAVOR].sort(()=>Math.random()-0.5).slice(0,RI(2,4)).forEach(t=>evs.push({m:RI(1,90), flavor:t}));
+  evs.sort((x,y)=>x.m-y.m);
+  ui.mq.push({...o, events:evs});
+}
+function runQueue(then){
+  if(ui.mq && ui.mq.length){ ui.mqThen = then; showExtraMatch(ui.mq.shift()); }
+  else { ui.mqThen = null; then && then(); }
+}
+function showExtraMatch(m){
+  const usHome = m.where!=='away';
+  const homeName = usHome ? S.club : m.opp, awayName = usHome ? m.opp : S.club;
+  const res = m.gu>m.go ? 'W' : m.gu<m.go ? 'L' : 'D';
+  const left = ui.mq.length;
+  openModal(`
+    <div class="small muted" style="text-align:center">${esc(m.title)}・${m.where==='home'?'ホーム':m.where==='away'?'アウェイ':'中立地'}</div>
+    <div class="score"><div class="t">${esc(homeName)}</div><div class="n" id="sc">0 - 0</div><div class="t">${esc(awayName)}</div></div>
+    <div class="clock" id="clk">キックオフ</div>
+    <ul class="log" id="log"></ul>
+    <div id="after"></div>
+    <div class="row" id="mrow"><button class="btn" data-act="skip">スキップ</button></div>`);
+  let min = 0, hs = 0, as = 0; const evs = [...m.events];
+  const $log = document.getElementById('log'), $sc = document.getElementById('sc'), $clk = document.getElementById('clk');
+  const step = ()=>{
+    min++;
+    while(evs.length && evs[0].m<=min){
+      const e = evs.shift();
+      if(!e.flavor){ if(e.us===usHome) hs++; else as++; }
+      $log.insertAdjacentHTML('beforeend', `<li class="${e.flavor?'':(e.us?'goal us':'goal them')}"><span class="m">${e.m}'</span>${esc(e.text||e.flavor)}</li>`);
+      $sc.textContent = `${hs} - ${as}`; $log.scrollTop = $log.scrollHeight;
+    }
+    $clk.textContent = min>=90 ? '試合終了' : `${min}分`;
+    if(min>=90){ clearInterval(playTimer); playTimer = null; finish(); }
+  };
+  const finish = ()=>{
+    if(m.note){ $log.insertAdjacentHTML('beforeend', `<li><span class="m">90+</span>${esc(m.note.replace(/[（）]/g,''))}</li>`); $log.scrollTop = $log.scrollHeight; }
+    const word = m.win===true ? (m.final ? '優勝！' : '勝ち抜け！') : m.win===false ? (res==='W' ? '勝利' : '敗退…') : {W:'勝利！',D:'引き分け',L:'敗戦…'}[res];
+    const col = m.win===true || (m.win==null && res==='W') ? 'win' : m.win===false || res==='L' ? 'loss' : 'draw';
+    document.getElementById('after').innerHTML = `<h2 style="text-align:center;color:var(--${col})">${word}</h2>${m.after?`<p class="small" style="text-align:center;margin:0">${esc(m.after)}</p>`:''}`;
+    document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="extraDone">${left?`次の試合へ（あと${left}試合）`:'続ける'}</button>`;
+  };
+  ui.finishMatch = ()=>{ if(playTimer){ clearInterval(playTimer); playTimer = null; } while(min<90) step(); };
+  playTimer = setInterval(step, 35);
+}
 
 function playOurMatch(h,a){
   const home = h===0; const oi = home?a:h; const opp = S.teams[oi];
@@ -892,6 +942,7 @@ function advance(){
   if(S && !S.over) ui.tab = 'home'; // 日程を進めたらホームに戻る
   if(S && !S.over && isOff()) return advanceOff();
   if(!S || S.over || S.round>=nr()) return;
+  ui.mq = [];
   const before = {money:S.money, fans:S.fans};
   expireReports();
   applyTraining();
@@ -1851,6 +1902,7 @@ const OFF_EVENTS = [
     const lv = j1 ? TOP : clamp(S.div + RI(0,1), 1, TOP);
     const opp = fakeOpp(`${genTeam(lv).name}（${DIVS[lv].short}）`, (DIVS[lv].base[0]+DIVS[lv].base[1])/2);
     const m = quickMatch(opp, 'home');
+    queueMatch({title:'プレシーズンマッチ', opp:opp.name, where:'home', gu:m.gu, go:m.go});
     if(j1) boostMor(S.players, m.gu>=m.go ? 6 : 2);
     const att = Math.round(Math.min(CAP[S.fac.stadium-1], S.fans * R(0.5, 0.8) * (j1?1.6:1)));
     const inc = Math.round(att * DIVS[S.div].ticket * 0.8 / 10000); earn(inc, 'ticket');
@@ -1870,6 +1922,7 @@ function campDay(last){
   const opp = `${genTeam(lv).name}（${DIVS[lv].short}）`;
   const my = teamRating(getLineup(true)).ovr, os = DIVS[lv].base[0] + R(-2,4);
   const gu = poisson(lam(my, os, true, 1)), go = poisson(lam(os, my, false, 0.9));
+  queueMatch({title:`${c.name} 練習試合`, opp, where:'neutral', gu, go});
   lines.push(`${c.name}：練習試合 vs ${opp} ${gu}-${go}${gu>go?'。手応えのある勝利':gu<go?'。課題が見えた':''}。`);
   if(S.camp==='thai' && !last){ S.companies.forEach(co=>{ if(co.size>=2) co.rel=clamp(co.rel+4,0,100); }); lines.push('タイ遠征が地元経済紙で取り上げられ、企業の関心が高まった（関係+4）。'); }
   if(S.camp==='okinawa' && Math.random()<0.5){ const f=changeFans(0.01,10); lines.push(`沖縄まで駆けつけたサポーターと交流。ファン +${f}人。`); }
@@ -1892,6 +1945,7 @@ function computeTarget(){
 function advanceOff(){
   if(S.offChoice && !S.offChoice.picked){ const o = OFF_DECISIONS[S.offChoice.w].opts(S.offChoice); if(o.length) pickOffChoice(o[o.length-1][0]); }
   const before = {money:S.money, fans:S.fans};
+  ui.mq = [];
   expireReports();
   const w = S.offWeek;
   academyWeek(false);
@@ -1920,7 +1974,7 @@ function advanceOff(){
     addNews(`第${S.season}シーズン開幕！ ${DIVS[S.div].name}で戦う。フロントの目標は${S.target}位以内。`);
   }
   save();
-  showOffWeek(w, lines, {dm:S.money-before.money, df:S.fans-before.fans}, kickoff);
+  runQueue(()=>showOffWeek(w, lines, {dm:S.money-before.money, df:S.fans-before.fans}, kickoff));
 }
 function showOffWeek(w, lines, d, kickoff){
   const P = OFF_PLAN[w];
@@ -2475,6 +2529,7 @@ function postMatch(post, label, opp, where, tieRule){
     else if(tieRule==='pk'){ win = Math.random()<0.5; note = `（PK戦 ${win?'勝利':'敗戦'}）`; }
   }
   post.push({label, opp:opp.name, where, gu:m.gu, go:m.go, res: m.gu>m.go?'W':m.gu<m.go?'L':'D', win, note});
+  queueMatch({title:label, opp:opp.name, where, gu:m.gu, go:m.go, note, win: tieRule ? win : undefined});
   return {win, ...m};
 }
 // 総当たりのミニリーグ（地域CL）
@@ -2764,6 +2819,7 @@ function playCupRound(i){
   if(m.gu===m.go){ win = Math.random()<0.5; note = `（延長・PK戦 ${win?'勝利':'敗戦'}）`; }
   const upset = win && opp.str > teamRating(getLineup(true)).ovr + 5;
   const line = `【天皇杯】${R_.name} vs ${opp.name} ${m.gu}-${m.go}${note} ${win ? (R_.final ? '天皇杯優勝！！' : upset ? '大金星！' : '勝利') : '敗退'}`;
+  queueMatch({title:R_.name.startsWith('天皇杯') ? R_.name : `天皇杯 ${R_.name}`, opp:opp.name, where, gu:m.gu, go:m.go, note, win, final:!!R_.final, after: win && upset ? '格上を倒す大金星！' : ''});
   c.log.push(line); addNews(line);
   getLineup(true).forEach(s=>{ if(!s.p.ghost) s.p.cond = clamp(s.p.cond-10, 30, 100); });
   if(win){
@@ -3496,7 +3552,7 @@ function showMatch(m, fin, d){
       ${m.ratings&&m.ratings[0]?`<p class="small" style="margin:8px 0 0">MVP：<b>${esc(m.ratings[0].p.name)}</b>（評価 ${m.ratings[0].r.toFixed(1)}）</p>
         <details class="small"><summary>出場選手の評価</summary><div class="kv">${m.ratings.map(x=>`<span>${esc(x.p.name)}${x.g?`（${x.g}得点）`:''}</span><span class="v ${x.r>=7?'plus':x.r<5.5?'minus':''}">${x.r.toFixed(1)}</span>`).join('')}</div></details>`:''}
       ${d.ac?`<p class="small muted" style="margin:6px 0 0">${esc(d.ac)}</p>`:''}
-      ${d.cup&&d.cup.length?`<div class="warn">${d.cup.map(esc).join('<br>')}</div>`:''}
+      ${d.cup&&d.cup.length?`<div class="warn">今週は天皇杯の試合もあります（続けると観戦）</div>`:''}
       ${d.ev?`<div class="warn">${esc(d.ev)}</div>`:''}
       ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}`;
     document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="matchDone">続ける</button>`;
@@ -3507,6 +3563,9 @@ function showMatch(m, fin, d){
 
 function showSeasonEnd(){
   const rep = endSeason();
+  runQueue(()=>seasonEndModal(rep));
+}
+function seasonEndModal(rep){
   const head = rep.champion ? 'J1優勝！ 金沢から日本一へ！' : rep.moved===1 && rep.div===1 ? 'JFL昇格！ 全国リーグへ！' : rep.moved===1 ? `${DIVS[rep.div+1].name}へ昇格！` : rep.moved===-1 ? `${DIVS[rep.div-1].name}へ降格…` : `${DIVS[rep.div].name} 残留`;
   openModal(`
     <div class="small muted">${S.season-1}年目 シーズン総括</div>
@@ -3547,7 +3606,8 @@ const ACTIONS = {
   national(){ buyNational(); },
   advance(){ advance(); },
   skip(){ ui.finishMatch && ui.finishMatch(); },
-  matchDone(){ closeModal(); render(); if(S.over) showGameOver(); else if(S.round>=nr()) showSeasonEnd(); },
+  matchDone(){ closeModal(); runQueue(()=>{ render(); if(S.over) showGameOver(); else if(S.round>=nr()) showSeasonEnd(); }); },
+  extraDone(){ closeModal(); const t = ui.mqThen; runQueue(t); },
   season(){ showSeasonEnd(); },
   seasonDone(){ closeModal(); render(); if(S.over) showGameOver(); },
   set(a){ const [k,v]=a.split(':'); S[k]=v; save(); render(); },
