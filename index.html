@@ -178,6 +178,10 @@ summary{cursor:pointer;color:var(--indigo);font-weight:600}
 .dots i.now{background:var(--gold)}
 .pdgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
 .pdh{margin:14px 0 4px;font-size:13px;color:var(--muted)}
+.atg{display:flex;gap:8px;align-items:flex-start;margin-top:4px}.atgn{flex:0 0 44px;font-size:11px;color:var(--muted);padding-top:4px}
+.atr{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px 8px}
+.atc{display:flex;align-items:baseline;gap:4px;font-size:12px;padding:2px 0;border-bottom:1px solid var(--line)}.atc span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atc.key span{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}.atc b{font-variant-numeric:tabular-nums}.atc b.hi{color:var(--win)}.atc b.lo{color:var(--loss)}.atc i{font-style:normal;font-size:10px}
 td.pcell{cursor:pointer}
 .seg.scrollx{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;overscroll-behavior:none;margin-top:0}
 .seg.scrollx::-webkit-scrollbar{display:none}
@@ -380,7 +384,7 @@ function roleEffect(xi){
   for(const s of xi){
     if(s.pen || s.p.ghost) continue;
     const r = roleOf(s.p); if(!r) continue;
-    const learn = s.p.roleNew>0 ? 0.5 : 1;
+    const learn = (s.p.roleNew>0 ? 0.5 : 1) * clamp(0.83 + roleFit(s.p, s.p.role)/20, 0.6, 1.35); // 能力が役割に合っているほど効果大
     const match = r.tac.includes(S.tactic) ? 1.5 : 1;
     if(match>1) fit++;
     att += (r.att||0) * match * learn * 0.35;
@@ -391,6 +395,106 @@ function roleEffect(xi){
   if(keyOk){ att += k.att; def += k.def; }
   // 平均的な噛み合いで0になるよう基準値を引く（相手チームとの公平さを保つ）
   return {att: att-2.3, def: def-2.0, fit, keyOk, key:k};
+}
+// ===================== 能力値の内訳（総合力はここから計算） =====================
+const ATTRS = {
+  sho:{n:'シュート', g:'tech'}, pas:{n:'パス', g:'tech'}, dri:{n:'ドリブル', g:'tech'}, cro:{n:'クロス', g:'tech'}, hea:{n:'ヘディング', g:'tech'}, tac:{n:'タックル', g:'tech'},
+  spd:{n:'スピード', g:'phys'}, sta:{n:'スタミナ', g:'phys'}, pow:{n:'フィジカル', g:'phys'},
+  vis:{n:'視野', g:'ment'}, pos:{n:'ポジショニング', g:'ment'}, com:{n:'冷静さ', g:'ment'},
+  ref:{n:'反応', g:'gk'}, han:{n:'キャッチング', g:'gk'}, one:{n:'飛び出し', g:'gk'},
+};
+// ポジションごとの重み（総合力＝重み付き平均）
+const POS_W = {
+  GK:{ref:3, han:2.5, pos:2, one:1.5, com:1, pas:0.5, pow:0.5},
+  DF:{tac:3, pos:2.5, hea:2, pow:1.5, spd:1, pas:0.8, com:0.8, sta:0.6, cro:0.3},
+  MF:{pas:3, vis:2.5, dri:1.5, sta:1.5, tac:1, com:1, sho:0.8, pos:0.8, cro:0.5},
+  FW:{sho:3, dri:1.5, spd:1.5, com:1.5, hea:1.2, pow:1, pos:1, pas:0.5},
+};
+// 役割ごとに必要な能力（生まれつき伸びていて、役割の適性にもなる）
+const ROLE_AT = {
+  stopper:['ref','han'], sweeper:['one','pas','spd'],
+  cb:['hea','pow','tac'], cover:['spd','pos','tac'], build:['pas','vis','com'], osb:['cro','spd','sta'], dsb:['tac','pos','sta'],
+  anchor:['tac','pos','pow'], b2b:['sta','tac','sho'], regista:['pas','vis','com'], wing:['cro','dri','spd'], ah:['dri','sho','vis'],
+  striker:['sho','com','pos'], post:['hea','pow','pas'], speed:['spd','dri','sho'], press:['sta','tac','pow'],
+};
+const FOCUS_T = {
+  bal: {name:'バランス', desc:'ポジションに必要な能力をまんべんなく'},
+  tech:{name:'技術', g:'tech', desc:'シュート・パス・ドリブル・守備技術を重点的に'},
+  phys:{name:'フィジカル', g:'phys', desc:'スピード・スタミナ・当たりの強さ。調子も落ちにくい'},
+  ment:{name:'戦術理解', g:'ment', desc:'視野・ポジショニング・冷静さ'},
+};
+function posW(pos){ return POS_W[pos] || POS_W.MF; }
+function compAt(at, pos){ const w = posW(pos); let a = 0, t = 0; for(const k in w){ a += w[k]*at[k]; t += w[k]; } return a/t; }
+function ageU(p, k, up){
+  const g = ATTRS[k].g;
+  if(g==='gk' && p.pos!=='GK') return 0.05;
+  if(up) return p.age<=21 ? (g==='phys'?1.4:g==='ment'?0.7:1.1) : p.age>=28 ? (g==='ment'?1.6:g==='phys'?0.4:1) : 1;
+  if(k==='spd' && p.age>=30) return 1.9; // 衰えはまずスピードから
+  return g==='phys' ? (p.age>=30?1.6:1.1) : g==='ment' ? 0.4 : 1;
+}
+// 能力の内訳を動かして、総合力（重み付き平均）を p.ovr に合わせる
+function fitAttrs(p){
+  const at = p.at, w = posW(p.pos);
+  for(let it=0; it<4; it++){
+    const d = p.ovr - compAt(at, p.pos); if(Math.abs(d) < 0.01) break;
+    const u = {}; let a = 0, t = 0;
+    for(const k in at){ u[k] = (d>0 ? at[k]>=99 : at[k]<=1) ? 0 : ageU(p, k, d>0) * (w[k] ? 1 : 0.3) * ((d>0 ? at[k]-p.ovr > 15 : p.ovr-at[k] > 15) ? 0.2 : 1); } // 重視されない能力はゆっくり動く
+    for(const k in w){ a += w[k]*u[k]; t += w[k]; }
+    if(a<=0) break;
+    const c = d*t/a;
+    for(const k in at) at[k] = clamp(at[k] + c*u[k], 1, 99);
+  }
+}
+function genAttrs(p){
+  const at = {}, w = posW(p.pos), bias = ROLE_AT[p.role] || [];
+  for(const k in ATTRS){
+    let v;
+    if(ATTRS[k].g==='gk' && p.pos!=='GK') v = R(5,18);
+    else if(p.pos==='GK' && !w[k]) v = p.ovr*0.45 + R(-5,5);
+    else v = p.ovr + R(-7,7) - (w[k] ? 0 : R(2,9));
+    if(bias.includes(k)) v += R(4,9);
+    at[k] = v;
+  }
+  if(p.age<=20){ at.com -= 4; at.pos -= 3; }
+  if(p.age>=31){ at.spd -= (p.age-29)*1.5; at.sta -= p.age-30; at.com += 4; at.vis += 2; }
+  for(const k in at) at[k] = clamp(at[k], 1, 99);
+  p.at = at; p.atPos = p.pos; fitAttrs(p);
+}
+function syncAt(p){ if(!p || p.ghost) return; if(!p.at || p.atPos!==p.pos) genAttrs(p); else fitAttrs(p); }
+function syncAll(){ if(!S) return; for(const p of S.players) syncAt(p); if(S.academy) for(const p of [...S.academy.u18, ...S.academy.u15]) syncAt(p); }
+// 練習による成長：能力ごとに伸ばし、総合力はその結果。重点練習がポジションに合えば総合も伸びやすい
+function growAttrs(p, g){
+  if(!(g>0)) return;
+  syncAt(p);
+  const f = FOCUS_T[S.drill||'bal'], w = posW(p.pos), at = p.at;
+  const base = {}, u = {}; let sb = 0, su = 0, a = 0, t = 0;
+  for(const k in at){
+    base[k] = ageU(p, k, true) * ((w[k]||0) + 0.4);
+    u[k] = base[k] * (f.g ? (ATTRS[k].g===f.g ? 2.2 : 0.5) : 1);
+    if(ATTRS[k].g==='gk' && p.pos!=='GK') base[k] = u[k] = 0;
+    sb += base[k]; su += u[k];
+  }
+  for(const k in w){ a += w[k]*base[k]; t += w[k]; }
+  const c = g*t/a * sb/su;
+  for(const k in at) at[k] = clamp(at[k] + c*u[k], 1, 99);
+  p.ovr = Math.min(p.pot, compAt(at, p.pos));
+  fitAttrs(p);
+}
+// 他ポジションで起用したときの総合力
+function posRating(p, pos){ return p.at ? compAt(p.at, pos) : p.ovr*(pos==='GK'||p.pos==='GK'?0.55:0.78); }
+function roleFit(p, role){ const ks = ROLE_AT[role]; if(!p.at || !ks) return 5; return ks.reduce((a,k)=>a+p.at[k],0)/ks.length - compAt(p.at, p.pos); }
+function fitMark(v){ return v>=4 ? '◎' : v>=0 ? '○' : v>=-5 ? '△' : '×'; }
+function traits(p, n){ syncAt(p); const ks = Object.keys(p.at).filter(k=>(ATTRS[k].g==='gk')===(p.pos==='GK') || (p.pos==='GK' && posW('GK')[k])); return ks.sort((a,b)=>p.at[b]-p.at[a]).slice(0, n||2).map(k=>ATTRS[k].n); }
+function attrHtml(p){
+  syncAt(p);
+  const groups = p.pos==='GK' ? [['GK',['ref','han','one']],['その他',['pos','com','pas','pow','spd']]]
+    : [['技術',['sho','pas','dri','cro','hea','tac']],['身体',['spd','sta','pow']],['メンタル',['vis','pos','com']]];
+  const w = posW(p.pos), at0 = p.at0 || {};
+  const cell = k => { const v = p.at[k], d = at0[k]!=null ? v - at0[k] : 0;
+    return `<div class="atc${(w[k]||0)>=1.5?' key':''}"><span>${ATTRS[k].n}</span><b class="${v>=p.ovr+5?'hi':v<=p.ovr-8?'lo':''}">${Math.round(v)}</b>${Math.abs(d)>=0.5?`<i class="${d>0?'plus':'minus'}">${d>0?'+':''}${Math.round(d)}</i>`:''}</div>`; };
+  const other = ['GK','DF','MF','FW'].filter(x=>x!==p.pos).map(x=>`${x} ${Math.round(posRating(p,x))}`).join('・');
+  return `<h3 class="pdh">能力の内訳</h3>${groups.map(([n,ks])=>`<div class="atg"><span class="atgn">${n}</span><div class="atr">${ks.map(cell).join('')}</div></div>`).join('')}
+    <p class="small muted" style="margin:4px 0 0">総合力は${p.pos}で重視する能力（下線）の重み付き平均。緑＝長所・赤＝短所、小さな数字は今季の増減。<br>他のポジションで起用した場合：${other}</p>`;
 }
 function changeRole(id, role){
   const p = S.players.find(x=>x.id===id); if(!p || !ROLES[p.pos][role] || p.role===role) return;
@@ -533,7 +637,7 @@ function startSeason(){
   if(S.ledger) S.lastLedger = S.ledger;
   S.ledger = {in:{}, out:{}};
   S.matchLog = [];
-  S.players.forEach(p=>{p.sg=0; p.sa=0; p.rSum=0; p.rN=0;});
+  S.players.forEach(p=>{p.sg=0; p.sa=0; p.rSum=0; p.rN=0; syncAt(p); p.at0 = {...p.at};});
   cupReset(); S.rival = undefined;
   computeTarget(); // 目標順位 = 戦力順位
 }
@@ -553,7 +657,8 @@ function getLineup(ignoreCond){
   }
   for(const pos of ['GK','DF','MF','FW']){
     while(need[pos]>0){
-      const rest = avail.filter(p=>!used.has(p.id)).sort((a,b)=>score(b)-score(a));
+      const pen = p => score(p) * (p.at ? clamp(posRating(p, pos)/p.ovr, 0.3, 1) : 0.78);
+      const rest = avail.filter(p=>!used.has(p.id)).sort((a,b)=>pen(b)-pen(a));
       if(rest.length){ used.add(rest[0].id); xi.push({p:rest[0], slot:pos, pen:true}); }
       else xi.push({p:{id:'ghost'+Math.random(),name:'ユース（臨時）',pos,ovr:18,cond:100,age:16,ghost:true}, slot:pos, pen:false});
       need[pos]--;
@@ -564,7 +669,7 @@ function getLineup(ignoreCond){
 function teamRating(xi){
   const f = FORMATIONS[S.formation];
   const g = {GK:[],DF:[],MF:[],FW:[]};
-  xi.forEach(s=>g[s.slot].push(eff(s.p)*(s.pen?(s.slot==='GK'?0.55:0.78):1)));
+  xi.forEach(s=>g[s.slot].push(eff(s.p)*(s.pen ? (s.p.at ? clamp(posRating(s.p, s.slot)/s.p.ovr, 0.3, 1)*0.95 : (s.slot==='GK'?0.55:0.78)) : 1)));
   const avg = a=>a.length? a.reduce((x,y)=>x+y,0)/a.length : 15;
   const GK=avg(g.GK), DF=avg(g.DF), MF=avg(g.MF), FW=avg(g.FW);
   const m = S.staff.manager;
@@ -601,9 +706,9 @@ function applyTraining(){
     if(p.playHurt) healWeek(p);
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
     if(t.g>0 && ageF>0 && !S.snow){
-      p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*wk()*t.g*ageF*facG*(p.age<=23?youthM:1)*(p.pos==='GK'?gkM:1)*R(0.5,1.5));
+      growAttrs(p, Math.max(0,p.pot-p.ovr)*0.03*wk()*t.g*ageF*facG*(p.age<=23?youthM:1)*(p.pos==='GK'?gkM:1)*R(0.5,1.5));
     }
-    p.cond = clamp(p.cond + t.c + (p.rest?12:0), 30, 100);
+    p.cond = clamp(p.cond + t.c + (p.rest?12:0) + (S.drill==='phys'&&t.c<0?2:0), 30, 100);
     if(!p.rest && !(p.inj>0) && Math.random() < t.inj*injuryRisk(p)*Math.min(1,wk()*1.3)){ injure(p, S.training==='hard' ? (Math.random()<0.5?'overuse':'muscle') : (Math.random()<0.6?'muscle':'random')); }
   }
   S.snow = false;
@@ -1668,7 +1773,7 @@ function offTraining(w){
     const camp = w===6||w===7 ? CAMPS[S.camp||'home'] : w===4 ? {g:0.35} : {g:0.5}; // 自主トレ→始動→キャンプ
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
     const facG = (0.8+0.15*S.fac.training) * (p.age<=23 ? 0.8+staffAb('youth')/250 : 1);
-    p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*camp.g*ageF*facG*R(0.5,1.5));
+    growAttrs(p, Math.max(0,p.pot-p.ovr)*0.03*camp.g*ageF*facG*R(0.5,1.5));
     p.cond = clamp(p.cond - 4 + 8, 40, 100);
     if((w===6||w===7) && Math.random()<0.012*injuryRisk(p)){ injure(p, Math.random()<0.5?'muscle':'overuse'); lines.push(`キャンプ中に${p.name}が${injLabel(p)}（全治${p.inj}週）。`); }
   }
@@ -1911,13 +2016,14 @@ function showPlayer(id){
   openModal(`<div style="display:flex;align-items:center;gap:8px">${posTag(p.pos)}<h2 style="margin:0">${esc(p.name)}</h2></div>
     <p class="small muted" style="margin:4px 0 10px">${p.age}歳${p.foreign?`・外国籍${p.region?`（${REGIONS[p.region].name}）`:''}`:''}${p.from?`・${esc(p.from)}出身`:''}</p>
     <div class="pdgrid">
-      <div><span class="small muted">能力</span><div class="ovr" style="font-size:22px">${Math.round(p.ovr)}</div>${bar(p.ovr)}</div>
+      <div><span class="small muted">総合力</span><div class="ovr" style="font-size:22px">${Math.round(p.ovr)}</div>${bar(p.ovr)}</div>
       <div><span class="small muted">伸びしろ</span><div style="margin-top:6px">${potTxt}</div></div>
       <div><span class="small muted">調子</span><div><b>${Math.round(p.cond)}</b></div>${bar(p.cond, p.cond>70?'':'gold')}</div>
       <div><span class="small muted">士気</span><div><b>${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</b></div>${bar(p.mor??60,'gold')}</div>
     </div>
-    <h3 class="pdh">役割</h3>${(()=>{ const r=roleOf(p); if(!r) return ''; return `<p class="small" style="margin:0"><b>${r.name}</b>${p.roleNew>0?`<span class="muted">（転向中・慣れるまであと${p.roleNew}週）</span>`:''}<br>${r.desc}<br><span class="muted">合う戦術：${r.tac.map(t=>TACTICS[t].name).join('・')}${r.tac.includes(S.tactic)?' <span class="plus">✓今の戦術に合っている</span>':''}</span></p>
-      <details class="small" style="margin-top:4px"><summary>役割を変える</summary><div class="seg">${Object.entries(ROLES[p.pos]).filter(([k])=>k!==p.role).map(([k,v])=>`<button data-act="role" data-arg="${p.id}|${k}">${v.name}</button>`).join('')}</div><span class="muted">変えると約4週間は効果が半分になります。</span></details>`; })()}
+    ${attrHtml(p)}
+    <h3 class="pdh">役割</h3>${(()=>{ const r=roleOf(p); if(!r) return ''; return `<p class="small" style="margin:0"><b>${r.name}</b> <span class="muted">適性${fitMark(roleFit(p,p.role))}</span>${p.roleNew>0?`<span class="muted">（転向中・慣れるまであと${p.roleNew}週）</span>`:''}<br>${r.desc}<br><span class="muted">合う戦術：${r.tac.map(t=>TACTICS[t].name).join('・')}${r.tac.includes(S.tactic)?' <span class="plus">✓今の戦術に合っている</span>':''}</span></p>
+      <details class="small" style="margin-top:4px"><summary>役割を変える</summary><div class="seg">${Object.entries(ROLES[p.pos]).filter(([k])=>k!==p.role).map(([k,v])=>`<button data-act="role" data-arg="${p.id}|${k}">${v.name} ${fitMark(roleFit(p,k))}</button>`).join('')}</div><span class="muted">◎○△×＝能力から見た適性。変えると約4週間は効果が半分になります。</span></details>`; })()}
     <h3 class="pdh">状態</h3><p class="small" style="margin:0">${state}</p>${medical}
     <h3 class="pdh">成績</h3>
     <div class="kv"><span>今季</span><span class="v">${p.sa}試合 ${p.sg}得点${rAvg(p)?`・平均評価 ${rAvg(p).toFixed(2)}`:''}${p.mvps?`・MVP ${p.mvps}回`:''}</span>${p.last&&p.last.length?`<span>直近の評価</span><span class="v">${p.last.map(r=>`<span class="${r>=7?'plus':r<5.5?'minus':''}">${r.toFixed(1)}</span>`).join(' ')}</span>`:''}<span>通算</span><span class="v">${p.apps}試合 ${p.goals}得点</span></div>
@@ -2932,7 +3038,7 @@ function migrate(s){
 }
 
 // ===================== 保存 =====================
-function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+function save(){ try{ syncAll(); }catch(e){} try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const s = localStorage.getItem(SAVE_KEY); return s?JSON.parse(s):null; }catch(e){ return null; } }
 function clearSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
 
@@ -3128,7 +3234,7 @@ function renderTactics(){
   const m = S.staff.manager;
   return `<div class="infobar" style="margin-top:12px">
     <span><b>${S.formation}</b>・${TACTICS[S.tactic].name}${m&&m.style===S.tactic?' <span class="plus">✓得意</span>':''}</span>
-    <span>${TRAINING[S.training].name}</span><span>攻 <b>${rt.att.toFixed(1)}</b> / 守 <b>${rt.def.toFixed(1)}</b></span>
+    <span>${TRAINING[S.training].name}・${FOCUS_T[S.drill||'bal'].name}</span><span>攻 <b>${rt.att.toFixed(1)}</b> / 守 <b>${rt.def.toFixed(1)}</b></span>
     <details><summary>今週の方針</summary>チケット：${TICKET[S.ticket].name}・広報活動：${PR[S.pr].name}${m?`<br>監督 ${esc(m.name)} の得意戦術は「${TACTICS[m.style].name}」。合わせると戦力が上がります。`:''}</details>
   </div>
   <div class="infobar" style="margin-top:0">${(()=>{ const re=rt.roles; return `<span>役割の噛み合い <b>${re.fit}</b>/11人</span><span class="${re.keyOk?'plus':'minus'}">${re.keyOk?'✓':'✗'} ${re.key.label}</span><details><summary>役割とは</summary>選手にはポジションごとに役割（アンカー、司令塔、ポストプレーヤーなど）があります。今の戦術に合う役割の選手が多いほど、また陣形に欲しい役割の選手がいるとボーナスが付きます。役割は選手の詳細から変えられます。<br>スタメンの役割：${getLineup().filter(s=>!s.p.ghost).map(s=>`${esc(s.p.name)}（${esc(roleShort(s.p))}）`).join('、')}</details>`; })()}</div>
@@ -3136,7 +3242,8 @@ function renderTactics(){
     <div class="card"><h3>フォーメーション</h3>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}
 </div>
     <div class="card"><h3>戦術</h3>${optGroup('tactic', TACTICS, S.tactic)}</div>
-    <div class="card"><h3>今週の練習</h3>${optGroup('training', TRAINING, S.training)}</div>
+    <div class="card"><h3>今週の練習</h3>${optGroup('training', TRAINING, S.training)}<h3 style="margin-top:10px">練習テーマ</h3>${optGroup('drill', FOCUS_T, S.drill||'bal')}
+      <p class="small muted" style="margin-bottom:0">伸ばす能力の系統を選びます。ポジションで重視される能力が伸びるほど総合力も上がります（FW・DFは技術、GKは戦術理解が効きやすい）。若手はフィジカル、ベテランは戦術理解が伸びやすく、フィジカル練習は調子も落ちにくくなります。</p></div>
     <div class="card"><h3>チケット価格（ホーム）</h3>${optGroup('ticket', TICKET, S.ticket, (k,d)=>`${Math.round(DIVS[S.div].ticket*d.price)}円・集客×${d.demand}`)}
       <p class="small muted" style="margin-bottom:0">スタジアム収容 ${CAP[S.fac.stadium-1].toLocaleString()}人</p></div>
     <div class="card" style="grid-column:1/-1"><h3>今週の広報活動（金沢の街で）</h3>${optGroup('pr', PR, S.pr, (k,d)=>`${d.cost?yen(d.cost):'無料'}・${d.desc}`)}
@@ -3160,6 +3267,7 @@ function renderMarket(){
         ${p.loanFrom?`<div class="small muted" style="margin-top:4px">${esc(p.loanFrom)}（${p.loanDiv}）の有望株。今季終了まで期限付き移籍</div>`:p.bio?`<div class="small muted" style="margin-top:4px">${esc(p.bio)}</div>`:''}
         <div class="kv" style="margin-top:8px">
           <span>年齢</span><span class="v">${p.age}歳</span>
+          <span>特徴</span><span class="v">${traits(p).join('・')}</span>
           <span>能力</span><span class="v"><span class="ovr">${round1(p.ovr)}</span> <span class="small ${up>0?'plus':'muted'}">${up>0?`先発+${round1(up)}`:'控え級'}</span></span>
           <span>伸びしろ</span><span class="v">${stars(p)}</span>
           <span>年俸</span><span class="v">${yen(p.salary)}/年${p.loanFrom?'<br><span class="small muted">（残り半分は親クラブ負担）</span>':''}</span>
