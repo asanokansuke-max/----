@@ -29,15 +29,15 @@ body{background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Noto San
 button{font:inherit;color:inherit;cursor:pointer}
 select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
 .wrap{max-width:1040px;margin:0 auto;padding:0 16px 16px}
-main.main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none}
+.main{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none}
 /* リスト系のタブはページ全体を動かさず、リストの枠だけがスクロールする */
-main.fill{overflow:hidden}
-main.fill>.wrap{height:100%;display:flex;flex-direction:column}
-main.fill>.wrap>*{flex-shrink:0}
-main.fill .grow{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
-main.fill .grow>*{flex-shrink:0}
-main.fill .grow>.list-scroll,main.fill .grow>.card-scroll,main.fill>.wrap>.card-scroll{flex:1 1 0;min-height:120px;max-height:none}
-main.fill .side{flex:0 1 auto;max-height:26%;overflow-y:auto;overscroll-behavior:none}
+.fill{overflow:hidden}
+.fill>.wrap{height:100%;display:flex;flex-direction:column}
+.fill>.wrap>*{flex-shrink:0}
+.fill .grow{flex:1 1 0;min-height:0;display:flex;flex-direction:column}
+.fill .grow>*{flex-shrink:0}
+.fill .grow>.list-scroll,.fill .grow>.card-scroll,.fill>.wrap>.card-scroll{flex:1 1 0;min-height:120px;max-height:none}
+.fill .side{flex:0 1 auto;max-height:26%;overflow-y:auto;overscroll-behavior:none}
 .title-wrap{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:none;padding-bottom:24px}
 .card-scroll .grid,.card-scroll .mk{align-items:start}
 header.top{flex:none;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
@@ -227,18 +227,21 @@ table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .mood{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:3px}
 .mood.good{background:var(--win)}.mood.ok{background:#7fb3d5}.mood.low{background:var(--warn)}.mood.bad{background:var(--loss)}
 #app{position:relative}
-.sheet-back{position:absolute;inset:0;background:rgba(10,14,22,.35);z-index:8}
-.sheet{position:absolute;left:0;right:0;top:10px;bottom:0;z-index:9;display:flex;flex-direction:column;background:var(--bg);border-radius:16px 16px 0 0;box-shadow:0 -8px 28px rgba(0,0,0,.2);overflow:hidden}
-.sheet.enter{animation:sheetUp .26s cubic-bezier(.2,.8,.2,1)}
-@keyframes sheetUp{from{transform:translateY(100%)}to{transform:none}}
-@media (prefers-reduced-motion:reduce){.sheet.enter{animation:none}}
-.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;max-width:1040px;margin:0 auto;padding:12px 16px 2px}
-.sheet-head::before{content:"";position:absolute;left:50%;top:5px;width:40px;height:4px;margin-left:-20px;border-radius:2px;background:var(--line)}
+.sheet-back{position:absolute;inset:0;background:rgba(10,14,22,.45);z-index:8;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+/* 画面の真ん中に浮かぶパネル。後ろのホームは透けて見える */
+.sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(calc(100% - 24px), 960px);height:min(calc(100% - 28px), 860px);z-index:9;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 48px rgba(0,0,0,.28);overflow:hidden}
+.sheet.enter{animation:sheetPop .22s cubic-bezier(.2,.8,.2,1)}
+.sheet-back.enter{animation:fadeIn .22s ease-out}
+@keyframes sheetPop{from{opacity:0;transform:translate(-50%,-46%) scale(.94)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){.sheet.enter,.sheet-back.enter{animation:none}}
+.sheet-head{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:10px 12px 2px 16px}
 .sheet-title{display:flex;align-items:center;gap:8px;color:var(--indigo)}
 .sheet-title b{font-size:17px;color:var(--ink)}
 .sheet-x{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:flex;align-items:center;justify-content:center;color:var(--ink);padding:0}
 .sheet-x svg{width:16px;height:16px}
 .sheet-body{flex:1;min-height:0}
+.sheet-body>.wrap{max-width:none;padding:0 12px 12px}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -2476,7 +2479,7 @@ function render(){
     </div>
   </div></header>
   <main class="main fill" data-keep="main-home"><div class="wrap">${ui.tab==='home' ? body : renderHome()}</div></main>
-  ${ui.tab!=='home' ? `<div class="sheet-back" data-act="tab" data-arg="home"></div>
+  ${ui.tab!=='home' ? `<div class="sheet-back ${opening?'enter':''}" data-act="tab" data-arg="home"></div>
   <section class="sheet ${opening?'enter':''}" role="dialog" aria-label="${MENU.find(m=>m.k===ui.tab)?.name||''}">
     <div class="sheet-head"><span class="sheet-title">${ICON(MENU.find(m=>m.k===ui.tab)?.ic)}<b>${MENU.find(m=>m.k===ui.tab)?.name||''}</b></span>
       <button class="sheet-x" data-act="tab" data-arg="home" aria-label="閉じてホームに戻る"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
