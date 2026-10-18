@@ -384,11 +384,11 @@ function startSeason(){
 }
 
 // ===================== 戦力計算 =====================
-function eff(p){ return p.ovr*(0.72+0.28*p.cond/100)*(0.94+0.12*(p.mor??50)/100); }
+function eff(p){ return p.ovr*(0.72+0.28*p.cond/100)*(0.94+0.12*(p.mor??50)/100)*(p.playHurt&&p.inj>0?0.85:1)*(p.rust>0?0.93:1); }
 function getLineup(ignoreCond){
   const f = FORMATIONS[S.formation];
   const need = {GK:1, DF:f.DF, MF:f.MF, FW:f.FW};
-  const avail = S.players.filter(p=>p.inj===0 && !p.rest && !p.restOnce && !p.loan);
+  const avail = S.players.filter(p=>(p.inj===0 || p.playHurt) && !p.rest && !p.restOnce && !p.loan);
   const score = p=> (p.promise?1000:0) + (ignoreCond ? p.ovr : eff(p));
   const used = new Set(); const xi = [];
   for(const pos of ['GK','DF','MF','FW']){
@@ -439,15 +439,15 @@ function applyTraining(){
   const injured = [];
   for(const p of S.players){
     if(p.loan) continue;
-    if(p.inj>0){ p.inj--; p.cond = clamp(p.cond+10,30,100); continue; }
+    if(p.inj>0 && !p.playHurt){ healWeek(p); p.cond = clamp(p.cond+10,30,100); continue; }
+    if(p.playHurt) healWeek(p);
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
     if(t.g>0 && ageF>0 && !S.snow){
       p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*t.g*ageF*facG*(p.age<=23?youthM:1)*(p.pos==='GK'?gkM:1)*R(0.5,1.5));
     }
     p.cond = clamp(p.cond + t.c + (p.rest?12:0), 30, 100);
-    if(!p.rest && Math.random() < t.inj*medRed){ p.inj = RI(1,3); injured.push(p); }
+    if(!p.rest && !(p.inj>0) && Math.random() < t.inj*injuryRisk(p)){ injure(p, S.training==='hard' ? (Math.random()<0.5?'overuse':'muscle') : (Math.random()<0.6?'muscle':'random')); }
   }
-  injured.forEach(p=>addNews(`練習中に ${p.name} が負傷（全治${p.inj}週）。`));
   S.snow = false;
   if(S.restBack){ S.training = S.restBack; S.restBack = null; }
 }
@@ -520,11 +520,12 @@ function playOurMatch(h,a){
     if(ids.has(p.id)){
       p.apps++; p.sa++; p.cond = clamp(p.cond-18,30,100);
       if(p.age<=27) p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.012);
-      if(Math.random()<0.025*medRed){ p.inj=RI(1,4); injuredNow.push(p); }
+      afterMatchInjury(p);
+      if(!(p.inj>0) && Math.random()<0.02*injuryRisk(p)){ const scene = injure(p, Math.random()<0.6?'contact':'muscle'); injuredNow.push([p,scene]); }
     } else if(p.inj===0){ p.cond = clamp(p.cond+8,30,100); }
     p.cond = clamp(p.cond + 6 + (S.fac.medical-1)*2 + staffAb('physical')/40, 30, 100);
   }
-  injuredNow.forEach(p=>{ events.push({m:RI(10,89), text:`🚑 ${p.name} が負傷交代（全治${p.inj}週）`, inj:true}); });
+  injuredNow.forEach(([p,scene])=>{ events.push({m:RI(10,89), text:`🚑 ${p.name}が${scene}。そのまま交代（${injLabel(p)}・全治${p.inj}週）`, inj:true}); });
   events.sort((x,y)=>x.m-y.m);
   if(home) record(0,oi,gu,go); else record(oi,0,go,gu);
   const res = gu>go?'W':gu<go?'L':'D';
@@ -546,7 +547,7 @@ const EVENTS = [
   {w:1, f:()=>{const d=changeFans(0.025,15); return `兼六園ライトアップとのコラボ企画が好評。ファン +${d}人`;}},
   {w:0.8, f:()=>{const d=changeFans(0.02,15); return `金沢21世紀美術館でクラブ展示を開催。ファン +${d}人`;}},
   {w:0.8, f:()=>{const d=changeFans(0.015,10); return `選手たちが近江町市場で海鮮丼を食べる姿がSNSでバズる。ファン +${d}人`;}},
-  {w:1.2, f:()=>{const c=S.players.filter(p=>p.inj===0); if(!c.length) return null; const p=pick(c); p.inj=RI(1,2); return `${p.name} が雪道で転倒し負傷（全治${p.inj}週）。`;}},
+  {w:1.2, f:()=>{const c=S.players.filter(p=>p.inj===0); if(!c.length) return null; const p=pick(c); injure(p,'random'); return `${p.name}が雪道で転倒し、${injLabel(p)}（全治${p.inj}週）。`;}},
   {w:0.8, f:()=>{const v=Math.round(R(300,1000)*Math.sqrt(DIV_MULT[S.div])); spend(v); return `雷雨でスタジアムの照明が故障。修理費 ${yen(v)}。`;}},
   {w:0.8, f:()=>{S.trust=clamp(S.trust-3,0,100); return '北國の地元紙が辛口のクラブ批評を掲載。フロントの信頼 -3';}},
   {w:2, ok:()=>month(S.round)===6, f:()=>{const d=changeFans(0.05,30); return `百万石まつりの行列にクラブで参加！ ファン +${d}人`;}},
@@ -985,13 +986,21 @@ const REPORTS = {
   },
   fscout:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='foreign'; } return '海外スカウトの報告を確認した。'; } },
   camp:{ make(){ return null; }, resolve(k){ return campResolve(k); } },
+  surgery:{ make(){ return null; }, resolve(k,p,rep){
+    if(!p.injury) return `${p.name}はすでに回復していた。`;
+    if(k==='cons'){ p.inj = rep.cons; p.injury.total = rep.cons; p.injury.cons = true; p.reRisk = {id:p.injury.id, until:tick()+30, mult:3}; return `${p.name}は保存療法を選択。約${rep.cons}週間での復帰を目指す。再発に注意。`; }
+    p.injury.op = true; return `${p.name}は${p.injury.part}の手術を受けることに。全治約${p.inj}週間。「必ず戻ってきます」`; } },
+  hurt:{ make(){ return null; }, resolve(k,p){
+    if(!(p.inj>0)) return `${p.name}はすでに回復していた。`;
+    if(k==='hurt'){ p.playHurt = true; return `${p.name}は痛み止めを打って出場可能に。ただし本来の動きはできず、悪化のリスクがある。`; }
+    return `${p.name}は完治まで休ませることにした。`; } },
   ama:{ make(){ return null; }, resolve(k){ if(k==='view'){ ui.tab='transfer'; ui.sub='ama'; } return 'スカウトの報告を確認した。'; } },
 };
 function generateReports(){
   if(S.inbox.length>=4) return;
   const c = ctxNow();
   const chance = 0.4 + staffAb('hc')/220;
-  const kinds = Object.keys(REPORTS).filter(k=>!['ama','fscout','camp'].includes(k)).sort(()=>Math.random()-0.5);
+  const kinds = Object.keys(REPORTS).filter(k=>!['ama','fscout','camp','surgery','hurt'].includes(k)).sort(()=>Math.random()-0.5);
   let made = 0, max = staffAb('hc')>=55 ? 2 : 1;
   for(const k of kinds){
     if(made>=max || Math.random()>chance) continue;
@@ -1414,14 +1423,14 @@ function isOff(){ return S.phase==='off'; }
 function offTraining(w){
   const lines = [];
   for(const p of S.players){
-    if(p.inj>0){ p.inj = Math.max(0,p.inj-1); }
+    if(p.inj>0){ healWeek(p); if(p.inj>0) continue; }
     if(w<=2){ p.cond = 100; continue; } // 12月〜1月上旬は休暇
     const camp = w>=4 ? CAMPS[S.camp||'home'] : {g:0.5};
     const ageF = p.age<=20?1.3:p.age<=23?1:p.age<=26?0.6:p.age<=29?0.25:0;
     const facG = (0.8+0.15*S.fac.training) * (p.age<=23 ? 0.8+staffAb('youth')/250 : 1);
     p.ovr = Math.min(p.pot, p.ovr + Math.max(0,p.pot-p.ovr)*0.03*camp.g*ageF*facG*R(0.5,1.5));
     p.cond = clamp(p.cond - 4 + 8, 40, 100);
-    if(w>=4 && Math.random()<0.012*(1.15-staffAb('physical')/250)){ p.inj = RI(1,3); lines.push(`キャンプ中に${p.name}が負傷（全治${p.inj}週）。`); }
+    if(w>=4 && Math.random()<0.012*injuryRisk(p)){ injure(p, Math.random()<0.5?'muscle':'overuse'); lines.push(`キャンプ中に${p.name}が${injLabel(p)}（全治${p.inj}週）。`); }
   }
   return lines;
 }
@@ -1591,11 +1600,24 @@ function expiringLeave(){
   }
   return lines;
 }
+function medicalHtml(p){
+  const parts = [];
+  if(p.inj>0 && p.injury){
+    const i = p.injury, done = Math.max(0, i.total - p.inj);
+    const back = isOff() ? `開幕${p.inj>OFF_WEEKS-S.offWeek?`後 約${p.inj-(OFF_WEEKS-S.offWeek)}週`:'までに復帰'}` : (S.round + p.inj < ROUNDS ? `第${S.round+p.inj+1}節ごろ` : '今季絶望');
+    parts.push(`<div class="warn" style="margin-top:6px"><b>${esc(injLabel(p))}</b>${i.again?'（再発）':''}${i.op?'・手術済み':i.cons?'・保存療法':''}<br>全治${i.total}週・残り${p.inj}週（復帰見込み：${back}）
+      <div class="bar" style="margin-top:6px"><i style="width:${Math.round(done/i.total*100)}%"></i></div><span class="small muted">リハビリの進み具合</span></div>`);
+  }
+  if(p.reRisk && tick()<p.reRisk.until && !(p.inj>0)) parts.push(`<p class="small minus" style="margin:6px 0 0">再発リスクあり（${INJURIES.find(x=>x.id===p.reRisk.id)?.name||''}）。調子が低い時の起用は注意。</p>`);
+  if(p.hist && p.hist.length) parts.push(`<p class="small muted" style="margin:6px 0 0">負傷歴：${p.hist.slice().reverse().map(h=>`${h.s}年目 ${esc(h.name)}（${h.w}週）`).join('、')}</p>`);
+  return parts.join('');
+}
 function showPlayer(id){
   const p = S.players.find(x=>x.id===id); if(!p) return;
   ui.detail = id;
   const inXI = getLineup().some(s=>s.p.id===id);
-  const state = [inXI?'先発予定':'控え', p.inj?`負傷（全治${p.inj}週）`:'', p.rest?'休養指示中':'', p.promise?'先発を約束済み':'', p.loan?'他クラブへ期限付き移籍中':''].filter(Boolean).join('・');
+  const state = [inXI?'先発予定':'控え', p.inj?(p.playHurt?'痛み止めを打って強行出場中':'負傷で離脱中'):'', p.rust>0&&!p.inj?`復帰明け（試合勘が戻るまであと${p.rust}試合）`:'', p.rest?'休養指示中':'', p.promise?'先発を約束済み':'', p.loan?'他クラブへ期限付き移籍中':''].filter(Boolean).join('・');
+  const medical = medicalHtml(p);
   const kind = p.loanFrom ? `期限付き移籍（${esc(p.loanFrom)}・${p.loanDiv}）` : p.amateur ? `${p.amateur}（アマチュア）` : 'プロ契約';
   const contract = p.loanFrom ? `今季終了まで（買取オプション ${yen(p.buyFee)}）`
     : p.amateur ? `今季終了後にプロ契約（予定年俸 ${yen(p.proSalary)}）`
@@ -1611,7 +1633,7 @@ function showPlayer(id){
       <div><span class="small muted">調子</span><div><b>${Math.round(p.cond)}</b></div>${bar(p.cond, p.cond>70?'':'gold')}</div>
       <div><span class="small muted">士気</span><div><b>${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</b></div>${bar(p.mor??60,'gold')}</div>
     </div>
-    <h3 class="pdh">状態</h3><p class="small" style="margin:0">${state}</p>
+    <h3 class="pdh">状態</h3><p class="small" style="margin:0">${state}</p>${medical}
     <h3 class="pdh">成績</h3>
     <div class="kv"><span>今季</span><span class="v">${p.sa}試合 ${p.sg}得点</span><span>通算</span><span class="v">${p.apps}試合 ${p.goals}得点</span></div>
     <h3 class="pdh">契約</h3>
@@ -1624,11 +1646,101 @@ function showPlayer(id){
     ${p.expiring && !p.refused ? `<div class="warn">契約更新の条件：年俸 ${yen(renewAsk(p))}${renewChance(p)<1?`・本人の士気が低く、合意できる見込みは約${Math.round(renewChance(p)*100)}%`:''}
       <div class="row" style="justify-content:flex-start">${years.map(y=>`<button class="btn primary" data-act="renew" data-arg="${p.id}|${y}">${y}年契約で更新</button>`).join('')}</div></div>` : ''}
     <div class="row">
+      ${p.inj>0&&p.playHurt?`<button class="btn" data-act="stopHurt" data-arg="${p.id}">強行出場をやめる</button>`:''}
       <button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用する':'休ませる'}</button>
       ${p.loanFrom?`<button class="btn" data-act="buyout" data-arg="${p.id}">買取（${yen(p.buyFee)}）</button>`:p.amateur?'':`<button class="btn" data-act="sell" data-arg="${p.id}">売却（${yen(Math.round(playerValue(p)*0.7))}）</button>`}
       ${isOff()&&!p.loanFrom&&!p.amateur?`<button class="btn" data-act="release" data-arg="${p.id}">戦力外</button>`:''}
       <button class="btn primary" data-act="close">閉じる</button>
     </div>`);
+}
+
+// ===================== 負傷（部位・診断名・全治・リハビリ） =====================
+const INJURIES = [
+  {id:'bruise',   name:'打撲',               short:'打撲',   parts:['右太もも','左太もも','すね','右足首','腰'], w:[1,1], cause:{contact:5}},
+  {id:'sprain',   name:'捻挫',               short:'捻挫',   parts:['右足首','左足首'], w:[1,3], cause:{contact:4, random:2}, hurt:true},
+  {id:'concuss',  name:'脳震盪',             short:'脳震盪', parts:['頭部'], w:[1,2], cause:{contact:1.2}},
+  {id:'hamstring',name:'肉離れ',             short:'肉離れ', parts:['右太もも裏','左太もも裏','右ふくらはぎ','左ふくらはぎ'], w:[2,6], cause:{muscle:5, overuse:1}, muscle:true},
+  {id:'adductor', name:'内転筋損傷',         short:'内転筋', parts:['右脚の付け根','左脚の付け根'], w:[2,4], cause:{muscle:2, overuse:1}, hurt:true, muscle:true},
+  {id:'groin',    name:'グロインペイン症候群', short:'鼠径部痛', parts:['鼠径部'], w:[3,8], cause:{overuse:2}, muscle:true},
+  {id:'back',     name:'腰痛',               short:'腰痛',   parts:['腰'], w:[1,3], cause:{overuse:2, random:1}, hurt:true},
+  {id:'mcl',      name:'内側側副靭帯損傷',   short:'膝靭帯', parts:['右膝','左膝'], w:[4,8], cause:{contact:1.5}},
+  {id:'meniscus', name:'半月板損傷',         short:'半月板', parts:['右膝','左膝'], w:[6,10], cause:{contact:0.6, overuse:0.5}, op:{cons:[3,5]}},
+  {id:'stress',   name:'疲労骨折',           short:'疲労骨折', parts:['右足の第5中足骨','左足の第5中足骨','すね'], w:[8,12], cause:{overuse:1}, op:{cons:[5,7]}},
+  {id:'acl',      name:'前十字靭帯断裂',     short:'膝十字', parts:['右膝','左膝'], w:[24,32], cause:{contact:0.25, muscle:0.15}, op:{cons:[12,16]}, severe:true},
+];
+const INJ_SCENE = {
+  bruise:['相手と激しく接触して倒れ込んだ','相手のスパイクが入った'],
+  sprain:['着地の際に足首をひねった','相手に足を踏まれて足首をひねった'],
+  concuss:['空中戦で相手と頭同士が激突した'],
+  hamstring:['ダッシュの途中で太もも裏を押さえて座り込んだ','スプリントの直後に脚を押さえた'],
+  adductor:['クロスを上げた瞬間に股関節周りを痛めた'],
+  groin:['キックの際に鼠径部の痛みを訴えた'],
+  back:['腰の張りを訴えた'],
+  mcl:['相手のスライディングを膝に受けた','競り合いで膝を内側にひねった'],
+  meniscus:['切り返した瞬間に膝を押さえた'],
+  stress:['足の甲の痛みを訴え、検査に回った'],
+  acl:['着地の際に膝が崩れ、担架で運ばれた','切り返しで膝が抜けたように倒れ込んだ'],
+};
+function injuryRisk(p){
+  const condF = p.cond<55 ? 1.8 : p.cond<70 ? 1.3 : 1;
+  const ageF = p.age>=33 ? 1.5 : p.age>=30 ? 1.25 : 1;
+  const re = p.reRisk && tick() < p.reRisk.until ? p.reRisk.mult : 1;
+  const med = (1 - (S.fac.medical-1)*0.12) * (1.15 - staffAb('physical')/250);
+  return condF * ageF * re * med;
+}
+function injLabel(p){ return p.injury ? (p.injury.part ? `${p.injury.part}の${p.injury.name}` : p.injury.name) : '負傷'; }
+function injure(p, cause){
+  let t;
+  if(p.reRisk && tick()<p.reRisk.until && Math.random()<0.5) t = INJURIES.find(x=>x.id===p.reRisk.id);
+  if(!t){
+    const pool = INJURIES.filter(x=>x.cause[cause]);
+    let r = Math.random()*pool.reduce((a,x)=>a+x.cause[cause],0);
+    t = pool.find(x=>(r-=x.cause[cause])<=0) || pool[0];
+  }
+  const part = t.id===p.injury?.id ? p.injury.part : pick(t.parts);
+  const medF = 1 - (S.fac.medical-1)*0.06 - (staffAb('physical')-30)/500;
+  const weeks = Math.max(1, Math.round(RI(t.w[0], t.w[1]) * medF));
+  const again = p.reRisk && p.reRisk.id===t.id && tick()<p.reRisk.until;
+  p.inj = weeks; p.playHurt = false; p.promise = false;
+  p.injury = {id:t.id, name:t.name, short:t.short, part, total:weeks, again};
+  p.hist = [...(p.hist||[]), {name:`${part}の${t.name}`, s:S.season, w:weeks}].slice(-5);
+  const left = isOff() ? ROUNDS + OFF_WEEKS - S.offWeek : ROUNDS - S.round;
+  const out = weeks > left && !isOff() ? '（今季絶望）' : '';
+  addNews(`【負傷】${p.name}　${part}の${t.name}${again?'（再発）':''}・全治${weeks}週間${out}`);
+  const doc = `メディカル ${S.staff.physical ? S.staff.physical.name : 'スタッフ'}`;
+  if(t.op){
+    const cons = Math.max(2, Math.round(RI(t.op.cons[0], t.op.cons[1])*medF));
+    S.inbox.push(mkRep('surgery', doc, `${p.name}の治療方針を決めてください`,
+      `精密検査の結果、${p.name}は${part}の${t.name}と診断されました。\n手術すれば全治約${weeks}週間ですが、完治が見込めます。保存療法なら約${cons}週間で復帰できる可能性がありますが、再発のリスクが高くなります。${t.severe?'\n選手生命にも関わる大けがです。':''}`,
+      [['cons',`保存療法（約${cons}週で復帰・再発リスク大）`],['op',`手術する（全治約${weeks}週）`]], {pid:p.id, cons}));
+  } else if(t.hurt && weeks<=3 && !isOff()){
+    S.inbox.push(mkRep('hurt', doc, `${p.name}は痛み止めを打てば出場できます`,
+      `${p.name}は${part}の${t.name}（全治${weeks}週間）です。痛み止めを打てば試合に出られますが、本来の動きはできず、悪化させると長引く恐れがあります。`,
+      [['hurt','強行出場させる'],['rest','完治まで休ませる']], {pid:p.id}));
+  }
+  return INJ_SCENE[t.id] ? pick(INJ_SCENE[t.id]) : '負傷した';
+}
+function healWeek(p){
+  if(!(p.inj>0)) return null;
+  if(p.playHurt && Math.random()<0.5) return null; // 強行出場中は治りが遅い
+  const fast = Math.random() < (S.fac.medical-1)*0.07 + staffAb('physical')/700 ? 1 : 0;
+  p.inj = Math.max(0, p.inj - 1 - (p.injury && p.injury.total>=4 ? fast : 0));
+  if(p.inj>0) return null;
+  const inj = p.injury; p.injury = null; p.playHurt = false;
+  if(!inj) return null;
+  let msg = `${p.name}が${inj.part}の${inj.name}から全体練習に復帰。`;
+  if(inj.total>=6){ p.rust = 3; p.cond = Math.min(p.cond, 65); msg += '試合勘を取り戻すまで少し時間がかかりそうだ。'; }
+  if(inj.id==='acl'){ const loss = p.age>=30 ? R(1.5,4) : R(0,1.5); p.ovr = Math.max(12, p.ovr-loss); p.pot = Math.max(p.ovr, p.pot-loss); if(loss>=1) msg += `大けがの影響で能力が${Math.round(loss)}下がった。`; }
+  if(INJURIES.find(x=>x.id===inj.id)?.muscle && !p.reRisk) p.reRisk = {id:inj.id, until:tick()+8, mult:2};
+  addNews(msg);
+  return msg;
+}
+function afterMatchInjury(p){
+  if(p.rust>0) p.rust--;
+  if(p.playHurt && p.inj>0 && Math.random()<0.3){
+    const add = RI(2,4); p.inj += add; p.injury.total += add; p.playHurt = false;
+    addNews(`${p.name}が強行出場で${injLabel(p)}を悪化させた。全治が${add}週間延びた…`);
+  }
 }
 
 // ===================== 旧セーブ互換 =====================
@@ -1650,7 +1762,7 @@ function migrate(s){
   }
   s.staffMarket ??= []; s.foreignCands ??= []; s.fscoutTrip ??= null; s.inbox ??= []; s.prospects ??= []; s.companies ??= initCompanies();
   s.visitsLeft ??= 1; s.watchLeft ??= 1; s.mentor ??= 0; s.cfSeason ??= 0;
-  s.players.forEach(p=>{ p.mor ??= 60; if(p.contract===undefined && !p.amateur && !p.loanFrom) p.contract = RI(1,3); });
+  s.players.forEach(p=>{ if(p.inj>0 && !p.injury) p.injury = {id:'bruise', name:'負傷', short:'負傷', part:'', total:p.inj}; p.mor ??= 60; if(p.contract===undefined && !p.amateur && !p.loanFrom) p.contract = RI(1,3); });
   if(!s.staffMarket.length){ S = s; refreshStaffMarket(); }
   return s;
 }
@@ -1795,6 +1907,7 @@ function renderHome(){
         <span>直近の結果</span><span class="v">${S.results.slice(-5).map(resBadge).join('')||'<span class="muted">—</span>'}</span>
         <span>攻撃力 / 守備力</span><span class="v">${rt.att.toFixed(1)} / ${rt.def.toFixed(1)}</span>
         <span>監督</span><span class="v">${S.staff.manager?`${esc(S.staff.manager.name)}（能力${S.staff.manager.abil}・${S.staff.manager.lic}）`:'<span class="minus">空席</span>'}</span>
+        <span>負傷者</span><span class="v small">${(()=>{const l=S.players.filter(p=>p.inj>0); return l.length? l.map(p=>`${esc(p.name)}（${esc(p.injury?.short||'負傷')}・残り${p.inj}週）`).join('<br>') : '<span class="plus">なし</span>'; })()}</span>
         <span>チーム士気</span><span class="v">${(()=>{const a=S.players.filter(p=>!p.loan);const m=a.reduce((x,p)=>x+(p.mor??60),0)/a.length;return moraleFace(m)+' '+Math.round(m);})()}</span>
         <span>年俸総額（選手＋スタッフ）</span><span class="v">${yen(sal+staffSalary())}/年</span>
         <span>スポンサー収入</span><span class="v">${yen(S.sponsor+contractIncome())}/年</span>
@@ -1827,7 +1940,7 @@ function renderSquad(){
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>伸び</th><th>調子</th><th class="num">士気</th><th class="num hide-s">得点</th><th class="num hide-s">年俸</th><th class="num">契約</th><th></th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}">
       <td>${posTag(p.pos)}</td>
-      <td class="pcell" data-act="player" data-arg="${p.id}"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj">負傷${p.inj}週</span>`:''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.expiring?'<span class="tag inj">満了</span>':''}</div></td>
+      <td class="pcell" data-act="player" data-arg="${p.id}"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}${p.inj?`<span class="tag inj" title="${esc(injLabel(p))}">${esc(p.injury?.short||'負傷')}${p.inj}週${p.playHurt?'・強行':''}</span>`:''}${p.rust>0&&!p.inj?'<span class="tag rest">復帰明け</span>':''}${p.rest?'<span class="tag rest">休養</span>':''}${p.promise?'<span class="tag">約束</span>':''}${p.loan?'<span class="tag rest">貸出中</span>':''}${p.loanFrom?`<span class="tag" title="${esc(p.loanFrom)}から期限付き移籍">レンタル</span>`:''}${p.amateur?`<span class="tag xi">${p.amateur==='2種登録'?'2種':'特指'}</span>`:''}${p.from?`<span class="tag" title="${esc(p.from)}出身">地元</span>`:''}${p.expiring?'<span class="tag inj">満了</span>':''}</div></td>
       <td class="num">${p.age}</td>
       <td class="num"><span class="ovr">${round1(p.ovr)}</span></td>
       <td>${stars(p)}</td>
@@ -2177,6 +2290,7 @@ const ACTIONS = {
   release(a){ releasePlayer(a); },
   reg2(a){ ui.flash=a; register2(a); },
   player(a){ showPlayer(a); },
+  stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
   dispatch(a){ dispatchScout(a); },
   signForeign(a){ signForeign(a); },
