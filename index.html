@@ -221,6 +221,11 @@ table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .tile .badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--loss);color:#fff;font-size:10.5px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px}
 .matchcard{padding:10px 14px}
 .matchcard h3{margin-bottom:6px}
+.svgi{width:20px;height:20px;display:block}
+.fac .ic .svgi{width:28px;height:28px;color:var(--gold)}
+.tile .ic{color:var(--indigo)}
+.mood{display:inline-block;width:9px;height:9px;border-radius:50%;vertical-align:middle;margin-right:3px}
+.mood.good{background:var(--win)}.mood.ok{background:#7fb3d5}.mood.low{background:var(--warn)}.mood.bad{background:var(--loss)}
 .row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .kv{display:grid;grid-template-columns:auto auto;gap:3px 14px;font-size:13.5px}
 .kv .v{text-align:right;font-variant-numeric:tabular-nums}
@@ -264,15 +269,15 @@ function econ(){ return Math.max(0, S.div-1); } // クラブの経済規模の�
 const CAP = [2500,6000,12000,22000,38000];
 const FAN_CAP = [3000,5000,14000,30000,60000,100000]; // リーグごとのファン数の目安（これを超えると伸びにくい）
 const FAC = {
-  stadium: {name:'スタジアム', ic:'🏟️', cost:[0,8000,30000,90000,250000], upkeep:80,
+  stadium: {name:'スタジアム', ic:'facility', cost:[0,8000,30000,90000,250000], upkeep:80,
             desc:l=>`収容 ${CAP[l-1].toLocaleString()}人`},
-  training:{name:'練習場', ic:'⚽', cost:[0,4000,12000,35000,90000], upkeep:30,
+  training:{name:'練習場', ic:'ball', cost:[0,4000,12000,35000,90000], upkeep:30,
             desc:l=>`選手の成長速度 ×${(0.8+0.15*l).toFixed(2)}`},
-  youth:   {name:'ユースアカデミー', ic:'🌱', cost:[0,3000,10000,30000,80000], upkeep:30,
+  youth:   {name:'ユースアカデミー', ic:'sprout', cost:[0,3000,10000,30000,80000], upkeep:30,
             desc:l=>`毎シーズン ${youthCount(l)}人昇格・素質 ${'★'.repeat(l)}`},
-  medical: {name:'メディカル', ic:'🩺', cost:[0,2500,8000,24000,60000], upkeep:30,
+  medical: {name:'メディカル', ic:'medical', cost:[0,2500,8000,24000,60000], upkeep:30,
             desc:l=>`負傷率 -${(l-1)*15}%・回復 +${(l-1)*2}/週`},
-  scout:   {name:'スカウト網', ic:'🔭', cost:[0,2500,8000,24000,60000], upkeep:30,
+  scout:   {name:'スカウト網', ic:'scout', cost:[0,2500,8000,24000,60000], upkeep:30,
             desc:l=>`移籍市場の選手の質 +${(l-1)*3}・伸びしろが見える`},
 };
 const FORMATIONS = {
@@ -366,6 +371,23 @@ function changeRole(id, role){
   save(); render(); showPlayer(id);
 }
 
+// 線画のアイコン（currentColor で描くので、ライト・ダーク両方で色が合う）
+const ICON_PATHS = {
+  inbox:'<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9z"/><path d="M8.5 11h7M8.5 15h5"/>',
+  squad:'<circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.3c2.9.3 5.4 2.6 5.4 5.7"/>',
+  tactics:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/><circle cx="12" cy="12" r="3"/>',
+  transfer:'<circle cx="11" cy="11" r="6"/><path d="M15.5 15.5 20 20"/>',
+  staff:'<circle cx="12" cy="7" r="3.5"/><path d="M5 21c0-3.9 3.1-7 7-7s7 3.1 7 7"/><path d="m12 14-1.4 2.6L12 21l1.4-4.4z"/>',
+  sales:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/>',
+  facility:'<ellipse cx="12" cy="9" rx="9" ry="3.5"/><path d="M3 9v6c0 1.9 4 3.5 9 3.5s9-1.6 9-3.5V9M8 12.2v4.5M16 12.2v4.5"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+  league:'<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5.5a2.5 2.5 0 0 0 2.6 3.6M16 6h2.5a2.5 2.5 0 0 1-2.6 3.6M12 13v4M8.5 20h7"/>',
+  ball:'<circle cx="12" cy="12" r="9"/><path d="m12 7.5 3.5 2.5-1.3 4H9.8l-1.3-4z"/>',
+  sprout:'<path d="M12 21v-8"/><path d="M12 13c0-4 3-6.5 7-6.5 0 4-3 6.5-7 6.5z"/><path d="M12 15.5c0-3-2.2-5-6-5 0 3 2.2 5 6 5z"/>',
+  medical:'<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M12 8v8M8 12h8"/>',
+  scout:'<circle cx="7" cy="15" r="3.5"/><circle cx="17" cy="15" r="3.5"/><path d="M7 11.5V6h3v6.5M17 11.5V6h-3v6.5M10 13.5h4"/>',
+};
+function ICON(k){ return `<svg class="svgi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[k]||''}</svg>`; }
 // ===================== ユーティリティ =====================
 const R = (a,b)=>a+Math.random()*(b-a);
 const RI = (a,b)=>Math.floor(R(a,b+1));
@@ -611,7 +633,7 @@ function playOurMatch(h,a){
   events.sort((x,y)=>x.m-y.m);
   events.forEach(e=>{
     if(e.flavor) return;
-    if(e.us){ e.text = `⚽ ${e.p.name} ${pick(GOAL_LINES)}`; if(!e.p.ghost){e.p.goals++; e.p.sg++;} }
+    if(e.us){ e.text = `ゴール！ ${e.p.name} ${pick(GOAL_LINES)}`; if(!e.p.ghost){e.p.goals++; e.p.sg++;} }
     else e.text = `${opp.name} ${pick(OPP_LINES)}`;
   });
   // 選手の状態
@@ -628,7 +650,7 @@ function playOurMatch(h,a){
     } else if(p.inj===0){ p.cond = clamp(p.cond+8,30,100); }
     p.cond = clamp(p.cond + 6 + (S.fac.medical-1)*2 + staffAb('physical')/40, 30, 100);
   }
-  injuredNow.forEach(([p,scene])=>{ events.push({m:RI(10,89), text:`🚑 ${p.name}が${scene}。そのまま交代（${injLabel(p)}・全治${p.inj}週）`, inj:true}); });
+  injuredNow.forEach(([p,scene])=>{ events.push({m:RI(10,89), text:`負傷：${p.name}が${scene}。そのまま交代（${injLabel(p)}・全治${p.inj}週）`, inj:true}); });
   events.sort((x,y)=>x.m-y.m);
   if(home) record(0,oi,gu,go); else record(oi,0,go,gu);
   (S.matchLog = S.matchLog || [])[S.round] = {gu, go};
@@ -736,7 +758,7 @@ function advance(){
   const fin = payWeekly(ours.home);
   if(ours.res==='W') S.trust+=3*wk(); else if(ours.res==='L') S.trust-=2*wk();
   const fanD = seasonFanGain(ours.res);
-  if(S.money<0) { S.trust -= S.money<-3000 ? 3 : 1; addNews('⚠ 資金がマイナスです。フロントの信頼が下がっています。'); }
+  if(S.money<0) { S.trust -= S.money<-3000 ? 3 : 1; addNews('【警告】資金がマイナスです。フロントの信頼が下がっています。'); }
   S.trust = clamp(S.trust,0,100);
   const sc = `${ours.home?'H':'A'} ${ours.gu}-${ours.go} vs ${ours.opp.name}`;
   addNews(`第${S.round+1}節 ${ {W:'勝利',D:'引き分け',L:'敗戦'}[ours.res] }：${sc}`);
@@ -1004,7 +1026,7 @@ function licenseIssues(){
 }
 
 // ===================== 士気・コーチからの報告 =====================
-function moraleFace(m){ return m>=70?'😊':m>=45?'🙂':m>=25?'😐':'😠'; }
+function moraleFace(m){ const lv = m>=70?'good':m>=45?'ok':m>=25?'low':'bad'; return `<i class="mood ${lv}" title="士気 ${Math.round(m)}"></i>`; }
 function hcFrom(){ const h=S.staff.hc; return h?`ヘッドコーチ ${h.name}`:'ヘッドコーチ（空席）'; }
 function phyFrom(){ const h=S.staff.physical; return h?`フィジカルコーチ ${h.name}`:'メディカルスタッフ'; }
 function scFrom(){ const h=S.staff.scout; return h?`チーフスカウト ${h.name}`:'スカウト部'; }
@@ -1266,8 +1288,8 @@ function offerProspect(id){
       spend(fee); pr.status='signed';
       if(pr.kind==='大学'){
         joinAmateur(pr, '特別指定');
-        addNews(`🎓 ${pr.school}の${pr.name}が来季加入内定！特別指定選手として今季から試合に出られる。`);
-      } else addNews(`🎓 ${pr.school}の${pr.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
+        addNews(`【新人】${pr.school}の${pr.name}が来季加入内定！特別指定選手として今季から試合に出られる。`);
+      } else addNews(`【新人】${pr.school}の${pr.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
       save(); render(); toast(`${pr.name}が入団を決断しました！`);
     } else {
       pr.status='declined';
@@ -1371,7 +1393,7 @@ function proposeDeal(i, tier){
   if(Math.random()<ch){
     c.contract = {slot, amount:amt, years:RI(1,3)}; c.rel = clamp(c.rel+5,0,100);
     if(slot==='chest'||slot==='naming') S.trust = clamp(S.trust+3,0,100);
-    addNews(`💼 ${c.name}と${SLOTS[slot].name}スポンサー契約を締結！ 年${yen(amt)}・${c.contract.years}年契約。`);
+    addNews(`【営業】${c.name}と${SLOTS[slot].name}スポンサー契約を締結！ 年${yen(amt)}・${c.contract.years}年契約。`);
     save(); render(); toast(`${c.name}との契約が成立！ 年${yen(amt)}`);
   } else {
     c.rel = clamp(c.rel-8,0,100); c.cool = 2;
@@ -1386,7 +1408,7 @@ function askInvest(i){
   c.invested = true;
   if(Math.random() < c.rel/115){
     const v = Math.round(investAmount()*R(0.8,1.3)); earn(v); S.trust=clamp(S.trust+5,0,100);
-    addNews(`🏦 ${c.name}がクラブへの出資（第三者割当増資）を決定！ ${yen(v)}を調達。`);
+    addNews(`【出資】${c.name}がクラブへの出資（第三者割当増資）を決定！ ${yen(v)}を調達。`);
     save(); render(); toast(`${c.name}から${yen(v)}の出資を受けました！`);
   } else { c.rel=clamp(c.rel-10,0,100); addNews(`${c.name}への出資依頼は取締役会で否決された。`); save(); render(); toast('出資は見送られました。'); }
 }
@@ -1395,7 +1417,7 @@ function crowdfund(){
   S.cfSeason = S.season;
   const v = Math.round(S.fans*R(0.4,1) + R(200,800)); earn(v);
   const d = changeFans(0.02,10);
-  addNews(`📣 クラウドファンディング「金沢から日本一へ」が終了。${yen(v)}が集まった。ファン +${d}人`);
+  addNews(`【CF】クラウドファンディング「金沢から日本一へ」が終了。${yen(v)}が集まった。ファン +${d}人`);
   save(); render(); toast(`クラウドファンディングで${yen(v)}が集まりました！`);
 }
 function contractIncome(){ return S.companies.reduce((a,c)=>a+(c.contract?c.contract.amount:0),0); }
@@ -1464,7 +1486,7 @@ function dispatchScout(r){
   if(S.money < tripCost(r)) return toast('資金が足りません。');
   spend(tripCost(r));
   S.fscoutTrip = {region:r, back:tick()+RI(2,3)};
-  addNews(`✈ 海外スカウトの${fs.name}が${REGIONS[r].name}へ出発。掘り出し物を探しに行った。`);
+  addNews(`【海外】海外スカウトの${fs.name}が${REGIONS[r].name}へ出発。掘り出し物を探しに行った。`);
   save(); render();
 }
 function genForeign(r){
@@ -1494,7 +1516,7 @@ function checkTrip(){
   }
   S.foreignCands.push(...found); S.foreignCands = S.foreignCands.slice(-9);
   const fs = S.staff.fscout;
-  addNews(`✈ 海外スカウトの${fs?fs.name:''}が${REGIONS[t.region].name}から帰国。${found.length}人の候補を連れてきた。`);
+  addNews(`【海外】海外スカウトの${fs?fs.name:''}が${REGIONS[t.region].name}から帰国。${found.length}人の候補を連れてきた。`);
   S.inbox.push(mkRep('fscout', fs?`海外スカウト ${fs.name}`:'海外スカウト', `${REGIONS[t.region].name}で${found.length}人の選手を見つけてきました`,
     `${found.map(p=>`・${p.name}（${p.pos}・${p.age}歳）— ${p.bio}`).join('\n')}\n実力は正直、見てみないと分かりません。獲得するかはGMの判断にお任せします。`,
     [['view','候補を見る'],['ok','了解']]));
@@ -1514,7 +1536,7 @@ function signForeign(id){
   const verdict = d>=6 ? '大当たり！ 想像以上の逸材だ' : d>=-2 ? 'ほぼ期待通りの実力' : d>=-8 ? 'やや期待外れ…' : '完全にハズレだった…';
   let msg = `${p.name}が加入。練習で見た実際の能力は${Math.round(p.ovr)}。${verdict}。`;
   if(REGIONS[p.region]?.fans){ const f = changeFans(0.03, 30); msg += ` 母国メディアも報じ、ファン +${f}人。`; }
-  addNews(`🌏 ${msg}`);
+  addNews(`【新加入】${msg}`);
   save(); render(); toast(msg);
 }
 function dropForeign(id){ S.foreignCands = S.foreignCands.filter(x=>x.id!==id); save(); render(); }
@@ -1526,7 +1548,7 @@ function renderForeign(){
       <details><summary>説明</summary>海外スカウトを雇うと、南米・東欧・アジア・アフリカに派遣して、無名の外国人選手を連れてきてくれます。実力は未知数。大当たりもハズレもあります。</details></div>`
     : `<div class="infobar">
       <span>${esc(fs.name)}（能力${fs.abil}）</span><span>外国籍 <b>${foreignCount()}</b>/${FOREIGN_MAX}</span>
-      ${t?`<span>✈ ${REGIONS[t.region].name}に出張中（第${t.back%100}節後に帰国）</span>`:''}
+      ${t?`<span>出張中：${REGIONS[t.region].name}（第${t.back%100}節後に帰国）</span>`:''}
       ${t?'':`<div class="regions">${Object.entries(REGIONS).map(([k,g])=>`<button class="btn" data-act="dispatch" data-arg="${k}" ${S.money<tripCost(k)?'disabled':''}>${g.name}<br><span class="small muted">${yen(tripCost(k))}</span></button>`).join('')}</div>`}
       <details><summary>行き先の特徴</summary>${Object.values(REGIONS).map(g=>`${g.name}：${g.desc}`).join('<br>')}<br>能力が高いスカウトほど見積もりが正確で、当たりを引きやすくなります。</details></div>`;
   return head + `<div class="card-scroll" data-keep="foreign"><div class="mk">${S.foreignCands.map(p=>`<div class="card" data-id="${p.id}">
@@ -1679,7 +1701,7 @@ function advanceOff(){
 function showOffWeek(w, lines, d, kickoff){
   const P = OFF_PLAN[w];
   openModal(`<div class="small muted">オフシーズン ${w+1}/${OFF_WEEKS}週・${P.label}</div>
-    <h2>${kickoff?`⚽ ${S.season}年目、開幕！`:esc(P.title)}</h2>
+    <h2>${kickoff?`${S.season}年目、開幕！`:esc(P.title)}</h2>
     <ul class="small" style="padding-left:18px">${lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>
     <div class="kv">
       <span>資金の増減</span><span class="v">${d.dm>=0?'<span class="plus">+':'<span class="minus">'}${yen(d.dm)}</span></span>
@@ -1973,7 +1995,7 @@ function renderNego(){
   const money = S.money >= t.fee + (n.extra||0);
   const logHtml = n.log.map(l=>`<li class="nl-${l.who}">${l.who==='me'?'<b>GM：</b>':l.who==='them'?`<b>${esc(n.party)}：</b>`:''}${esc(l.t)}</li>`).join('');
   const body = n.pending ? `<div class="nego-wait"><div class="spin"></div><p>${esc(n.pending)}</p></div>`
-    : n.done ? `<h2 style="text-align:center;color:var(--${n.done==='ok'?'win':'loss'})">${n.done==='ok'?'🤝 合意！':'交渉決裂…'}</h2><div class="row"><button class="btn primary" data-act="negoClose">閉じる</button></div>`
+    : n.done ? `<h2 style="text-align:center;color:var(--${n.done==='ok'?'win':'loss'})">${n.done==='ok'?'合意！':'交渉決裂…'}</h2><div class="row"><button class="btn primary" data-act="negoClose">閉じる</button></div>`
     : `${n.counter ? `<div class="warn"><b>逆提案</b>：${n.askFee&&!n.feeFixed||n.kind==='prospect'?`${n.feeLabel||'移籍金'} ${yen(n.counter.fee)}・`:''}年俸 ${yen(n.counter.sal)}${n.years?`・${n.offer.years}年契約`:''}
           <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="negoCounter" ${S.money<n.counter.fee?'disabled':''}>この条件をのむ</button><button class="btn" data-act="negoRetry">条件を考え直す</button></div></div>`
         : `${!n.feeFixed?`<div class="small muted">${n.feeLabel||'移籍金'}（希望 ${yen(n.askFee)}）</div>${opt('fee', n.feeOpts, v=>`${yen(Math.round(n.askFee*v))}`)}`:n.askFee?`<div class="small muted">${n.kind==='market'&&negoTarget(n).loanFrom?'レンタル料':'移籍金'}：${yen(n.askFee)}（固定）</div>`:''}
@@ -2027,9 +2049,9 @@ function negoFinish(n, t){
   else if(n.kind==='foreign'){ p.fee = t.fee; p.salary = t.sal; p.contract = t.years; ui.nego = null; signForeign(p.id); return; }
   else if(n.kind==='prospect'){
     spend(t.fee); p.status = 'signed'; p.proSal = t.sal;
-    if(isOff()){ addNews(`🎓 ${p.school}の${p.name}が入団に合意！ 開幕からチームに加わる。`); }
-    else if(p.kind==='大学'){ joinAmateur(p, '特別指定'); addNews(`🎓 ${p.school}の${p.name}が来季加入内定！特別指定選手として今季から試合に出られる。`); }
-    else addNews(`🎓 ${p.school}の${p.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
+    if(isOff()){ addNews(`【新人】${p.school}の${p.name}が入団に合意！ 開幕からチームに加わる。`); }
+    else if(p.kind==='大学'){ joinAmateur(p, '特別指定'); addNews(`【新人】${p.school}の${p.name}が来季加入内定！特別指定選手として今季から試合に出られる。`); }
+    else addNews(`【新人】${p.school}の${p.name}が来季の加入に内定！「地元のクラブでプロになれて嬉しい」（2種登録すれば今季から出場可能）`);
     save(); render();
   } else if(n.kind==='renew'){
     p.salary = t.sal; p.contract = t.years; p.expiring = false; p.mor = clamp((p.mor??60)+5,0,100);
@@ -2157,7 +2179,7 @@ function prospectsKickoff(){
   const missed = S.prospects.filter(p=>p.status==='none' && p.pot>=60);
   if(missed.length) addNews(`獲得を見送った ${missed.slice(0,2).map(p=>p.name).join('、')} らは他クラブへ進んだ。`);
   S.prospects = [];
-  if(joined.length) addNews(`🎓 ${joined.join('、')}が新人選手として入団！`);
+  if(joined.length) addNews(`【新人】${joined.join('、')}が新人選手として入団！`);
 }
 
 // ===================== 日程カレンダー =====================
@@ -2180,7 +2202,7 @@ function renderCalendar(){
   if(isOff()){
     OFF_PLAN.forEach((p,w)=>{
       const d = offDate(w);
-      const ev = NAT_EVENTS.filter(e=>e.off===w && natActive()).map(e=>`🎓 ${e.name}`);
+      const ev = NAT_EVENTS.filter(e=>e.off===w && natActive()).map(e=>`${e.name}`);
       add(`${d.getFullYear()}年${d.getMonth()+1}月`, {d, off:true, now:w===S.offWeek, done:w<S.offWeek, title:p.title, ev});
     });
   }
@@ -2193,11 +2215,11 @@ function renderCalendar(){
     const t1 = d.getTime(), t0 = r ? roundDate(r-1).getTime() : 0;
     const inRange = e => eventTime(e) > t0 && eventTime(e) <= t1;
     const ev = [
-      ...AMA_EVENTS.filter(inRange).map(e=>`🎓 ${e.name}`),
-      ...NAT_EVENTS.filter(e=>e.m && natActive() && inRange(e)).map(e=>`🎓【全国】${e.name}`),
+      ...AMA_EVENTS.filter(inRange).map(e=>`${e.name}`),
+      ...NAT_EVENTS.filter(e=>e.m && natActive() && inRange(e)).map(e=>`【全国】${e.name}`),
     ];
-    if(month(r)===7 && (r===0 || month(r-1)<7)) ev.unshift('✈ 夏の移籍期間（〜8月）');
-    if(month(r)===6 && (r===0 || month(r-1)<6)) ev.push('🏮 百万石まつり');
+    if(month(r)===7 && (r===0 || month(r-1)<7)) ev.unshift('夏の移籍期間（〜8月）');
+    if(month(r)===6 && (r===0 || month(r-1)<6)) ev.push('百万石まつり');
     add(`${d.getFullYear()}年${d.getMonth()+1}月`, {d, r, home, opp:S.teams[oi], orank: st.findIndex(t=>t.i===oi)+1, log, now:!isOff() && r===S.round, ev});
   }
   const row = it => it.off
@@ -2384,7 +2406,6 @@ function renderTitle(){
   const saved = load();
   $app.innerHTML = `
   <div class="title-wrap"><div class="title-screen">
-    <div style="font-size:44px">⚽</div>
     <h1>百万石<span>フットボール</span></h1>
     <div class="gold-line"></div>
     <p>北信越リーグの弱小クラブのGMとして、<br>金沢からJ1の頂点を目指すクラブ経営シミュレーション。</p>
@@ -2448,26 +2469,26 @@ function render(){
   let f = document.getElementById('footer');
   if(!f){ f=document.createElement('div'); f.id='footer'; f.className='footer-bar'; document.body.appendChild(f); }
   f.innerHTML = `<div class="footer-inner">
-    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">📋 報告${ni}件</a>　`:''}${isOff() ? `オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
+    <div class="info">${ni?`<a href="#" data-act="tab" data-arg="inbox" style="color:var(--loss);font-weight:700">報告${ni}件</a>　`:''}${isOff() ? `オフ <b>${OFF_PLAN[S.offWeek].label}</b> ${esc(OFF_PLAN[S.offWeek].title)}` : nm ? `次節 <b>${nm.home?'ホーム':'アウェイ'}</b> vs <b>${esc(nm.opp.name)}</b>` : 'シーズン終了'}</div>
     ${isOff() ? `<button class="go" data-act="advance">${S.offWeek>=OFF_WEEKS-1?'開幕へ ▶':'次の週へ ▶'}</button>` : nm ? `<button class="go" data-act="advance">次の試合へ ▶</button>` : `<button class="go" data-act="season">シーズン総括へ ▶</button>`}
   </div>`;
 }
 
 // ホームのクラブハウスメニュー（各画面への入口）
 const MENU = [
-  {k:'inbox',    name:'報告',     ic:'📋', st:()=>S.inbox.length?`${S.inbox.length}件 未対応`:'なし', badge:()=>S.inbox.length},
-  {k:'squad',    name:'選手',     ic:'👥', st:()=>`${S.players.length}人・負傷${S.players.filter(p=>p.inj>0).length}`, badge:()=>S.players.filter(p=>p.expiring).length},
-  {k:'tactics',  name:'作戦・練習', ic:'📐', st:()=>`${S.formation}・${TACTICS[S.tactic].name}`},
-  {k:'transfer', name:'補強',     ic:'🔍', st:()=>`市場${S.market.length}・学生${S.prospects.filter(p=>p.status==='none').length}`, badge:()=>S.foreignCands.length},
-  {k:'staff',    name:'スタッフ', ic:'🧑‍💼', st:()=>S.staff.manager?`監督 能力${S.staff.manager.abil}`:'監督 空席', badge:()=>licenseIssues().some(x=>x.includes('監督'))?1:0},
-  {k:'sales',    name:'営業',     ic:'💼', st:()=>`訪問 ${S.visitsLeft}/${salesTeam().length}社`},
-  {k:'facility', name:'施設',     ic:'🏟️', st:()=>`スタジアムLv${S.fac.stadium}`, badge:()=>licenseIssues().some(x=>x.includes('スタジアム'))?1:0},
-  {k:'cal',      name:'日程',     ic:'📅', st:()=>isOff()?`オフ ${OFF_PLAN[S.offWeek].label}`:S.round<nr()?`次 ${fmtDate(roundDate(S.round))}`:'全日程終了'},
-  {k:'league',   name:'順位表',   ic:'🏆', st:()=>`${myRank()}位 / ${S.teams.length}チーム`},
+  {k:'inbox',    name:'報告',     ic:'inbox', st:()=>S.inbox.length?`${S.inbox.length}件 未対応`:'なし', badge:()=>S.inbox.length},
+  {k:'squad',    name:'選手',     ic:'squad', st:()=>`${S.players.length}人・負傷${S.players.filter(p=>p.inj>0).length}`, badge:()=>S.players.filter(p=>p.expiring).length},
+  {k:'tactics',  name:'作戦・練習', ic:'tactics', st:()=>`${S.formation}・${TACTICS[S.tactic].name}`},
+  {k:'transfer', name:'補強',     ic:'transfer', st:()=>`市場${S.market.length}・学生${S.prospects.filter(p=>p.status==='none').length}`, badge:()=>S.foreignCands.length},
+  {k:'staff',    name:'スタッフ', ic:'staff', st:()=>S.staff.manager?`監督 能力${S.staff.manager.abil}`:'監督 空席', badge:()=>licenseIssues().some(x=>x.includes('監督'))?1:0},
+  {k:'sales',    name:'営業',     ic:'sales', st:()=>`訪問 ${S.visitsLeft}/${salesTeam().length}社`},
+  {k:'facility', name:'施設',     ic:'facility', st:()=>`スタジアムLv${S.fac.stadium}`, badge:()=>licenseIssues().some(x=>x.includes('スタジアム'))?1:0},
+  {k:'cal',      name:'日程',     ic:'cal', st:()=>isOff()?`オフ ${OFF_PLAN[S.offWeek].label}`:S.round<nr()?`次 ${fmtDate(roundDate(S.round))}`:'全日程終了'},
+  {k:'league',   name:'順位表',   ic:'league', st:()=>`${myRank()}位 / ${S.teams.length}チーム`},
 ];
 function renderMenu(){
   return `<div class="menu">${MENU.map(m=>{ const b = m.badge ? m.badge() : 0;
-    return `<button class="tile" data-act="tab" data-arg="${m.k}"><span class="ic">${m.ic}</span><b>${m.name}</b><span class="st">${esc(m.st())}</span>${b?`<i class="badge">${b}</i>`:''}</button>`; }).join('')}</div>`;
+    return `<button class="tile" data-act="tab" data-arg="${m.k}"><span class="ic">${ICON(m.ic)}</span><b>${m.name}</b><span class="st">${esc(m.st())}</span>${b?`<i class="badge">${b}</i>`:''}</button>`; }).join('')}</div>`;
 }
 function renderHome(){
   const nm = nextMatch(); const xi=getLineup(); const rt=teamRating(xi);
@@ -2519,12 +2540,12 @@ function renderHome(){
 }
 function licenseChip(){
   const li = licenseIssues();
-  return li.length ? `<span class="minus" title="${DIVS[S.div+1].name}への昇格条件">⚠ 昇格条件：${li.join('・')}</span>` : '';
+  return li.length ? `<span class="minus" title="${DIVS[S.div+1].name}への昇格条件">昇格条件 未達：${li.join('・')}</span>` : '';
 }
 function licenseWarn(){
   const li = licenseIssues();
   if(!li.length) return '';
-  return `<div class="warn">⚠ ${DIVS[S.div+1].name}への昇格には次の条件が必要です：${li.join('・')}。「施設」「スタッフ」で準備しましょう。</div>`;
+  return `<div class="warn">${DIVS[S.div+1].name}への昇格には次の条件が必要です：${li.join('・')}。「施設」「スタッフ」で準備しましょう。</div>`;
 }
 
 function renderSquad(){
@@ -2533,7 +2554,7 @@ function renderSquad(){
   const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
   return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
-  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の顔。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
+  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の点（緑：好調、青：普通、橙：低め、赤：不満）。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
@@ -2605,7 +2626,7 @@ function renderFacility(){
     </div>
     <div class="card-scroll" data-keep="facility"><div class="grid g2" style="margin-top:0">${Object.entries(FAC).map(([k,f])=>{
     const l=S.fac[k]; const c=f.cost[l];
-    return `<div class="card fac"><div class="ic">${f.ic}</div><div style="flex:1;min-width:0">
+    return `<div class="card fac"><div class="ic">${ICON(f.ic)}</div><div style="flex:1;min-width:0">
       <b>${f.name}</b> <span class="muted small">Lv${l}</span>
       <div class="lv">${[1,2,3,4,5].map(i=>`<i class="${i<=l?'on':''}"></i>`).join('')}</div>
       <div class="small">${f.desc(l)}</div>
@@ -2630,7 +2651,7 @@ function renderLeague(){
     <p class="small muted" style="margin-bottom:0">${ZONE_NOTE[S.div]}</p></div>
   <div class="card side" style="margin-top:14px"><h3>クラブ史</h3>
     ${S.history.length? `<table><tr><th>年</th><th>リーグ</th><th class="num">順位</th><th class="num">勝点</th><th></th></tr>
-    ${S.history.map(h=>`<tr><td>${h.season}年目</td><td>${DIVS[h.div].name}</td><td class="num">${h.rank}位</td><td class="num">${h.pts}</td><td>${h.champion?'🏆 J1優勝':h.moved===1?'⬆ 昇格':h.moved===-1?'⬇ 降格':''}</td></tr>`).join('')}</table>`
+    ${S.history.map(h=>`<tr><td>${h.season}年目</td><td>${DIVS[h.div].name}</td><td class="num">${h.rank}位</td><td class="num">${h.pts}</td><td>${h.champion?'J1優勝':h.moved===1?'↑昇格':h.moved===-1?'↓降格':''}</td></tr>`).join('')}</table>`
     : '<p class="muted small">まだ記録はありません。</p>'}</div>`;
 }
 
@@ -2748,7 +2769,7 @@ function companyCard(c,i){
   if(c.contract){
     body = `<div class="warn" style="margin-top:8px">${SLOTS[c.contract.slot].name}スポンサー：年${yen(c.contract.amount)}・残り${c.contract.years}年</div>`;
   } else if(lock){
-    body = `<p class="small muted" style="margin:8px 0 0">🔒 ${lock}</p>`;
+    body = `<p class="small muted" style="margin:8px 0 0">${lock}</p>`;
   } else {
     const free = Object.keys(SLOTS).filter(slotFree);
     const sel = (ui.slotSel||{})[i] && slotFree(ui.slotSel[i]) ? ui.slotSel[i] : free[0];
@@ -2815,7 +2836,7 @@ function showMatch(m, fin, d){
         <span>ファン</span><span class="v">${sign(d.df)}人</span>
         <span>現在の順位</span><span class="v"><b>${myRank()}位</b></span>
       </div>
-      ${d.ev?`<div class="warn">📰 ${esc(d.ev)}</div>`:''}
+      ${d.ev?`<div class="warn">${esc(d.ev)}</div>`:''}
       ${S.over==='fired'?'<div class="warn">フロントの信頼が尽きました…</div>':''}`;
     document.getElementById('mrow').innerHTML = `<button class="btn primary" data-act="matchDone">続ける</button>`;
   };
@@ -2825,7 +2846,7 @@ function showMatch(m, fin, d){
 
 function showSeasonEnd(){
   const rep = endSeason();
-  const head = rep.champion ? '🏆 J1優勝！ 金沢から日本一へ！' : rep.moved===1 && rep.div===1 ? '⬆ JFL昇格！ 全国リーグへ！' : rep.moved===1 ? `⬆ ${DIVS[rep.div+1].name}へ昇格！` : rep.moved===-1 ? `⬇ ${DIVS[rep.div-1].name}へ降格…` : `${DIVS[rep.div].name} 残留`;
+  const head = rep.champion ? 'J1優勝！ 金沢から日本一へ！' : rep.moved===1 && rep.div===1 ? 'JFL昇格！ 全国リーグへ！' : rep.moved===1 ? `${DIVS[rep.div+1].name}へ昇格！` : rep.moved===-1 ? `${DIVS[rep.div-1].name}へ降格…` : `${DIVS[rep.div].name} 残留`;
   openModal(`
     <div class="small muted">${S.season-1}年目 シーズン総括</div>
     <h2>${head}</h2>
