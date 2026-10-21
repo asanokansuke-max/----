@@ -224,6 +224,12 @@ table.sticky td:first-child,table.sticky th:first-child{padding-left:6px}
 .tile .st{font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .tile .badge{position:absolute;top:6px;right:6px;min-width:18px;height:18px;border-radius:9px;background:var(--loss);color:#fff;font-size:10.5px;font-style:normal;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px}
 .matchcard{padding:10px 14px}
+.stake{margin:8px 0 0;padding:6px 10px;border-radius:8px;background:color-mix(in srgb,var(--gold) 16%,transparent);border:1px solid var(--gold);text-align:center;font-weight:800;font-size:13.5px}
+.stake .danger{color:var(--loss);font-weight:800}.stake:empty{display:none}
+.clinch{margin:6px 0 2px;padding:10px;border-radius:10px;background:var(--gold);color:#fff;text-align:center;font-weight:900;font-size:20px;letter-spacing:.05em;animation:pop .5s ease}
+.clinch.doom{background:var(--loss)}
+@keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+.log li.other{color:var(--muted);font-size:12.5px;font-style:italic}
 .matchcard.special{border:2px solid var(--gold)}
 .matchcard h3{margin-bottom:6px}
 .svgi{width:20px;height:20px;display:block}
@@ -738,6 +744,7 @@ function simAI(h,a){
   const gh = poisson(lam(H.att+R(-3,3), A.def+R(-3,3), true, 1));
   const ga = poisson(lam(A.att+R(-3,3), H.def+R(-3,3), false, 1));
   record(h,a,gh,ga);
+  return [h,a,gh,ga];
 }
 function record(h,a,gh,ga){
   const H=S.teams[h], A=S.teams[a];
@@ -1023,6 +1030,86 @@ function payWeekly(home, derby){
   return out;
 }
 
+// ===================== 優勝・昇格・残留争い =====================
+function remOf(i){ let c = 0; for(let r=S.round; r<nr(); r++) if(S.schedule[r].some(([h,a])=>h===i||a===i)) c++; return c; }
+function raceGoals(){
+  const n = S.teams.length, z = zones(S.div, n), g = [];
+  const top = a => (a||[]).filter(r=>r<=n/2), bot = a => (a||[]).filter(r=>r>n/2);
+  const up = Math.max(0, ...top(z.up)), ply = Math.max(0, ...top(z.ply), ...top(z.swap));
+  g.push({k:1, name: S.div===TOP ? 'J1優勝' : S.div===1 ? '優勝（地域CL出場）' : up===1 ? '優勝・昇格' : '優勝', top:true});
+  if(up>1) g.push({k:up, name:'自動昇格', top:true});
+  if(ply>Math.max(1,up)) g.push({k:ply, name: S.div>=3 ? 'プレーオフ出場' : '入れ替え戦出場', top:true});
+  const bad = Math.min(n+1, ...bot(z.swap), ...bot(z.dn)), dn = Math.min(n+1, ...bot(z.dn));
+  if(bad<=n) g.push({k:bad-1, name:'残留', safe:true, dn});
+  return g;
+}
+// 今節の試合に懸かっているもの
+function matchStakes(){
+  if(isOff() || S.round>=nr()) return null;
+  const nm = nextMatch(); if(!nm) return null;
+  const oi = nm.oi, me = S.teams[0], remMe = remOf(0), ids = S.teams.map((t,i)=>i).filter(i=>i!==0);
+  const maxOf = (i, res) => S.teams[i].pts + 3*remOf(i) - (i===oi ? (res==='W'?3:res==='D'?2:0) : 0);
+  const above = (myG, res) => ids.filter(i=>maxOf(i,res) >= myG);
+  const out = {lines:[], danger:null, rival:null};
+  for(const g of raceGoals()){
+    const K = g.k;
+    if(above(me.pts, 'L').length <= K-1){ if(g.k===1){ out.lines.push(`${g.name}は決定済み`); return out; } continue; } // すでに確定
+    const myMax = me.pts + 3*remMe;
+    if(ids.filter(i=>S.teams[i].pts > myMax).length > K-1) continue; // もう届かない
+    const ab = above(me.pts+3, 'W');
+    if(ab.length <= K-1){ out.lines.push(above(me.pts+1,'D').length <= K-1 ? `引き分け以上で${g.name}決定！` : `勝てば${g.name}決定！`); out.goal = g; out.rival = ab[0] ?? standings().find(t=>!t.isMe && t.i!==oi)?.i ?? null; break; }
+    if(ab.length === K){
+      const b = ab.find(i=>maxOf(i,'W')-2 < me.pts+3), c = ab.find(i=>maxOf(i,'W')-3 < me.pts+3);
+      if(b!=null){ out.lines.push(`勝って、${S.teams[b].name}が引き分け以下なら${g.name}決定！`); out.goal = g; out.rival = b; break; }
+      if(c!=null){ out.lines.push(`勝って、${S.teams[c].name}が負ければ${g.name}決定！`); out.goal = g; out.rival = c; break; }
+    }
+    if(g.safe) break;
+    const st = standings(), line = st[K-1].isMe ? st[K] : st[K-1], gap = me.pts - line.pts;
+    if(remMe<=6 && gap >= -Math.max(3, remMe*1.5)){ out.lines.push(remMe===1 ? `最終節。${g.name}の可能性が残っている（${K}位ラインの${line.name}と勝点差${gap>=0?'+':''}${gap}）` : `${g.name}争い：${line.name}と勝点差${gap>=0?'+':''}${gap}・残り${remMe}試合`); out.goal = g; out.rival = line.i; }
+    break;
+  }
+  // 降格の危機
+  const sg = raceGoals().find(g=>g.safe);
+  if(sg && sg.dn<=S.teams.length){
+    const need = sg.dn-1, myMaxL = me.pts + 3*(remMe-1);
+    const surely = i => S.teams[i].pts + (i===oi?3:0);
+    if(ids.filter(i=>surely(i) > myMaxL).length >= need) out.danger = '負ければ降格決定…';
+    else if(remMe<=4){ const st = standings(), r = st.findIndex(t=>t.isMe)+1; if(r>=sg.dn-1) out.danger = `残留争い：${st[sg.dn-2]?.isMe ? st[sg.dn-1].name : st[sg.dn-2].name}と勝点差${me.pts-(st[sg.dn-2]?.isMe?st[sg.dn-1].pts:st[sg.dn-2].pts)}・残り${remMe}試合`; }
+  }
+  return out.lines.length || out.danger ? out : null;
+}
+// 今節の結果で決まったこと
+function raceCheck(){
+  const me = S.teams[0], ids = S.teams.map((t,i)=>i).filter(i=>i!==0), done = S.round>=nr();
+  S.race = S.race && S.race.s===S.season ? S.race : {s:S.season, got:{}};
+  const news = [];
+  for(const g of raceGoals()){
+    const ok = done ? myRank()<=g.k : ids.filter(i=>S.teams[i].pts + 3*remOf(i) >= me.pts).length <= g.k-1;
+    if(ok && !S.race.got[g.k]){ S.race.got[g.k] = true; if(!g.safe || !done) news.push({g, t: g.safe ? `${g.name}決定！` : `${g.name}決定！！`}); }
+  }
+  const sg = raceGoals().find(g=>g.safe);
+  if(sg && sg.dn<=S.teams.length && !S.race.doom){
+    const doomed = done ? myRank()>=sg.dn : ids.filter(i=>S.teams[i].pts > me.pts + 3*remOf(0)).length >= sg.dn-1;
+    if(doomed){ S.race.doom = true; news.push({doom:true, t:'降格が決まってしまった…'}); }
+  }
+  // 一番大きなニュースだけ
+  const top = news.find(x=>x.g && x.g.k===1) || news.find(x=>x.g && x.g.top) || news[0];
+  if(!top) return null;
+  addNews(`【${S.round}節】${top.t}`);
+  if(!top.doom){ supp().mood = clamp(supp().mood + (top.g.top?10:5), 0, 100); boostMor(S.players, top.g.top?6:3); S.trust = clamp(S.trust + (top.g.top?5:2), 0, 100); }
+  return top;
+}
+// 他会場の試合の流れ（今節の結果をもとに）
+function otherVenue(ai, rival){
+  const m = ai.find(([h,a])=>h===rival||a===rival); if(!m) return [];
+  const [h,a,gh,ga] = m, H = S.teams[h], A = S.teams[a], ev = [];
+  for(let i=0;i<gh;i++) ev.push({m:RI(1,90), side:'h'}); for(let i=0;i<ga;i++) ev.push({m:RI(1,90), side:'a'});
+  ev.sort((x,y)=>x.m-y.m);
+  let x = 0, y = 0;
+  const out = ev.map(e=>{ if(e.side==='h') x++; else y++; return {m:Math.min(89.9, e.m+0.5), other:true, text:`他会場：${H.name} ${x}-${y} ${A.name}`}; });
+  out.push({m:90, other:true, text:`他会場 試合終了：${H.name} ${gh}-${ga} ${A.name}`});
+  return out;
+}
 function advance(){
   if(S && !S.over) ui.tab = 'home'; // 日程を進めたらホームに戻る
   if(S && !S.over && isOff()) return advanceOff();
@@ -1035,10 +1122,12 @@ function advance(){
   expireReports();
   applyTraining();
   applyPR();
-  let ours=null;
+  const stake = matchStakes();
+  let ours=null; const ai = [];
   for(const [h,a] of S.schedule[S.round]){
-    if(h===0||a===0) ours = playOurMatch(h,a); else simAI(h,a);
+    if(h===0||a===0) ours = playOurMatch(h,a); else ai.push(simAI(h,a));
   }
+  if(stake && stake.rival!=null){ ours.events.push(...otherVenue(ai, stake.rival)); ours.events.sort((x,y)=>x.m-y.m); }
   const fin = payWeekly(ours.home, ours.derby);
   if(ours.res==='W') S.trust+=3*wk(); else if(ours.res==='L') S.trust-=2*wk();
   const fanD = seasonFanGain(ours.res) + (ours.derby ? seasonFanGain(ours.res) : 0);
@@ -1056,11 +1145,12 @@ function advance(){
   if(S.round%4===3) refreshStaffMarket(3);
   S.companies.forEach(c=>{ if(c.cool>0) c.cool--; });
   S.round++;
+  const clinch = raceCheck();
   checkTrip();
   S.visitsLeft = salesTeam().length; S.watchLeft = watchPerWeek();
   if(S.trust<=0){ S.over='fired'; }
   save();
-  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, ac:acLine});
+  showMatch(ours, fin, {dm:S.money-before.money, df:S.fans-before.fans, fanD, ev, ac:acLine, stake, clinch});
 }
 
 function standings(){
@@ -1158,9 +1248,17 @@ function endSeason(){
 }
 
 // ===================== アクション =====================
+// ===================== 登録枠 =====================
+// Jリーグ：プロ（A契約）は25人まで。ホームグロウン（生え抜き）・2種登録・特別指定・貸出中は枠外
+// 地域リーグ・JFL：クラブの方針で登録30人まで（2種登録・特別指定・貸出中は枠外）
+function rosterCap(){ return S.div>=3 ? 25 : 30; }
+function rosterCount(){ return S.players.filter(p=>!p.amateur && !p.loan && !(S.div>=3 && p.homegrown)).length; }
+function rosterFull(){ return rosterCount() >= rosterCap(); }
+function rosterRule(){ return S.div>=3 ? 'Jリーグの規約で、プロ契約（A契約）の選手は25人まで。生え抜き（ホームグロウン）・2種登録・特別指定・期限付き移籍で貸出中の選手は枠に数えません' : '地域リーグ・JFLでは、寮や練習環境の都合で登録は30人までがクラブの方針。2種登録・特別指定・貸出中の選手は枠に数えません'; }
+function rosterToast(){ toast(`登録枠がいっぱいです（${rosterCount()}/${rosterCap()}人）。${rosterRule()}。移籍リスト・契約解除・期限付き移籍で枠を空けてください。`); }
 function signPlayer(id){
   const p = S.market.find(x=>x.id===id); if(!p) return;
-  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  if(rosterFull()) return rosterToast();
   if(p.foreign && foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
   if(S.money < p.fee) return toast('資金が足りません。');
   spend(p.fee, 'transfer');
@@ -1596,7 +1694,6 @@ function offerProspect(id){
   const pr = S.prospects.find(x=>x.id===id); if(!pr||pr.status!=='none') return;
   const fee = prospectFee(pr);
   if(S.money<fee) return toast('資金が足りません。');
-  if(pr.kind==='大学' && S.players.length>=26) return toast('選手登録は26人までです。');
   const chance = interest(pr);
   confirmBox(`${pr.name}（${pr.school}）に正式オファーを出しますか？ 支度金 ${yen(fee)}（入団時のみ）・入団の見込み 約${chance}%`, ()=>{
     if(Math.random()*100 < chance){
@@ -1621,7 +1718,6 @@ function joinAmateur(pr, type){
 }
 function register2(id){
   const pr = S.prospects.find(x=>x.id===id); if(!pr||pr.status!=='signed'||pr.kind!=='高校') return;
-  if(S.players.length>=26) return toast('選手登録は26人までです。');
   confirmBox(`${pr.name}（${pr.school}）を2種登録しますか？ 高校在籍のまま、今季からトップチームの試合に出場できます。年俸はかかりません（来季からプロ契約）。`, ()=>{
     joinAmateur(pr, '2種登録');
     addNews(`${pr.name}（${pr.school}）を2種登録。高校生ながらトップチームの一員に！`);
@@ -1839,7 +1935,7 @@ function checkTrip(){
 }
 function signForeign(id){
   const p = S.foreignCands.find(x=>x.id===id); if(!p) return;
-  if(S.players.length>=26) return toast('選手登録は26人までです。');
+  if(rosterFull()) return rosterToast();
   if(foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
   if(S.money < p.fee) return toast('資金が足りません。');
   spend(p.fee, 'transfer');
@@ -1876,7 +1972,7 @@ function renderForeign(){
         <span>年俸</span><span class="v">${yen(p.salary)}/年</span>
         <span>移籍金</span><span class="v"><b>${yen(p.fee)}</b></span>
       </div>
-      <div class="row"><button class="btn" data-act="dropForeign" data-arg="${p.id}">見送る</button><button class="btn primary" data-act="nego" data-arg="foreign|${p.id}" ${S.money<p.fee||foreignCount()>=FOREIGN_MAX||S.players.length>=26?'disabled':''}>獲得する</button></div>
+      <div class="row"><button class="btn" data-act="dropForeign" data-arg="${p.id}">見送る</button><button class="btn primary" data-act="nego" data-arg="foreign|${p.id}" ${S.money<p.fee||foreignCount()>=FOREIGN_MAX||rosterFull()?'disabled':''}>獲得する</button></div>
     </div>`).join('') || `<p class="muted small">${fs?'まだ候補はいません。派遣すると2〜3週で候補を連れて帰ってきます。':'海外スカウトを雇うと、ここに候補が並びます。'}</p>`}</div></div>`;
 }
 
@@ -2301,20 +2397,19 @@ function openNego(kind, id){
     if(cur) n.log.push({who:'info', t:`合意すると現${STAFF_ROLES[p.role].name}の${cur.name}は解任になり、違約金${yen(n.extra)}がかかる。`});
     if(hireChance(p)<0.6) n.log.push({who:'info', t:`実績のある人物で、${DIVS[S.div].short}のクラブからの話には慎重なようだ。`});
   } else if(kind==='market'){
-    if(S.players.length>=26) return toast('選手登録は26人までです。');
+    if(rosterFull()) return rosterToast();
     if(p.foreign && foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
     n.askFee = p.fee; n.askSal = p.salary; n.feeFixed = !!p.loanFrom || p.fee===0; n.years = !p.loanFrom;
     n.feeOpts = n.feeFixed ? [1] : [0.8,0.9,1,1.1]; n.salOpts = [0.9,1,1.15,1.3];
     n.appeal = (econ()-1)*0.05 + (p.local?0.15:0);
     n.party = p.loanFrom ? `${p.loanFrom}（親クラブ）と本人` : p.free ? '本人（フリー）' : '所属クラブと本人';
   } else if(kind==='foreign'){
-    if(S.players.length>=26) return toast('選手登録は26人までです。');
+    if(rosterFull()) return rosterToast();
     if(foreignCount()>=FOREIGN_MAX) return toast(`外国籍選手は${FOREIGN_MAX}人までです。`);
     n.askFee = p.fee; n.askSal = p.salary; n.years = true;
     n.feeOpts = [0.8,0.9,1,1.1]; n.salOpts = [0.9,1,1.15,1.3]; n.appeal = 0.15; n.party = '代理人';
   } else if(kind==='prospect'){
     if(p.status!=='none') return;
-    if(p.kind==='大学' && S.players.length>=26) return toast('選手登録は26人までです。');
     n.askFee = prospectFee(p); n.askSal = Math.round(calcSalary((p.lo+p.hi)/2)*0.8); n.years = false;
     n.feeOpts = [0.7,1,1.5]; n.salOpts = [0.9,1,1.2]; n.feeLabel = '支度金'; n.party = `本人と${p.kind==='高校'?'家族・監督':'大学の監督'}`;
     n.patience = 2;
@@ -3068,7 +3163,7 @@ const OFF_DECISIONS = [
     init:d=>{ d.list = [0,1,2].map(()=>{ const p = genCandidate('free'); p.salary = Math.round(p.salary*0.5); p.ovr += R(-2,4); p.bio='合同トライアウト参加'; return p; }); },
     opts:d=>[...d.list.map(p=>[p.id, `${p.name}（${p.pos}・${p.age}歳・能力${Math.round(p.ovr)}）`, `年俸 ${yen(p.salary)}・${roleShort(p)}`]), ['skip','誰も獲らない','']],
     apply:(k,d)=>{ const p = d.list.find(x=>x.id===k); if(!p) return 'トライアウトからの獲得は見送った。';
-      if(S.players.length>=26) return '登録枠がいっぱいで獲得できなかった。';
+      if(rosterFull()) return `登録枠（${rosterCap()}人）がいっぱいで獲得できなかった。`;
       delete p.fee; p.free = false; p.contract = 1; p.cond = 85; S.players.push(p); return `トライアウト組から${p.name}を獲得！「拾ってくれたクラブに恩返しを」`; } },
   { // 1月上旬：スローガン
     title:'新体制発表会で掲げるスローガン', body:()=>'今季のクラブスローガンを発表します。チームの雰囲気や評価に影響します。',
@@ -3236,7 +3331,6 @@ function acTogglePromote(id){ const p = acFind(id); if(!p || p.team!=='U18' || p
 function acToggleKeep(id){ const p = acFind(id); if(!p || p.team!=='U15' || p.grade!==3) return; p.keep = p.keep===false ? true : false; save(); render(); }
 function acRegister2(id){
   const a = acad(), p = acFind(id); if(!p || p.team!=='U18') return;
-  if(S.players.length>=26) return toast('選手登録は26人までです。');
   confirmBox(`${p.name}（U-18 ${p.grade}年）を2種登録しますか？ ユース在籍のまま、トップチームの試合に出場できます（年俸なし）。`, ()=>{
     a.u18 = a.u18.filter(x=>x!==p);
     p.amateur = '2種登録'; p.acGrade = p.grade; p.proSalary = Math.round(calcSalary(p.ovr)*0.8); p.salary = 0; p.from = `${S.club} U-18`; p.homegrown = true; p.mor = 75;
@@ -3444,6 +3538,7 @@ function renderHome(){
       <div class="x">VS</div>
       <div class="side"><div class="nm">${esc(nm.opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}・${standings().findIndex(t=>t.i===nm.oi)+1}位</div></div></div>
       ${derbyName(nm.oi)?`<p style="text-align:center;margin:6px 0 0"><span class="tag inj">${derbyName(nm.oi)}</span> <span class="small muted">観客が増え、勝敗の影響も大きい一戦</span></p>`:''}
+      ${(()=>{ const sk = matchStakes(); return sk ? `<div class="stake">${sk.lines.map(esc).join('<br>')}${sk.danger?`<div class="danger">${esc(sk.danger)}</div>`:''}</div>` : ''; })()}
       <p class="small" style="text-align:center;margin:10px 0 0">相手は<b>${word}</b>。${TACTICS[S.tactic].name} / ${S.formation} / ${TRAINING[S.training].name}</p>
       ${licenseIssues().length?`<p class="small" style="text-align:center;margin:4px 0 0">${licenseChip()}</p>`:''}
     </div>`;
@@ -3496,8 +3591,8 @@ function renderSquad(){
   const order = {GK:0,DF:1,MF:2,FW:3};
   const ps = [...S.players].sort((a,b)=>order[a.pos]-order[b.pos]||b.ovr-a.ovr);
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
-  return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・年俸計 ${yen(sal)}）</h3>
-  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の点（緑：好調、青：普通、橙：低め、赤：不満）。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
+  return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・登録枠 <span class="${rosterCount()>rosterCap()?'minus':''}">${rosterCount()}/${rosterCap()}</span>・年俸計 ${yen(sal)}）</h3>
+  <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の点（緑：好調、青：普通、橙：低め、赤：不満）。<br>登録枠：${esc(rosterRule())}。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
   <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
@@ -3539,7 +3634,7 @@ function renderTactics(){
 function renderMarket(){
   const xi = getLineup(true);
   return `<div class="infobar">
-      <span>登録 <b>${S.players.length}</b>/26</span><span>外国籍 <b>${foreignCount()}</b>/${FOREIGN_MAX}</span><span>資金 <b>${yen(S.money)}</b></span>
+      <span title="${esc(rosterRule())}">登録枠 <b class="${rosterCount()>rosterCap()?'minus':''}">${rosterCount()}</b>/${rosterCap()}</span><span>外国籍 <b>${foreignCount()}</b>/${FOREIGN_MAX}</span><span>資金 <b>${yen(S.money)}</b></span>
       <details><summary>説明</summary>毎週入れ替わります。フリー移籍（移籍金0円）や、上位クラブの若手のレンタル移籍も並びます。スカウト網Lv${S.fac.scout}${S.fac.scout<=1?'（伸びしろは不明。Lv2以上で見える）':''}。</details>
     </div>
     <div class="card-scroll" data-keep="market"><div class="mk">${S.market.map(p=>{
@@ -3559,7 +3654,7 @@ function renderMarket(){
           ${p.loanFrom?`<span>レンタル料</span><span class="v"><b>${yen(p.fee)}</b></span><span>買取オプション</span><span class="v">${yen(p.buyFee)}</span>`
             :`<span>移籍金</span><span class="v"><b>${p.free?'0円（フリー）':yen(p.fee)}</b></span>`}
         </div>
-        <div class="row"><button class="btn primary" data-act="nego" data-arg="market|${p.id}" ${S.money<p.fee||S.players.length>=26||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>交渉する</button></div>
+        <div class="row"><button class="btn primary" data-act="nego" data-arg="market|${p.id}" ${S.money<p.fee||rosterFull()||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>交渉する</button></div>
       </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div></div>`;
 }
 
@@ -3683,7 +3778,7 @@ function renderAma(){
         ${pr.status==='none'?`<span>入団の見込み</span><span class="v">${interest(pr)}%</span><span>支度金</span><span class="v">${yen(prospectFee(pr))}</span>`:''}
       </div>
       ${pr.status==='none'?`<div class="row"><button class="btn" data-act="watch" data-arg="${pr.id}" ${S.watchLeft<=0?'disabled':''}>視察する（${yen(watchCost())}）</button><button class="btn primary" data-act="nego" data-arg="prospect|${pr.id}">オファー</button></div>`:''}
-      ${pr.status==='signed'&&pr.kind==='高校'&&!isOff()?`<div class="row"><button class="btn gold" data-act="reg2" data-arg="${pr.id}" ${S.players.length>=26?'disabled':''}>2種登録して今季から出場させる</button></div>`:''}
+      ${pr.status==='signed'&&pr.kind==='高校'&&!isOff()?`<div class="row"><button class="btn gold" data-act="reg2" data-arg="${pr.id}">2種登録して今季から出場させる</button></div>`:''}
       ${pr.status==='joined'?'<p class="small plus" style="margin:8px 0 0">トップチームに合流済み（チーム）</p>':''}
     </div>`).join('') || '<p class="muted small">まだリストアップされた選手はいません。大会が終わるとスカウトから報告が届きます。</p>'}</div></div>`;
 }
@@ -3745,6 +3840,7 @@ function showMatch(m, fin, d){
   const homeName = m.home ? S.club : m.opp.name, awayName = m.home ? m.opp.name : S.club;
   openModal(`
     <div class="small muted" style="text-align:center">${DIVS[S.div].name} 第${S.round}節・${m.home?'ホーム':'アウェイ'}${m.derby?` <span class="tag inj">${m.derby}</span>`:''}</div>
+    ${d.stake?`<div class="stake">${d.stake.lines.map(esc).join('<br>')}${d.stake.danger?`<div class="danger">${esc(d.stake.danger)}</div>`:''}</div>`:''}
     <div class="score"><div class="t">${esc(homeName)}</div><div class="n" id="sc">0 - 0</div><div class="t">${esc(awayName)}</div></div>
     <div class="clock" id="clk">キックオフ</div>
     <ul class="log" id="log"></ul>
@@ -3756,9 +3852,9 @@ function showMatch(m, fin, d){
     min++;
     while(evs.length && evs[0].m<=min){
       const e = evs.shift();
-      if(!e.flavor && !e.inj){ if(e.us===m.home) hs++; else as++; }
-      const cls = e.flavor||e.inj?'':(e.us?'goal us':'goal them');
-      $log.insertAdjacentHTML('beforeend', `<li class="${cls}"><span class="m">${e.m}'</span>${esc(e.text||e.flavor)}</li>`);
+      if(!e.flavor && !e.inj && !e.other){ if(e.us===m.home) hs++; else as++; }
+      const cls = e.other ? 'other' : e.flavor||e.inj?'':(e.us?'goal us':'goal them');
+      $log.insertAdjacentHTML('beforeend', `<li class="${cls}"><span class="m">${Math.floor(e.m)}'</span>${esc(e.text||e.flavor)}</li>`);
       $sc.textContent = `${hs} - ${as}`;
       $log.scrollTop = $log.scrollHeight;
     }
@@ -3769,6 +3865,7 @@ function showMatch(m, fin, d){
     const word = {W:'勝利！',D:'引き分け',L:'敗戦…'}[m.res];
     const sign = v=>`<span class="${v>=0?'plus':'minus'}">${v>=0?'+':''}${typeof v==='number'&&Math.abs(v)>=1?v.toLocaleString():v}</span>`;
     document.getElementById('after').innerHTML = `
+      ${d.clinch?`<div class="clinch ${d.clinch.doom?'doom':''}">${esc(d.clinch.t)}</div>`:''}
       <h2 style="text-align:center;color:var(--${m.res==='W'?'win':m.res==='L'?'loss':'draw'})">${word}</h2>
       <div class="kv">
         ${m.home?`<span>観客数</span><span class="v">${fin.att.toLocaleString()}人</span><span>チケット収入</span><span class="v">${yen(fin.ticket)}</span>`:''}
