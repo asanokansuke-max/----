@@ -178,7 +178,7 @@ summary{cursor:pointer;color:var(--indigo);font-weight:600}
 .dots i.now{background:var(--gold)}
 .pdgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px}
 .pdh{margin:14px 0 4px;font-size:13px;color:var(--muted)}
-.atg{display:flex;gap:8px;align-items:flex-start;margin-top:4px}.atgn{flex:0 0 44px;font-size:11px;color:var(--muted);padding-top:4px}
+.atg{display:flex;gap:6px;align-items:flex-start;margin-top:4px}.atgn{flex:0 0 48px;white-space:nowrap;font-size:11px;color:var(--muted);padding-top:4px}
 .atr{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:3px 8px}
 .atc{display:flex;align-items:baseline;gap:4px;font-size:12px;padding:2px 0;border-bottom:1px solid var(--line)}.atc span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .atc.key span{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}.atc b{font-variant-numeric:tabular-nums}.atc b.hi{color:var(--win)}.atc b.lo{color:var(--loss)}.atc i{font-style:normal;font-size:10px}
@@ -281,7 +281,86 @@ ol.rank li span:nth-child(2){flex:1;min-width:0}
   th.hide-s,td.hide-s{display:none}
   .score .n{font-size:32px;min-width:84px}
 }
-.acbtns{text-align:right;white-space:nowrap}.acbtns .btn{display:block;width:100%;padding:4px 8px;font-size:12px;margin:2px 0}
+.optlab{font-size:11.5px;color:var(--muted);margin:8px 0 4px;font-weight:700}
+.optlab:first-of-type{margin-top:0}
+.opts{grid-template-columns:repeat(auto-fit,minmax(68px,1fr));gap:5px}
+.opt{padding:6px 4px;text-align:center}
+.opt b{font-size:13px}
+.optdesc{margin:4px 0 0;font-size:11.5px;color:var(--muted);line-height:1.4}
+.hometabs{margin:8px 0 6px;flex-wrap:nowrap}
+.hometabs button{flex:1;padding:5px 4px}
+.hometabs button.hot:not(.on){border-color:var(--loss);color:var(--loss)}
+.co{padding:6px 10px}
+.co .btn.primary{padding:4px 12px}
+.co.open{border-color:var(--gold)}
+.corow{display:flex;align-items:center;gap:8px}
+.coname{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px}
+.cosub{font-size:11.5px;color:var(--muted)}
+.cobar{width:56px;flex:none}
+.co .tiers{margin-top:4px}
+.mk.cos{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px}
+.mkc{padding:9px 11px}
+.mkh{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.mkl{font-size:12px;margin-top:3px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mkl:empty{display:none}
+.mkf{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:5px;line-height:1.4}
+.mkf .btn{padding:6px 14px}
+.pdtabs{margin:10px 0 0}
+.pdtabs button{flex:1}
+@media (max-width:560px){
+  body{font-size:14px}
+  .top-inner{padding:6px 12px 0}
+  .club-name{font-size:16px}
+  .meta{font-size:11.5px}
+  .stats{gap:2px 10px;margin:3px 0 6px;font-size:11.5px}
+  .stat b{font-size:13.5px}
+  .trust{width:40px;height:6px}
+  .wrap{padding:0 10px 10px}
+  .card{padding:10px;border-radius:10px}
+  .card h3{margin-bottom:6px;font-size:13px}
+  .grid{gap:8px;margin-top:8px}
+  .card-scroll{padding:6px;border-radius:8px}
+  .card-scroll h3.grp{margin:8px 0 5px;font-size:13px}
+  .menu{grid-template-columns:repeat(4,1fr);gap:5px;margin-top:6px}
+  .tile{padding:6px 6px;border-radius:10px;align-items:center;text-align:center}
+  .tile b{font-size:12px}
+  .tile .st{display:none}
+  .tile .ic .svgi{width:18px;height:18px}
+  .tile .badge{top:2px;right:2px}
+  .matchcard{padding:8px 10px}
+  .matchcard h3{font-size:12.5px;margin-bottom:2px}
+  .vs .nm{font-size:14px}
+  .stake{margin-top:6px;padding:4px 8px;font-size:12.5px}
+  .sheet{width:calc(100% - 10px);height:calc(100% - 10px);border-radius:14px}
+  .sheet-head{padding:6px 8px 0 12px}
+  .sheet-title b{font-size:15px}
+  .sheet-x{width:30px;height:30px}
+  .sheet-body>.wrap{padding:0 8px 8px}
+  .infobar{padding:6px 9px;gap:2px 10px;margin:6px 0;font-size:12px}
+  .seg button{padding:4px 10px;font-size:12.5px}
+  .modal{padding:6px}
+  .modal-box{padding:12px;max-height:calc(100vh - 12px);border-radius:12px}
+  .modal-box h2{font-size:17px}
+  .pdgrid{grid-template-columns:repeat(4,1fr);gap:6px}
+  .pdgrid .ovr{font-size:18px!important}
+  .pdh{margin:10px 0 3px}
+  .kv{font-size:12.5px;gap:2px 10px}
+  .news{font-size:12.5px}
+  .news li{padding:4px 0}
+  .log{max-height:34vh;font-size:12.5px}
+  .score{margin:4px 0 2px}
+  .footer-inner{padding:7px 10px calc(7px + env(safe-area-inset-bottom))}
+  .go{padding:9px 14px;font-size:14px}
+  table{font-size:12.5px}
+  th,td{padding:5px 4px}
+  .cal-row{padding:6px 4px;font-size:12.5px;grid-template-columns:56px 1fr auto}
+  .warn{padding:6px 8px;font-size:12.5px;margin-top:6px}
+  .row{margin-top:8px}
+}
+.acbtns{text-align:right;white-space:nowrap}.acbtns .btn{padding:3px 6px;font-size:11.5px;margin-left:3px}
+.stc{padding:9px 11px}.stc .rep-from{display:inline}
+.acTabs{margin:0 0 6px}.acTabs button{flex:1}
+.opt b{white-space:nowrap;letter-spacing:-.02em}
 </style>
 </head>
 <body>
@@ -2243,7 +2322,8 @@ function medicalHtml(p){
 }
 function showPlayer(id){
   const p = S.players.find(x=>x.id===id); if(!p) return;
-  ui.detail = id;
+  if(ui.detail!==id) ui.pdTab = 'ab';
+  ui.detail = id; const tb = ui.pdTab || 'ab';
   const inXI = getLineup().some(s=>s.p.id===id);
   const state = [inXI?'先発予定':'控え', p.inj?(p.playHurt?'痛み止めを打って強行出場中':'負傷で離脱中'):'', p.rust>0&&!p.inj?`復帰明け（試合勘が戻るまであと${p.rust}試合）`:'', p.rest?'休養指示中':'', p.promise?'先発を約束済み':'', p.loan?'他クラブへ期限付き移籍中':''].filter(Boolean).join('・');
   const medical = medicalHtml(p);
@@ -2262,13 +2342,15 @@ function showPlayer(id){
       <div><span class="small muted">調子</span><div><b>${Math.round(p.cond)}</b></div>${bar(p.cond, p.cond>70?'':'gold')}</div>
       <div><span class="small muted">士気</span><div><b>${moraleFace(p.mor??60)} ${Math.round(p.mor??60)}</b></div>${bar(p.mor??60,'gold')}</div>
     </div>
-    ${attrHtml(p)}
-    <h3 class="pdh">役割</h3>${(()=>{ const r=roleOf(p); if(!r) return ''; return `<p class="small" style="margin:0"><b>${r.name}</b> <span class="muted">適性${fitMark(roleFit(p,p.role))}</span>${p.roleNew>0?`<span class="muted">（転向中・慣れるまであと${p.roleNew}週）</span>`:''}<br>${r.desc}<br><span class="muted">合う戦術：${r.tac.map(t=>TACTICS[t].name).join('・')}${r.tac.includes(S.tactic)?' <span class="plus">✓今の戦術に合っている</span>':''}</span></p>
+    <div class="seg pdtabs">${[['ab','能力'],['role','役割・状態'],['ct','契約']].map(([k,n])=>`<button class="${tb===k?'on':''}" data-act="pdTab" data-arg="${p.id}|${k}">${n}</button>`).join('')}</div>
+    ${tb==='ab' ? attrHtml(p) : ''}
+    ${tb==='role' ? `<h3 class="pdh">役割</h3>${(()=>{ const r=roleOf(p); if(!r) return ''; return `<p class="small" style="margin:0"><b>${r.name}</b> <span class="muted">適性${fitMark(roleFit(p,p.role))}</span>${p.roleNew>0?`<span class="muted">（転向中・慣れるまであと${p.roleNew}週）</span>`:''}<br>${r.desc}<br><span class="muted">合う戦術：${r.tac.map(t=>TACTICS[t].name).join('・')}${r.tac.includes(S.tactic)?' <span class="plus">✓今の戦術に合っている</span>':''}</span></p>
       <details class="small" style="margin-top:4px"><summary>役割を変える</summary><div class="seg">${Object.entries(ROLES[p.pos]).filter(([k])=>k!==p.role).map(([k,v])=>`<button data-act="role" data-arg="${p.id}|${k}">${v.name} ${fitMark(roleFit(p,k))}</button>`).join('')}</div><span class="muted">◎○△×＝能力から見た適性。変えると約4週間は効果が半分になります。</span></details>`; })()}
     <h3 class="pdh">状態</h3><p class="small" style="margin:0">${state}</p>${medical}
     <h3 class="pdh">成績</h3>
     <div class="kv"><span>今季</span><span class="v">${p.sa}試合 ${p.sg}得点${rAvg(p)?`・平均評価 ${rAvg(p).toFixed(2)}`:''}${p.mvps?`・MVP ${p.mvps}回`:''}</span>${p.last&&p.last.length?`<span>直近の評価</span><span class="v">${p.last.map(r=>`<span class="${r>=7?'plus':r<5.5?'minus':''}">${r.toFixed(1)}</span>`).join(' ')}</span>`:''}<span>通算</span><span class="v">${p.apps}試合 ${p.goals}得点</span></div>
-    <h3 class="pdh">契約</h3>
+` : ''}
+    ${tb==='ct' ? `<h3 class="pdh">契約</h3>
     <div class="kv">
       <span>契約の種類</span><span class="v">${kind}</span>
       <span>年俸</span><span class="v">${p.amateur?'なし':yen(p.salary)}${underpaid(p)?'<br><span class="small minus">相場より低く、本人は不満（契約更新や昇給の要望で上がる）</span>':''}</span>
@@ -2277,6 +2359,7 @@ function showPlayer(id){
     </div>
     ${p.expiring && !p.refused ? `<div class="warn">契約更新の条件：年俸 ${yen(renewAsk(p))}${renewChance(p)<1?`・本人の士気が低く、合意できる見込みは約${Math.round(renewChance(p)*100)}%`:''}
       <div class="row" style="justify-content:flex-start"><button class="btn primary" data-act="nego" data-arg="renew|${p.id}">契約更新の交渉をする</button></div></div>` : ''}
+` : ''}
     <div class="row">
       ${p.inj>0&&p.playHurt?`<button class="btn" data-act="stopHurt" data-arg="${p.id}">強行出場をやめる</button>`:''}
       <button class="btn" data-act="rest" data-arg="${p.id}">${p.rest?'起用する':'休ませる'}</button>
@@ -3347,10 +3430,11 @@ function renderAcademy(){
   const table = (list, team) => `<table class="sticky"><thead><tr><th>Pos</th><th>名前</th><th class="num">学年</th><th class="num">能力</th><th></th></tr></thead><tbody>${[...list].sort((x,y)=>y.grade-x.grade||y.ovr-x.ovr).map(p=>row(p,team)).join('')}</tbody></table>`;
   return `<div class="infobar"><span>U-18：${AC_LEAGUES[a.league].name}${r?` <b>${r}位</b>`:''}</span><span>評判 <b>${Math.round(a.rep)}</b></span><span>ユース施設Lv${S.fac.youth}</span>
       <details><summary>説明</summary>下部組織はU-18（高校年代）とU-15（中学年代）。毎週、施設・育成コーチ・所属リーグのレベルに応じて成長します。<br>・U-18の3年生は「トップ昇格」を選んだ選手だけがシーズン終了時にプロ契約。選ばなかった選手は大学へ進学し、数年後に大学で成長して再会できることも。<br>・U-18の選手は「2種登録」でユース在籍のままトップの試合に出せます。<br>・U-15の3年生は基本的にU-18へ上がります。<br>・U-18が上位に入るとプリンスリーグ→プレミアリーグへ昇格し、成長が早まり評判も上がります。評判が高いほど良い子が入団します。</details></div>
-    <div class="card-scroll" data-keep="academy">
-      <h3 class="grp">U-18（${a.u18.length}人）</h3><div class="scroll">${table(a.u18,'U18')}</div>
-      <h3 class="grp">U-15（${a.u15.length}人）</h3><div class="scroll">${table(a.u15,'U15')}</div>
-      ${a.tbl?`<h3 class="grp">${AC_LEAGUES[a.league].name} 順位</h3><table><tr><th>#</th><th>チーム</th><th class="num">試</th><th class="num">差</th><th class="num">勝点</th></tr>${[...a.tbl].sort((x,y)=>y.pts-x.pts||y.gd-x.gd).map((t,i)=>`<tr class="${t.me?'me':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.p}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td><td class="num"><b>${t.pts}</b></td></tr>`).join('')}</table>`:''}
+    <div class="seg acTabs">${[['u18',`U-18（${a.u18.length}）`],['u15',`U-15（${a.u15.length}）`],['tbl','ユースリーグ']].map(([k,n])=>`<button class="${(ui.acTab||'u18')===k?'on':''}" data-act="acTab" data-arg="${k}">${n}</button>`).join('')}</div>
+    <div class="card-scroll" data-keep="academy-${ui.acTab||'u18'}">
+      ${(ui.acTab||'u18')==='u18'?`<div class="scroll">${table(a.u18,'U18')}</div>`:''}
+      ${ui.acTab==='u15'?`<div class="scroll">${table(a.u15,'U15')}</div>`:''}
+      ${ui.acTab==='tbl'?(a.tbl?`<table>`:'<p class="muted small">シーズンが始まると表示されます。</p>'):''}${ui.acTab==='tbl'&&a.tbl?`<tr><th>#</th><th>チーム</th><th class="num">試</th><th class="num">差</th><th class="num">勝点</th></tr>${[...a.tbl].sort((x,y)=>y.pts-x.pts||y.gd-x.gd).map((t,i)=>`<tr class="${t.me?'me':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.p}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td><td class="num"><b>${t.pts}</b></td></tr>`).join('')}</table>`:''}
     </div>`;
 }
 
@@ -3478,7 +3562,7 @@ function render(){
       <span class="stat">資金 <b class="${S.money<0?'neg':''}">${yen(S.money)}</b></span>
       <span class="stat">ファン <b>${S.fans.toLocaleString()}</b>人</span>
       <span class="stat">順位 <b>${myRank()}</b>位</span>
-      <span class="stat">フロント信頼 <b>${Math.round(S.trust)}</b><span class="trust"><i style="width:${S.trust}%"></i></span></span>
+      <span class="stat">信頼 <b>${Math.round(S.trust)}</b><span class="trust"><i style="width:${S.trust}%"></i></span></span>
     </div>
   </div></header>
   <main class="main fill" data-keep="main-home"><div class="wrap">${renderHome()}</div></main>
@@ -3507,7 +3591,7 @@ function specialCard(fx, rt){
   const where = fx.kind==='cup' ? cupWhere(fx.i) : fx.q.where;
   const title = fx.kind==='cup' ? cupTitle(fx.i) : fx.q.label;
   const date = fx.kind==='cup' ? `${CUP[fx.i].m}/${CUP[fx.i].d}・` : '';
-  const tie = fx.kind==='cup' || fx.q.tie==='pk' ? '一発勝負。90分で決着がつかなければ延長戦、それでも同点ならPK戦。' : fx.q.tie==='higher' ? '一発勝負。延長戦はなく、引き分けならリーグ戦の上位チームが勝ち抜け。' : '4チームの総当たり。順位で次に進めるかが決まる。';
+  const tie = fx.kind==='cup' || fx.q.tie==='pk' ? '一発勝負（同点なら延長・PK戦）' : fx.q.tie==='higher' ? '一発勝負（延長なし・引き分けは上位チームが勝ち抜け）' : '4チームの総当たり';
   const stake = fx.kind==='cup' ? (CUP[fx.i].prize ? `勝てば賞金 ${yen(CUP[fx.i].prize*(CUP[fx.i].final?3:1))}。` : oppO > rt.ovr+5 ? '勝てば大金星。' : '')
     : fx.q.type==='single' ? (fx.q.onWin===1 ? '勝てば昇格。' : '負ければ降格。') : fx.q.type==='po' ? '勝ち上がれば昇格。' : '';
   return `<div class="card matchcard special" style="margin-top:12px"><h3><span class="tag xi">${fx.kind==='cup'?'天皇杯':fx.q.type==='cl'?'地域CL':fx.q.type==='po'?'プレーオフ':'入れ替え戦'}</span> ${esc(title)}</h3>
@@ -3515,11 +3599,10 @@ function specialCard(fx, rt){
     <div class="vs"><div class="side"><div class="nm">${esc(S.club)}</div><div class="small muted">総合 ${rt.ovr.toFixed(1)}</div></div>
     <div class="x">VS</div>
     <div class="side"><div class="nm">${esc(opp.name)}</div><div class="small muted">総合 ${oppO.toFixed(1)}</div></div></div>
-    <p class="small" style="text-align:center;margin:8px 0 0">相手は<b>${word}</b>。${stake}</p>
-    <p class="small muted" style="text-align:center;margin:2px 0 0">${tie}</p>
+    <p class="small" style="text-align:center;margin:6px 0 0">相手は<b>${word}</b>。${stake}<span class="muted">${tie}</span></p>
     ${fx.kind==='post' && fx.q.type==='cl' ? clTable(S.post) : ''}
-    ${fx.kind==='cup' ? `<div class="seg" style="justify-content:center;margin-top:8px"><button class="${S.cupRotate?'':'on'}" data-act="cupRot" data-arg="0">主力で臨む</button><button class="${S.cupRotate?'on':''}" data-act="cupRot" data-arg="1">ターンオーバー</button></div>
-      <p class="small muted" style="text-align:center;margin:4px 0 0">${S.cupRotate?'主力6人を休ませ、控え組にチャンスを与える（主力の調子が回復・控えの士気が上がる）。':'ベストメンバーで勝ちにいく。主力の疲労はたまる。'}</p>` : ''}
+    ${fx.kind==='cup' ? `<div class="seg" style="justify-content:center;margin:6px 0 0"><button class="${S.cupRotate?'':'on'}" data-act="cupRot" data-arg="0">主力で臨む</button><button class="${S.cupRotate?'on':''}" data-act="cupRot" data-arg="1">ターンオーバー</button></div>
+      <p class="small muted" style="text-align:center;margin:2px 0 0">${S.cupRotate?'主力6人を温存（調子回復・控えの士気アップ）':'ベストメンバーで勝ちにいく（主力は疲れる）'}</p>` : ''}
   </div>`;
 }
 function renderHome(){
@@ -3551,30 +3634,34 @@ function renderHome(){
   const mini = `<table><tr><th>#</th><th>クラブ</th><th class="num">勝点</th><th class="num">得失</th></tr>
     ${around.map(({t,i})=>`<tr class="${t.isMe?'me':''}"><td>${i+1}</td><td>${esc(t.name)}</td><td class="num">${t.pts}</td><td class="num">${t.gd>0?'+':''}${t.gd}</td></tr>`).join('')}</table>`;
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
-  const repCard = S.inbox.length ? `<div class="reports" id="reports" style="grid-column:1/-1"><h3 class="grp">報告（${S.inbox.length}件）<span class="muted small">　返答しないまま2週進めると、いちばん下の選択肢で自動処理</span></h3><div class="grid g2" style="margin-top:0">${reportCards()}</div></div>` : '';
-  return `${match}
-  ${renderMenu()}
-  <div class="card-scroll" data-keep="home" style="margin-top:10px"><div class="grid g2" style="margin-top:0">${isOff()?`<div style="grid-column:1/-1">${renderOffChoice()}</div>`:''}${repCard}
-    <div class="card"><h3>クラブ状況</h3>
-      <div class="kv">
+  const off = isOff() ? renderOffChoice() : '';
+  const tabs = [['rep', `報告${S.inbox.length?` ${S.inbox.length}`:''}`], ['club','クラブ'], ['table','順位'], ['news','ニュース']];
+  let ht = ui.homeTab || ((S.inbox.length || (isOff() && S.offChoice && !S.offChoice.picked)) ? 'rep' : 'club');
+  const panes = {
+    rep: `${off}${S.inbox.length ? `<p class="small muted" style="margin:0 0 6px">2週放置すると、いちばん下の選択肢で自動処理</p><div class="grid g2" style="margin-top:0">${reportCards()}</div>` : off ? '' : '<p class="muted small" style="margin:4px">報告はありません。</p>'}`,
+    club: `<div class="kv">
         <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
         <span>直近の結果</span><span class="v">${S.results.slice(-5).map(resBadge).join('')||'<span class="muted">—</span>'}</span>
         <span>攻撃力 / 守備力</span><span class="v">${rt.att.toFixed(1)} / ${rt.def.toFixed(1)}</span>
         <span>監督</span><span class="v">${S.staff.manager?`${esc(S.staff.manager.name)}（能力${S.staff.manager.abil}・${S.staff.manager.lic}）`:'<span class="minus">空席</span>'}</span>
         <span>負傷者</span><span class="v small">${(()=>{const l=S.players.filter(p=>p.inj>0); return l.length? l.map(p=>`${esc(p.name)}（${esc(p.injury?.short||'負傷')}・残り${p.inj}週）`).join('<br>') : '<span class="plus">なし</span>'; })()}</span>
-        <span>サポーター（${SUPP_NAME}）</span><span class="v">${suppWord(supp().mood)}（熱量 ${Math.round(supp().mood)}）</span>
+        <span>サポーター</span><span class="v">${suppWord(supp().mood)}（熱量 ${Math.round(supp().mood)}）</span>
         <span>天皇杯</span><span class="v small">${esc(cupStatus())}</span>
-        <span>ライバル</span><span class="v small">${esc(S.teams[rivalIdx()]?.name||'—')}（${derbyName(rivalIdx())}）</span>
+        <span>ライバル</span><span class="v small">${esc(S.teams[rivalIdx()]?.name||'—')}</span>
         <span>チーム士気</span><span class="v">${(()=>{const a=S.players.filter(p=>!p.loan);const m=a.reduce((x,p)=>x+(p.mor??60),0)/a.length;return moraleFace(m)+' '+Math.round(m);})()}</span>
-        <span>年俸総額（選手＋スタッフ）</span><span class="v">${yen(sal+staffSalary())}/年</span>
+        <span>年俸総額</span><span class="v">${yen(sal+staffSalary())}/年</span>
         <span>スポンサー収入</span><span class="v">${yen(S.sponsor+contractIncome())}/年</span>
         <span>今季の収支</span><span class="v ${S.fin.income-S.fin.expense>=0?'plus':'minus'}">${yen(S.fin.income-S.fin.expense)}</span>
         <span>J1優勝</span><span class="v">${S.champion}回</span>
-      </div>
-    </div>
-    <div class="card"><h3>順位（抜粋）</h3>${mini}</div>
-    <div class="card"><h3>ニュース</h3><ul class="news">${S.news.slice(0,10).map(n=>`<li><span class="r">${n.s}年目${n.r?` 第${n.r}節`:''}</span>${esc(n.t)}</li>`).join('')}</ul></div>
-  </div></div>`;
+      </div>`,
+    table: mini,
+    news: `<ul class="news">${S.news.slice(0,12).map(n=>`<li><span class="r">${n.s}年目${n.r?` 第${n.r}節`:''}</span>${esc(n.t)}</li>`).join('')}</ul>`,
+  };
+  if(!panes[ht]) ht = 'club';
+  return `${match}
+  ${renderMenu()}
+  <div class="seg hometabs">${tabs.map(([k,n])=>`<button class="${ht===k?'on':''}${k==='rep'&&(S.inbox.length||off&&S.offChoice&&!S.offChoice.picked)?' hot':''}" data-act="htab" data-arg="${k}">${n}</button>`).join('')}</div>
+  <div class="card-scroll" data-keep="home-${ht}">${panes[ht]}</div>`;
 }
 function licenseChip(){
   const li = licenseIssues();
@@ -3607,7 +3694,8 @@ function renderSquad(){
 }
 
 function optGroup(key, defs, cur, extra){
-  return `<div class="opts">${Object.entries(defs).map(([k,d])=>`<button class="opt ${cur===k?'on':''}" data-act="set" data-arg="${key}:${k}"><b>${d.name||k}</b><span>${extra?extra(k,d):d.desc}</span></button>`).join('')}</div>`;
+  const d = defs[cur];
+  return `<div class="opts">${Object.entries(defs).map(([k,v])=>`<button class="opt ${cur===k?'on':''}" data-act="set" data-arg="${key}:${k}"><b>${v.name||k}</b></button>`).join('')}</div>${d?`<p class="optdesc">${extra?extra(cur,d):(d.desc||'')}</p>`:''}`;
 }
 function renderTactics(){
   const rt = teamRating(getLineup());
@@ -3617,17 +3705,12 @@ function renderTactics(){
     <span>${TRAINING[S.training].name}・${FOCUS_T[S.drill||'bal'].name}</span><span>攻 <b>${rt.att.toFixed(1)}</b> / 守 <b>${rt.def.toFixed(1)}</b></span>
     <details><summary>今週の方針</summary>チケット：${TICKET[S.ticket].name}・広報活動：${PR[S.pr].name}${m?`<br>監督 ${esc(m.name)} の得意戦術は「${TACTICS[m.style].name}」。合わせると戦力が上がります。`:''}</details>
   </div>
-  <div class="infobar" style="margin-top:0">${(()=>{ const re=rt.roles; return `<span>役割の噛み合い <b>${re.fit}</b>/11人</span><span class="${re.keyOk?'plus':'minus'}">${re.keyOk?'✓':'✗'} ${re.key.label}</span><details><summary>役割とは</summary>選手にはポジションごとに役割（アンカー、司令塔、ポストプレーヤーなど）があります。今の戦術に合う役割の選手が多いほど、また陣形に欲しい役割の選手がいるとボーナスが付きます。役割は選手の詳細から変えられます。<br>スタメンの役割：${getLineup().filter(s=>!s.p.ghost).map(s=>`${esc(s.p.name)}（${esc(roleShort(s.p))}）`).join('、')}</details>`; })()}</div>
+  <div class="infobar" style="margin-top:-4px">${(()=>{ const re=rt.roles; return `<span>役割の噛み合い <b>${re.fit}</b>/11人</span><span class="${re.keyOk?'plus':'minus'}">${re.keyOk?'✓':'✗'} ${re.key.label}</span><details><summary>役割とは</summary>選手にはポジションごとに役割（アンカー、司令塔、ポストプレーヤーなど）があります。今の戦術に合う役割の選手が多いほど、また陣形に欲しい役割の選手がいるとボーナスが付きます。役割は選手の詳細から変えられます。<br>スタメンの役割：${getLineup().filter(s=>!s.p.ghost).map(s=>`${esc(s.p.name)}（${esc(roleShort(s.p))}）`).join('、')}</details>`; })()}</div>
   <div class="card-scroll" data-keep="tactics"><div class="grid g2" style="margin-top:0">
-    <div class="card"><h3>フォーメーション</h3>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}
-</div>
-    <div class="card"><h3>戦術</h3>${optGroup('tactic', TACTICS, S.tactic)}</div>
-    <div class="card"><h3>今週の練習</h3>${optGroup('training', TRAINING, S.training)}<h3 style="margin-top:10px">練習テーマ</h3>${optGroup('drill', FOCUS_T, S.drill||'bal')}
-      <p class="small muted" style="margin-bottom:0">伸ばす能力の系統を選びます。ポジションで重視される能力が伸びるほど総合力も上がります（FW・DFは技術、GKは戦術理解が効きやすい）。若手はフィジカル、ベテランは戦術理解が伸びやすく、フィジカル練習は調子も落ちにくくなります。</p></div>
-    <div class="card"><h3>チケット価格（ホーム）</h3>${optGroup('ticket', TICKET, S.ticket, (k,d)=>`${Math.round(DIVS[S.div].ticket*d.price)}円・集客×${d.demand}`)}
-      <p class="small muted" style="margin-bottom:0">スタジアム収容 ${CAP[S.fac.stadium-1].toLocaleString()}人</p></div>
-    <div class="card" style="grid-column:1/-1"><h3>今週の広報活動（金沢の街で）</h3>${optGroup('pr', PR, S.pr, (k,d)=>`${d.cost?yen(d.cost):'無料'}・${d.desc}`)}
-      <p class="small muted" style="margin-bottom:0">選んだ活動は毎週実施されます（資金が足りないと中止）。</p></div>
+    <div class="card"><h3>試合</h3><div class="optlab">フォーメーション</div>${optGroup('formation', Object.fromEntries(Object.entries(FORMATIONS).map(([k,v])=>[k,{...v,name:k}])), S.formation)}<div class="optlab">戦術</div>${optGroup('tactic', TACTICS, S.tactic)}</div>
+    <div class="card"><h3>練習</h3><div class="optlab">強度</div>${optGroup('training', TRAINING, S.training)}<div class="optlab">テーマ</div>${optGroup('drill', FOCUS_T, S.drill||'bal')}
+      <details class="small muted"><summary>練習テーマとは</summary>伸ばす能力の系統を選びます。ポジションで重視される能力が伸びるほど総合力も上がります（FW・DFは技術、GKは戦術理解が効きやすい）。若手はフィジカル、ベテランは戦術理解が伸びやすく、フィジカル練習は調子も落ちにくくなります。</details></div>
+    <div class="card"><h3>興行（スタジアム収容 ${CAP[S.fac.stadium-1].toLocaleString()}人）</h3><div class="optlab">チケット価格</div>${optGroup('ticket', TICKET, S.ticket, (k,d)=>`${Math.round(DIVS[S.div].ticket*d.price)}円・集客×${d.demand}`)}<div class="optlab">広報活動（毎週実施）</div>${optGroup('pr', PR, S.pr, (k,d)=>`${d.cost?yen(d.cost):'無料'}・${d.desc}`)}</div>
   </div></div>`;
 }
 
@@ -3641,20 +3724,12 @@ function renderMarket(){
       const sameXI = xi.filter(s=>s.slot===p.pos).map(s=>s.p.ovr);
       const worst = sameXI.length?Math.min(...sameXI):0;
       const up = p.ovr - worst;
-      return `<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
-          <span>${posTag(p.pos)} <b>${esc(p.name)}</b> <span class="small muted">${esc(roleShort(p))}</span></span>${p.loanFrom?'<span class="tag xi">レンタル</span>':p.free?'<span class="tag xi">フリー</span>':p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
-        ${p.loanFrom?`<div class="small muted" style="margin-top:4px">${esc(p.loanFrom)}（${p.loanDiv}）の有望株。今季終了まで期限付き移籍</div>`:p.bio?`<div class="small muted" style="margin-top:4px">${esc(p.bio)}</div>`:''}
-        <div class="kv" style="margin-top:8px">
-          <span>年齢</span><span class="v">${p.age}歳</span>
-          <span>特徴</span><span class="v">${traits(p).join('・')}</span>
-          <span>能力</span><span class="v"><span class="ovr">${round1(p.ovr)}</span> <span class="small ${up>0?'plus':'muted'}">${up>0?`先発+${round1(up)}`:'控え級'}</span></span>
-          <span>伸びしろ</span><span class="v">${stars(p)}</span>
-          <span>年俸</span><span class="v">${yen(p.salary)}/年${p.loanFrom?'<br><span class="small muted">（残り半分は親クラブ負担）</span>':''}</span>
-          ${p.loanFrom?`<span>レンタル料</span><span class="v"><b>${yen(p.fee)}</b></span><span>買取オプション</span><span class="v">${yen(p.buyFee)}</span>`
-            :`<span>移籍金</span><span class="v"><b>${p.free?'0円（フリー）':yen(p.fee)}</b></span>`}
-        </div>
-        <div class="row"><button class="btn primary" data-act="nego" data-arg="market|${p.id}" ${S.money<p.fee||rosterFull()||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>交渉する</button></div>
+      return `<div class="card mkc">
+        <div class="mkh"><span>${posTag(p.pos)} <b>${esc(p.name)}</b> <span class="small muted">${esc(roleShort(p))}・${p.age}歳</span></span>${p.loanFrom?'<span class="tag xi">レンタル</span>':p.free?'<span class="tag xi">フリー</span>':p.local?'<span class="tag">地元</span>':p.foreign?'<span class="tag">外国籍</span>':''}</div>
+        <div class="mkl">能力 <span class="ovr">${round1(p.ovr)}</span> <span class="${up>0?'plus':'muted'}">${up>0?`先発+${round1(up)}`:'控え級'}</span>・${stars(p)}・${traits(p).join('/')}</div>
+        <div class="mkl muted">${p.loanFrom?`${esc(p.loanFrom)}（${p.loanDiv}）から今季限り`:p.bio?esc(p.bio):''}</div>
+        <div class="mkf"><span class="small">年俸 <b>${yen(p.salary)}</b>${p.loanFrom?'（半額）':''}・${p.loanFrom?`レンタル料 <b>${yen(p.fee)}</b>・買取 ${yen(p.buyFee)}`:`移籍金 <b>${p.free?'0円':yen(p.fee)}</b>`}</span>
+          <button class="btn primary" data-act="nego" data-arg="market|${p.id}" ${S.money<p.fee||rosterFull()||(p.foreign&&foreignCount()>=FOREIGN_MAX)?'disabled':''}>交渉</button></div>
       </div>`;}).join('') || '<p class="muted">現在、獲得可能な選手はいません。</p>'}</div></div>`;
 }
 
@@ -3707,17 +3782,11 @@ function staffCard(st, role){
   const R_ = STAFF_ROLES[role];
   if(!st) return `<div class="card"><div class="rep-from">${R_.name}</div><h4 class="muted">空席</h4><p class="small muted" style="margin:0 0 8px">${R_.desc}</p>
     <button class="btn primary" data-act="staffRole" data-arg="${role}">候補を探す</button></div>`;
-  return `<div class="card">
-    <div class="rep-from">${R_.name}</div>
-    <div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><h4>${esc(st.name)} <span class="muted small">${st.age}歳</span></h4>${st.lic?`<span class="tag ${st.lic==='S級'?'xi':''}">${st.lic}</span>`:''}</div>
-    <div class="small muted" style="margin-bottom:6px">${esc(st.bio)}</div>
-    <div class="kv">
-      <span>能力</span><span class="v"><b>${st.abil}</b></span>
-      ${role==='manager'?`<span>得意戦術</span><span class="v">${TACTICS[st.style].name}${S.tactic===st.style?' <span class="plus">✓</span>':''}</span><span>人心掌握</span><span class="v">${st.man}</span>`:''}
-      <span>年俸</span><span class="v">${yen(st.salary)}</span>
-      <span>契約残り</span><span class="v">${st.years}年</span>
-    </div>
-    <div class="row"><button class="btn" data-act="fireStaff" data-arg="${st.id}">解任（違約金 ${yen(fireCost(st))}）</button></div>
+  return `<div class="card stc">
+    <div class="mkh"><span><span class="rep-from">${R_.name}</span> <b>${esc(st.name)}</b> <span class="muted small">${st.age}歳</span></span>${st.lic?`<span class="tag ${st.lic==='S級'?'xi':''}">${st.lic}</span>`:''}</div>
+    <div class="mkl muted">${esc(st.bio)}</div>
+    <div class="mkf"><span class="small">能力 <b>${st.abil}</b>${role==='manager'?`・得意 ${TACTICS[st.style].name}${S.tactic===st.style?' <span class="plus">✓</span>':''}・人心 ${st.man}`:''}<br>年俸 ${yen(st.salary)}・残り${st.years}年</span>
+      <button class="btn" data-act="fireStaff" data-arg="${st.id}" title="違約金 ${yen(fireCost(st))}">解任</button></div>
   </div>`;
 }
 function renderStaff(){
@@ -3797,7 +3866,8 @@ function renderSales(){
       <details><summary>営業部・スポンサー枠</summary>営業担当：${salesTeam().map(s=>esc(s.name)).join('、')||'不在'}・小口協賛 ${yen(S.sponsor)}/年<div class="kv" style="margin-top:6px">${slotRows}</div>企業を訪問して関係を深め、スポンサー契約を提案しましょう。関係が深いほど、強気の金額でも成約しやすくなります。CF＝クラウドファンディング（年1回）。</details>
     </div>
     <div class="card-scroll" data-keep="sales">
-      ${sizes.map(sz=>`<h3 class="grp">${SIZE_LABEL[sz]}</h3><div class="mk">${S.companies.map((c,i)=>({c,i})).filter(x=>x.c.size===sz).map(({c,i})=>companyCard(c,i)).join('')}</div>`).join('')}
+      <div class="seg acTabs" style="margin-top:0">${sizes.map(sz=>`<button class="${(ui.coSize||1)===sz?'on':''}" data-act="coSize" data-arg="${sz}">${['','老舗・商店','中堅企業','大企業'][sz]}</button>`).join('')}</div>
+      <p class="small muted" style="margin:0 0 4px">企業名を押すとスポンサー提案が開きます。</p><div class="mk cos">${S.companies.map((c,i)=>({c,i})).filter(x=>x.c.size===(ui.coSize||1)).map(({c,i})=>companyCard(c,i)).join('')}</div>
     </div>`;
 }
 function companyCard(c,i){
@@ -3816,15 +3886,15 @@ function companyCard(c,i){
       ${c.cool>0?`<p class="small muted" style="margin:6px 0 0">前回の提案から間がないため、あと${c.cool}週は提案できません。</p>`:''}</div>`
       : '<p class="small muted">空いているスポンサー枠がありません。</p>';
   }
-  return `<div class="card" data-id="co${i}">
-    <div style="display:flex;justify-content:space-between;gap:6px"><b>${esc(c.name)}</b><span class="tag">${esc(c.ind)}</span></div>
-    <div class="small muted" style="margin:6px 0 2px">関係 ${Math.round(c.rel)}</div>
-    <div class="bar gold"><i style="width:${c.rel}%"></i></div>
-    ${body}
-    <div class="row">
-      ${c.size===3&&!c.invested&&!lock?`<button class="btn" data-act="invest" data-arg="${i}" ${c.rel<75?'disabled':''} title="関係75以上で依頼可能">出資を依頼${c.rel<75?'（関係75〜）':''}</button>`:''}
-      ${!lock?`<button class="btn primary" data-act="visit" data-arg="${i}" ${S.visitsLeft<=0?'disabled':''}>訪問する</button>`:''}
+  const open = ui.coOpen===i;
+  return `<div class="card co ${open?'open':''}" data-id="co${i}">
+    <div class="corow">
+      <button class="coname" data-act="coOpen" data-arg="${i}"><b>${esc(c.name)}</b> <span class="tag">${esc(c.ind)}</span><span class="cosub">${c.contract?`<span class="plus">${SLOTS[c.contract.slot].name}・年${yen(c.contract.amount)}</span>`:lock?`<span class="muted">${lock}</span>`:`関係 ${Math.round(c.rel)}`}</span></button>
+      <div class="bar gold cobar"><i style="width:${c.rel}%"></i></div>
+      ${!lock?`<button class="btn primary" data-act="visit" data-arg="${i}" ${S.visitsLeft<=0?'disabled':''}>訪問</button>`:''}
     </div>
+    ${open ? `${c.contract||lock?'':body}
+    ${c.size===3&&!c.invested&&!lock?`<div class="row"><button class="btn" data-act="invest" data-arg="${i}" ${c.rel<75?'disabled':''} title="関係75以上で依頼可能">出資を依頼${c.rel<75?'（関係75〜）':''}</button></div>`:''}` : ''}
   </div>`;
 }
 
@@ -3962,6 +4032,11 @@ const ACTIONS = {
   acPromote(a){ acTogglePromote(a); },
   acKeep(a){ acToggleKeep(a); },
   acReg2(a){ acRegister2(a); },
+  coSize(a){ ui.coSize = +a; ui.coOpen = null; render(); },
+  coOpen(a){ const i = +a; ui.coOpen = ui.coOpen===i ? null : i; render(); },
+  acTab(a){ ui.acTab = a; render(); },
+  htab(a){ ui.homeTab = a; render(); },
+  pdTab(a){ const [id,k] = a.split('|'); ui.pdTab = k; showPlayer(id); },
   role(a){ const [id,r]=a.split('|'); changeRole(id,r); },
   stopHurt(a){ const p=S.players.find(x=>x.id===a); if(p){ p.playHurt=false; save(); render(); showPlayer(a); } },
   renew(a){ const [id,y]=a.split('|'); renewContract(id,+y); },
