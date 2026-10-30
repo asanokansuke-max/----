@@ -357,6 +357,25 @@ ol.rank li span:nth-child(2){flex:1;min-width:0}
   .warn{padding:6px 8px;font-size:12.5px;margin-top:6px}
   .row{margin-top:8px}
 }
+/* ボタンの大きさを中身の文字数で変えない */
+.seg:not(.scrollx) button{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.seg.scrollx button{min-width:5.6em;text-align:center}
+.opts{grid-template-columns:repeat(var(--n,4),minmax(0,1fr))}
+.opt{min-height:36px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.opts .opt{padding:6px 2px}.opts .opt b{font-size:12.5px;letter-spacing:-.04em}
+.dopts{grid-template-columns:1fr}
+.dopts .opt{align-items:flex-start;text-align:left;min-height:0}
+.dopts .opt b{white-space:normal}
+.rep .row{display:grid;grid-template-columns:1fr;gap:5px}
+.rep .row .btn{width:100%;text-align:left;padding:7px 10px}
+.mkf .btn,.corow .btn,.stc .btn{width:64px;flex:none;text-align:center;padding:6px 0}
+.acbtns .btn{width:72px;text-align:center;padding:3px 0}
+.row>.btn{min-width:84px;text-align:center}
+.go{min-width:136px;text-align:center}
+.infobar .btn{min-width:84px}
+.tiers .btn{min-height:64px}
+.sqx td.atkey span{text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}
+.sqx i.up{font-style:normal;font-size:8px;color:var(--win);margin-left:1px}
 .acbtns{text-align:right;white-space:nowrap}.acbtns .btn{padding:3px 6px;font-size:11.5px;margin-left:3px}
 .stc{padding:9px 11px}.stc .rep-from{display:inline}
 .acTabs{margin:0 0 6px}.acTabs button{flex:1}
@@ -2252,6 +2271,7 @@ function showOffWeek(w, lines, d, kickoff){
       <span>ファン</span><span class="v ${d.df>=0?'plus':'minus'}">${d.df>=0?'+':''}${d.df}人</span>
       ${kickoff?`<span>今季のリーグ</span><span class="v">${DIVS[S.div].name}</span><span>フロントの目標</span><span class="v"><b>${S.target}位以内</b></span>`:''}
     </div>
+    ${kickoff?`<details class="small" style="margin-top:6px"><summary>今季の展望（戦力・予算）</summary>${previewHtml()}</details>`:''}
     ${!kickoff && OFF_PLAN[w+1]?`<p class="small muted">次の週：${OFF_PLAN[w+1].label}「${OFF_PLAN[w+1].title}」</p>`:''}
     <div class="row"><button class="btn primary" data-act="close">続ける</button></div>`);
 }
@@ -2261,7 +2281,7 @@ function renderOffCard(){
   return `<div class="infobar" style="margin-top:12px">
     <span class="dots">${OFF_PLAN.map((p,i)=>`<i class="${i<w?'done':i===w?'now':''}"></i>`).join('')}</span>
     <span><b>${OFF_PLAN[w].label}</b> ${esc(OFF_PLAN[w].title)}</span><span class="muted">開幕まで${OFF_WEEKS-w}週</span>
-    ${exp?`<span class="minus">契約満了 ${exp}人</span>`:''}${S.camp?`<span>キャンプ：${CAMPS[S.camp].name}</span>`:''}
+    ${exp?`<span class="minus">契約満了 ${exp}人</span>`:''}${S.camp?`<span>キャンプ：${CAMPS[S.camp].name}</span>`:''}<button class="btn" data-act="preview">今季の展望</button>
     <details><summary>オフの予定</summary>${OFF_PLAN.map((p,i)=>`${i===w?'▶ ':''}${p.label}：${esc(p.title)}`).join('<br>')}<br>${esc(OFF_PLAN[w].desc)}。オフの間も移籍・スタッフ人事・営業ができます。</details>
   </div>`;
 }
@@ -3056,7 +3076,7 @@ function renderFinance(){
   const rows = (side) => Object.entries(LEDGER[side]).filter(([k])=>(L[side][k]||0) || (P&&P[side][k])).map(([k,n])=>`<tr><td>${n}</td><td class="num">${yen(L[side][k]||0)}</td>${P?`<td class="num muted">${yen(P[side][k]||0)}</td>`:''}</tr>`).join('');
   const upkeep = Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+econ()*0.3)*0.75);
   const bal = sum(L.in) - sum(L.out);
-  return `<div class="infobar"><span>資金 <b>${yen(S.money)}</b></span><span>今季の収支 <b class="${bal>=0?'plus':'minus'}">${yen(bal)}</b></span>
+  return `<div class="infobar"><span>資金 <b>${yen(S.money)}</b></span><span>今季の収支 <b class="${bal>=0?'plus':'minus'}">${yen(bal)}</b></span><button class="btn" data-act="preview">年間の見込み</button>
       <details><summary>年間の見込み</summary>年俸（選手）${yen(S.players.reduce((a,p)=>a+p.salary,0))}・スタッフ ${yen(staffSalary())}・スポンサー ${yen(S.sponsor+contractIncome())}・施設維持費 ${yen(upkeep)}/週</details></div>
     <div class="card-scroll" data-keep="finance"><div class="grid g2" style="margin-top:0">
       <div class="card"><h3>収入（今季${P?'・前季':''}）</h3><table><tr><th>項目</th><th class="num">今季</th>${P?'<th class="num">前季</th>':''}</tr>${rows('in')||'<tr><td class="muted" colspan="3">まだありません</td></tr>'}<tr><td><b>合計</b></td><td class="num"><b>${yen(sum(L.in))}</b></td>${P?`<td class="num muted">${yen(sum(P.in))}</td>`:''}</tr></table></div>
@@ -3639,7 +3659,7 @@ function renderHome(){
   let ht = ui.homeTab || ((S.inbox.length || (isOff() && S.offChoice && !S.offChoice.picked)) ? 'rep' : 'club');
   const panes = {
     rep: `${off}${S.inbox.length ? `<p class="small muted" style="margin:0 0 6px">2週放置すると、いちばん下の選択肢で自動処理</p><div class="grid g2" style="margin-top:0">${reportCards()}</div>` : off ? '' : '<p class="muted small" style="margin:4px">報告はありません。</p>'}`,
-    club: `<div class="kv">
+    club: `<div class="row" style="margin:0 0 6px;justify-content:flex-start"><button class="btn" data-act="preview">今季の展望（戦力・予算）</button></div><div class="kv">
         <span>フロントの目標</span><span class="v"><b>${S.target}位以内</b>（現在${rank}位）</span>
         <span>直近の結果</span><span class="v">${S.results.slice(-5).map(resBadge).join('')||'<span class="muted">—</span>'}</span>
         <span>攻撃力 / 守備力</span><span class="v">${rt.att.toFixed(1)} / ${rt.def.toFixed(1)}</span>
@@ -3673,6 +3693,60 @@ function licenseWarn(){
   return `<div class="warn">${DIVS[S.div+1].name}への昇格には次の条件が必要です：${li.join('・')}。「施設」「スタッフ」で準備しましょう。</div>`;
 }
 
+const AT_SHORT = {sho:'シュ', pas:'パス', dri:'ドリ', cro:'クロ', hea:'ヘデ', tac:'タク', spd:'速さ', sta:'スタ', pow:'フィ', vis:'視野', pos:'位置', com:'冷静', ref:'反応', han:'捕球', one:'飛出'};
+// 選手一覧の「能力」「お金」表示
+function squadTable(ps, xiIds, mode){
+  const head = c => `<tr><th>Pos</th><th>名前</th>${c}</tr>`;
+  const name = p => `<td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td><td class="pcell"><div class="pname">${esc(p.name)}</div><div class="ptags">${xiIds.has(p.id)?'<span class="tag xi">先発</span>':''}</div></td>`;
+  let th, row;
+  if(mode==='ab'){
+    const ks = Object.keys(AT_SHORT);
+    th = head(`<th class="num">総合</th>${ks.map(k=>`<th class="num" title="${ATTRS[k].n}">${AT_SHORT[k]}</th>`).join('')}`);
+    row = p => { syncAt(p); const w = posW(p.pos), d0 = p.at0||{}; return `${name(p)}<td class="num"><b class="ovr">${Math.round(p.ovr)}</b></td>${ks.map(k=>{ const v = p.at[k], gk = ATTRS[k].g==='gk'; if(gk!==(p.pos==='GK') && !(p.pos==='GK' && w[k])) return '<td class="num muted">—</td>'; const d = d0[k]!=null ? v-d0[k] : 0;
+      return `<td class="num${(w[k]||0)>=1.5?' atkey':''}"><span class="${v>=p.ovr+5?'plus':v<=p.ovr-8?'minus':''}">${Math.round(v)}</span>${d>=1?'<i class="up">▲</i>':''}</td>`; }).join('')}`; };
+  } else {
+    th = head(`<th class="num">年俸</th><th class="num">相場</th><th class="num">契約</th><th class="num">市場価値</th><th class="num">違約金</th>`);
+    row = p => { const fair = calcSalary(p.ovr), r = p.salary/fair;
+      return `${name(p)}<td class="num">${p.amateur?'—':yen(p.salary)}</td><td class="num ${p.amateur?'':r<0.6?'minus':r>1.4?'muted':''}">${p.amateur?'—':yen(fair)}</td><td class="num">${p.loanFrom?'レンタル':p.amateur?'アマ':p.expiring?'<span class="minus">満了</span>':`${p.contract??'-'}年`}</td><td class="num">${p.loanFrom||p.amateur?'—':yen(playerValue(p))}</td><td class="num">${p.loanFrom||p.amateur||p.expiring?'—':yen(releaseCost(p))}</td>`; };
+  }
+  const note = mode==='ab' ? '下線＝そのポジションで重視する能力。緑＝長所・赤＝短所・▲＝今季伸びた' : '相場＝今の総合力に見合う年俸（赤＝相場より大幅に安く、本人が不満）。違約金＝今契約解除した場合';
+  return `<p class="small muted" style="margin:0 0 4px">${note}</p><div class="scroll list-scroll" data-keep="squad-${mode}"><table class="sticky sqx">${th}${ps.map(p=>`<tr class="prow" data-id="${p.id}" data-act="player" data-arg="${p.id}">${row(p)}</tr>`).join('')}</table></div>`;
+}
+// 今季の展望：戦力と予算の見込み
+function upkeepWeek(){ return Math.round(Object.keys(FAC).reduce((a,k)=>a+FAC[k].upkeep*S.fac[k],0)*(1+econ()*0.3)*0.75); }
+function budgetPlan(){
+  const homes = Math.ceil(nr()/2), att = Math.round(clamp(S.fans*0.66*TICKET[S.ticket].demand, 150, CAP[S.fac.stadium-1]));
+  const ticket = Math.round(att*DIVS[S.div].ticket*TICKET[S.ticket].price/10000) * homes;
+  const inc = [['スポンサー（小口協賛）', S.sponsor], ['スポンサー契約', contractIncome()], [`入場料（ホーム${homes}試合・平均${att.toLocaleString()}人）`, ticket]];
+  const psal = S.players.filter(p=>!p.loan).reduce((a,p)=>a+p.salary,0);
+  const out = [['選手年俸', psal], ['スタッフ年俸', staffSalary()], ['施設維持費', upkeepWeek()*yearWeeks()]];
+  const sum = l => l.reduce((a,[,v])=>a+v,0);
+  return {inc, out, ti:sum(inc), to:sum(out), bal:sum(inc)-sum(out)};
+}
+function previewHtml(){
+  const xi = getLineup(true), rt = teamRating(xi), f = FORMATIONS[S.formation];
+  const better = S.teams.filter(t=>!t.isMe && t.str > rt.ovr).length, avg = S.teams.filter(t=>!t.isMe).reduce((a,t)=>a+t.str,0)/Math.max(1,S.teams.length-1);
+  const need = {GK:1, DF:f.DF, MF:f.MF, FW:f.FW};
+  const pos = ['GK','DF','MF','FW'].map(k=>{ const l = S.players.filter(p=>p.pos===k && !p.loan).sort((a,b)=>b.ovr-a.ovr); const top = l.slice(0,need[k]); const av = top.length ? top.reduce((a,p)=>a+p.ovr,0)/top.length : 0; return {k, n:l.length, need:need[k], av, best:l[0]}; });
+  const weak = [...pos].sort((a,b)=>(a.av - (a.n<a.need+1?3:0))-(b.av - (b.n<b.need+1?3:0)))[0];
+  const B = budgetPlan();
+  const pricey = [...S.players].filter(p=>!p.amateur&&!p.loan).sort((a,b)=>b.salary-a.salary).slice(0,5);
+  return `<h3 class="pdh" style="margin-top:4px">戦力</h3>
+    <div class="kv"><span>総合 / 攻 / 守</span><span class="v"><b>${rt.ovr.toFixed(1)}</b> / ${rt.att.toFixed(1)} / ${rt.def.toFixed(1)}</span>
+      <span>リーグ内の戦力順位</span><span class="v"><b>${better+1}位</b>（${S.teams.length}チーム・平均 ${avg.toFixed(1)}）</span>
+      <span>フロントの目標</span><span class="v">${S.target}位以内</span></div>
+    <table style="margin-top:6px"><tr><th>Pos</th><th class="num">人数</th><th class="num">先発平均</th><th>主力</th></tr>${pos.map(x=>`<tr class="${x===weak?'swap':''}"><td>${posTag(x.k)}</td><td class="num ${x.n<x.need+1?'minus':''}">${x.n}/${x.need}</td><td class="num"><b>${x.av.toFixed(1)}</b></td><td>${x.best?`${esc(x.best.name)} ${Math.round(x.best.ovr)}`:'—'}</td></tr>`).join('')}</table>
+    <p class="small" style="margin:4px 0 0">補強ポイント：<b>${weak.k}</b>${weak.n<weak.need+1?'（控えが足りない）':''}</p>
+    <h3 class="pdh">予算（年間の見込み）</h3>
+    <table><tr><th>収入</th><th class="num"></th></tr>${B.inc.map(([n,v])=>`<tr><td>${n}</td><td class="num">${yen(v)}</td></tr>`).join('')}
+      <tr><th>支出</th><th></th></tr>${B.out.map(([n,v])=>`<tr><td>${n}</td><td class="num minus">-${yen(v)}</td></tr>`).join('')}
+      <tr><td><b>収支の見込み</b></td><td class="num"><b class="${B.bal>=0?'plus':'minus'}">${B.bal>=0?'+':''}${yen(B.bal)}</b></td></tr>
+      <tr><td>現在の資金</td><td class="num">${yen(S.money)}</td></tr></table>
+    <p class="small muted" style="margin:4px 0 0">賞金・移籍金・天皇杯・グッズなどは含まない。${B.bal<0?'<span class="minus">このままだと赤字。営業でスポンサーを増やすか、年俸を見直そう。</span>':''}</p>
+    <h3 class="pdh">年俸の高い選手</h3>
+    <table><tr><th>名前</th><th class="num">総合</th><th class="num">年俸</th><th class="num">相場</th></tr>${pricey.map(p=>`<tr class="prow" data-act="player" data-arg="${p.id}"><td>${posTag(p.pos)} ${esc(p.name)}</td><td class="num">${Math.round(p.ovr)}</td><td class="num">${yen(p.salary)}</td><td class="num muted">${yen(calcSalary(p.ovr))}</td></tr>`).join('')}</table>`;
+}
+function showPreview(){ openModal(`<h2>${S.season}年目 今季の展望</h2><p class="small muted" style="margin:0">${DIVS[S.div].name}・${S.formation}・${TACTICS[S.tactic].name}</p>${previewHtml()}<div class="row"><button class="btn primary" data-act="close">閉じる</button></div>`); }
 function renderSquad(){
   const xi = getLineup(); const xiIds = new Set(xi.map(s=>s.p.id));
   const order = {GK:0,DF:1,MF:2,FW:3};
@@ -3680,7 +3754,8 @@ function renderSquad(){
   const sal = S.players.reduce((a,p)=>a+p.salary,0);
   return `<div class="card grow" style="margin-top:14px"><h3>選手一覧（${S.players.length}人・登録枠 <span class="${rosterCount()>rosterCap()?'minus':''}">${rosterCount()}/${rosterCap()}</span>・年俸計 ${yen(sal)}）</h3>
   <details class="small muted" style="margin:-4px 0 8px"><summary>説明</summary>スタメンは監督がフォーメーションに合わせて能力・コンディション・士気から選びます。「休ませる」でスタメンから外せます。出番のない実力者は士気が下がります。<br>行を押すと選手の詳細が開き、能力・契約・状態の確認や、休養・移籍リスト登録・契約解除・契約更新ができます。状態＝調子のバーと士気の点（緑：好調、青：普通、橙：低め、赤：不満）。<br>登録枠：${esc(rosterRule())}。<br>印：地元＝石川の高校・大学出身、2種＝2種登録、特指＝特別指定選手、約束＝先発を約束済み、貸出中＝他クラブへ期限付き移籍中、放出候補＝移籍リストに登録中</details>
-  <div class="scroll list-scroll" data-keep="squad"><table class="sticky">
+  <div class="seg acTabs" style="margin:0 0 6px">${[['base','基本'],['ab','能力'],['money','お金']].map(([k,n])=>`<button class="${(ui.sqMode||'base')===k?'on':''}" data-act="sqMode" data-arg="${k}">${n}</button>`).join('')}</div>
+  ${(ui.sqMode||'base')!=='base' ? squadTable(ps, xiIds, ui.sqMode) : `<div class="scroll list-scroll" data-keep="squad"><table class="sticky">
     <thead><tr><th>Pos</th><th>名前</th><th class="num">年齢</th><th class="num">能力</th><th>状態</th><th class="num">契約</th></tr></thead><tbody>
     ${ps.map(p=>`<tr data-id="${p.id}" data-act="player" data-arg="${p.id}" class="prow">
       <td>${posTag(p.pos)}<div class="rshort">${esc(roleShort(p))}</div></td>
@@ -3690,12 +3765,13 @@ function renderSquad(){
       <td class="pstate"><div class="bar ${p.cond>70?'':'gold'}" title="調子 ${Math.round(p.cond)}"><i style="width:${p.cond}%"></i></div><span title="士気 ${Math.round(p.mor??60)}">${moraleFace(p.mor??60)}</span></td>
       <td class="num small">${p.loanFrom||p.amateur?'—':p.expiring?'<span class="minus">満了</span>':`${p.contract??'-'}年`}</td>
     </tr>`).join('')}
-  </tbody></table></div></div>`;
+  </tbody></table></div>`}</div>`;
 }
 
 function optGroup(key, defs, cur, extra){
   const d = defs[cur];
-  return `<div class="opts">${Object.entries(defs).map(([k,v])=>`<button class="opt ${cur===k?'on':''}" data-act="set" data-arg="${key}:${k}"><b>${v.name||k}</b></button>`).join('')}</div>${d?`<p class="optdesc">${extra?extra(cur,d):(d.desc||'')}</p>`:''}`;
+  const n = Object.keys(defs).length;
+  return `<div class="opts" style="--n:${n>4?3:n}">${Object.entries(defs).map(([k,v])=>`<button class="opt ${cur===k?'on':''}" data-act="set" data-arg="${key}:${k}"><b>${v.name||k}</b></button>`).join('')}</div>${d?`<p class="optdesc">${extra?extra(cur,d):(d.desc||'')}</p>`:''}`;
 }
 function renderTactics(){
   const rt = teamRating(getLineup());
@@ -4034,6 +4110,8 @@ const ACTIONS = {
   acReg2(a){ acRegister2(a); },
   coSize(a){ ui.coSize = +a; ui.coOpen = null; render(); },
   coOpen(a){ const i = +a; ui.coOpen = ui.coOpen===i ? null : i; render(); },
+  sqMode(a){ ui.sqMode = a; render(); },
+  preview(){ showPreview(); },
   acTab(a){ ui.acTab = a; render(); },
   htab(a){ ui.homeTab = a; render(); },
   pdTab(a){ const [id,k] = a.split('|'); ui.pdTab = k; showPlayer(id); },
