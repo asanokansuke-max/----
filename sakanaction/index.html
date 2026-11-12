@@ -3,10 +3,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>サカナクション・クイズ</title>
-<meta name="description" content="全790問のサカナクション4択クイズ。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
+<meta name="description" content="ファンが作った非公式のサカナクション4択クイズ（全790問）。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
 <meta property="og:type" content="website">
 <meta property="og:title" content="サカナクション・クイズ大会">
-<meta property="og:description" content="全790問のサカナクション4択クイズ。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
+<meta property="og:description" content="ファンが作った非公式のサカナクション4択クイズ（全790問）。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
 <meta property="og:url" content="https://asanokansuke-max.github.io/----/sakanaction/">
 <meta property="og:image" content="https://asanokansuke-max.github.io/----/sakanaction/og.png">
 <meta name="twitter:card" content="summary_large_image">
@@ -219,25 +219,34 @@ budoux-ja { display: inline; }
 .tabs button { border: 3px solid transparent; border-bottom: 0; border-radius: 12px 12px 0 0; background: transparent; padding: 6px 0 5px; font-family: var(--font-display); font-size: 17px; color: var(--muted); margin-bottom: -3px; }
 .tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--board); color: var(--frame); }
 .seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: min(100%, 360px); justify-self: center; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; background: var(--board); }
-.seg button { border: 0; border-left: 2px solid var(--ink); background: transparent; padding: 6px 2px; font-weight: 800; font-size: 13px; line-height: 1.2; white-space: nowrap; }
+.seg button { border: 0; border-left: 2px solid var(--ink); background: transparent; padding: 6px 1px; font-weight: 800; font-size: 13px; line-height: 1.2; white-space: nowrap; overflow: hidden; }
+@media (max-width: 420px) { .seg button { font-size: 12px; letter-spacing: -.02em; } }
 .seg button:first-child { border-left: 0; }
 .seg button small { display: block; font-size: 10px; font-weight: 700; color: var(--frame); letter-spacing: .05em; }
 .seg button[aria-pressed="true"] { background: var(--navy); color: var(--led); }
 .seg button[aria-pressed="true"] small { color: var(--led); }
 .seg button:disabled { opacity: .35; cursor: default; }
-.field { display: grid; gap: 3px; justify-items: center; }
-.field .lbl { font-size: 11px; font-weight: 800; letter-spacing: .15em; color: var(--muted); }
-.field .seg { width: min(100%, 360px); }
+/* 見出しは左、選択肢は右に1行で並べる */
+.field { display: grid; grid-template-columns: 3.2em minmax(0, 1fr); gap: 8px; align-items: center; width: min(100%, 360px); justify-self: center; }
+.field .lbl { font-size: 11px; font-weight: 800; letter-spacing: .05em; color: var(--muted); text-align: right; white-space: nowrap; }
+.field .seg { width: 100%; }
+.field .pname.solo { width: 100%; justify-self: stretch; }
+.field .joinrow { justify-content: flex-start; }
+.field .joinrow .code-in { flex: 1; min-width: 0; }
 .names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: min(100%, 360px); justify-self: center; margin-top: 0; }
 .names.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .names .pname { width: 100%; }
+.intro.compact h1 { font-size: clamp(22px, 6vw, 34px); }
+.intro.compact h1 br { display: none; }
+.intro.compact { gap: 8px; }
+@media (max-height: 640px) { .intro.compact .lead { display: none; } }
+.fan-note { word-break: keep-all; overflow-wrap: anywhere; margin: 0; font-size: 10px; color: var(--muted); text-align: center; }
 .toggles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .tgl { display: inline-flex; gap: 6px; align-items: center; border: 2px solid var(--ink); border-radius: 999px; background: var(--board); padding: 3px 4px 3px 12px; font-size: 12px; font-weight: 800; }
 .tgl b { font-family: var(--font-led); font-weight: 400; font-size: 12px; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--ink) 15%, transparent); color: var(--muted); }
 .tgl[aria-pressed="true"] b { background: var(--green); color: #fff; }
 
 /* ---- 早押し対決 ---- */
-.names { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
 .pname { --c: var(--ink); width: 6.5em; font: inherit; font-weight: 800; font-size: 13px; padding: 3px 8px; border: 2px solid var(--ink); border-left: 8px solid var(--c); border-radius: 8px; background: var(--board); color: var(--ink); }
 .pstrip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; flex: none; }
 .pchip { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 2px solid var(--ink); background: var(--board); font-size: 12px; font-weight: 800; }
@@ -398,7 +407,7 @@ const CAT_COLOR = { "メンバー": "var(--red)", "こぼれ話": "#d9480f", "�
 const LEVELS = [
   { id: 1, name: "かんたん", stars: "★" },
   { id: 2, name: "ふつう", stars: "★★" },
-  { id: 3, name: "むずかしい", stars: "★★★" },
+  { id: 3, name: "むずかしい", short: "難しい", stars: "★★★" },
   { id: 0, name: "ミックス", stars: "" },
 ];
 const MODES = [
@@ -578,7 +587,7 @@ function renderIntro() {
     battle: "1台を囲んで2〜4人で早押し。正解+10点、お手つき−5点。",
     online: "URLを送って最大10人で対戦。全員同時に答えて、早いほど高得点。",
   };
-  const lvSeg = seg("data-lv", LEVELS.map((l) => ({ v: l.id, label: l.name, sub: l.stars || "ぜんぶ" })), prefs.lv, "難易度");
+  const lvSeg = seg("data-lv", LEVELS.map((l) => ({ v: l.id, label: l.short || l.name, sub: l.stars || "ぜんぶ" })), prefs.lv, "難易度");
   const rounds = prefs.mode === "battle" ? [10, 15, 20] : [10, 20, 30];
   if (!rounds.includes(prefs.round)) prefs.round = rounds[0];
   const roundSeg = seg("data-round", rounds.map((n) => ({ v: n, label: `${n}問` })), prefs.round, "問題数");
@@ -587,7 +596,7 @@ function renderIntro() {
     body = `
       <div class="field"><span class="lbl">名前</span><input id="oname" class="pname solo" maxlength="8" placeholder="ニックネーム" value="${esc(prefs.oname || "")}" aria-label="あなたの名前"></div>
       <button class="go" id="ocreate">部屋を作る</button>
-      <div class="field"><span class="lbl">招待された人</span><div class="joinrow">
+      <div class="field"><span class="lbl">コード</span><div class="joinrow">
         <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="例 1234" value="${esc(HASH_CODE)}" aria-label="部屋コード">
         <button class="go sub" id="ojoin">参加</button></div></div>
       ${IN_CLAUDE && !room ? `<p class="hint">※ claude.ai 上では、サインインして開いた人どうしで遊べます</p>` : ""}`;
@@ -609,7 +618,7 @@ function renderIntro() {
       <button class="go" id="go">スタート！</button>`;
   }
   panel.innerHTML = `
-    <div class="intro">
+    <div class="intro ${party ? "compact" : ""}">
       <h1>サカナクション<br>クイズ大会</h1>
       <div class="tabs" role="tablist">
         <button role="tab" data-group="solo" aria-selected="${!party}">ひとりで</button>
@@ -621,6 +630,7 @@ function renderIntro() {
       <p class="lead">${leads[prefs.mode]}</p>
       ${body}
       ${party ? "" : `<div class="zukan">魚図鑑 ${got.size} / ${total}匹（${pct}%）<div class="meter"><i style="width:${pct}%"></i></div></div>`}
+      <p class="fan-note"><budoux-ja>※ファンが作った非公式クイズです。サカナクション公式とは関係ありません。</budoux-ja></p>
     </div>`;
   answers.hidden = true;
   const set = (k, v) => { prefs[k] = v; save("prefs", prefs); render(); };
