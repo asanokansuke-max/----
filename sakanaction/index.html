@@ -238,7 +238,7 @@ budoux-ja { display: inline; }
 
 /* ---- 早押し対決 ---- */
 .names { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
-.pname { width: 6.5em; font: inherit; font-weight: 800; font-size: 13px; padding: 3px 8px; border: 2px solid var(--ink); border-left: 8px solid var(--c); border-radius: 8px; background: var(--board); color: var(--ink); }
+.pname { --c: var(--ink); width: 6.5em; font: inherit; font-weight: 800; font-size: 13px; padding: 3px 8px; border: 2px solid var(--ink); border-left: 8px solid var(--c); border-radius: 8px; background: var(--board); color: var(--ink); }
 .pstrip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; flex: none; }
 .pchip { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 2px solid var(--ink); background: var(--board); font-size: 12px; font-weight: 800; }
 .pchip::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); align-self: center; }
