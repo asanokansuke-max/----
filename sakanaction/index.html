@@ -249,6 +249,7 @@ budoux-ja { display: inline; }
 .pname.solo { width: 12em; border-left-width: 2px; text-align: center; font-size: 15px; padding: 5px 10px; }
 .joinrow { display: flex; gap: 8px; align-items: center; justify-content: center; }
 .code-in { width: 8em; border-left-width: 2px; text-align: center; font-family: var(--font-led); font-size: 18px; letter-spacing: .2em; }
+.code-in::placeholder { font-family: var(--font-body); font-size: 14px; letter-spacing: 0; color: var(--muted); opacity: .8; }
 .big.code { font-size: clamp(34px, 10vw, 52px); letter-spacing: .15em; }
 .plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 34em; }
 .plist span { border: 2px solid var(--ink); border-radius: 999px; padding: 1px 10px; font-size: 13px; font-weight: 800; background: var(--board); }
@@ -564,7 +565,7 @@ function renderIntro() {
       ${prefs.mode === "online" ? `
       <div class="pick"><span class="lbl">あなたの名前</span><input id="oname" class="pname solo" maxlength="8" placeholder="ニックネーム" value="${esc(prefs.oname || "")}" aria-label="あなたの名前"></div>
       <div class="pick"><span class="lbl">部屋に参加する</span><div class="joinrow">
-        <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="4けたのコード" value="${esc(HASH_CODE)}" aria-label="部屋コード">
+        <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="例 1234" value="${esc(HASH_CODE)}" aria-label="部屋コード">
         <button class="go sub" id="ojoin">参加</button></div></div>
       <div class="pick"><span class="lbl">または</span><button class="go" id="ocreate">部屋を作る</button></div>
       ${IN_CLAUDE && !room ? `<p class="hint">※ claude.ai 上では、サインインして開いた人どうしで遊べます</p>` : ""}` : ""}
