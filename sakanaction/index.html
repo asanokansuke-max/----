@@ -214,6 +214,28 @@ budoux-ja { display: inline; }
 .zukan .meter { width: min(260px, 70vw); height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
 .zukan .meter i { display: block; height: 100%; background: var(--blue); }
 
+/* ---- トップ：タブとセグメント ---- */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; width: min(100%, 360px); justify-self: center; border-bottom: 3px solid var(--ink); }
+.tabs button { border: 3px solid transparent; border-bottom: 0; border-radius: 12px 12px 0 0; background: transparent; padding: 6px 0 5px; font-family: var(--font-display); font-size: 17px; color: var(--muted); margin-bottom: -3px; }
+.tabs button[aria-selected="true"] { border-color: var(--ink); background: var(--board); color: var(--frame); }
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); width: min(100%, 360px); justify-self: center; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; background: var(--board); }
+.seg button { border: 0; border-left: 2px solid var(--ink); background: transparent; padding: 6px 2px; font-weight: 800; font-size: 13px; line-height: 1.2; white-space: nowrap; }
+.seg button:first-child { border-left: 0; }
+.seg button small { display: block; font-size: 10px; font-weight: 700; color: var(--frame); letter-spacing: .05em; }
+.seg button[aria-pressed="true"] { background: var(--navy); color: var(--led); }
+.seg button[aria-pressed="true"] small { color: var(--led); }
+.seg button:disabled { opacity: .35; cursor: default; }
+.field { display: grid; gap: 3px; justify-items: center; }
+.field .lbl { font-size: 11px; font-weight: 800; letter-spacing: .15em; color: var(--muted); }
+.field .seg { width: min(100%, 360px); }
+.names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: min(100%, 360px); justify-self: center; margin-top: 0; }
+.names.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.names .pname { width: 100%; }
+.toggles { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.tgl { display: inline-flex; gap: 6px; align-items: center; border: 2px solid var(--ink); border-radius: 999px; background: var(--board); padding: 3px 4px 3px 12px; font-size: 12px; font-weight: 800; }
+.tgl b { font-family: var(--font-led); font-weight: 400; font-size: 12px; border-radius: 999px; padding: 1px 8px; background: color-mix(in srgb, var(--ink) 15%, transparent); color: var(--muted); }
+.tgl[aria-pressed="true"] b { background: var(--green); color: #fff; }
+
 /* ---- 早押し対決 ---- */
 .names { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
 .pname { width: 6.5em; font: inherit; font-weight: 800; font-size: 13px; padding: 3px 8px; border: 2px solid var(--ink); border-left: 8px solid var(--c); border-radius: 8px; background: var(--board); color: var(--ink); }
@@ -539,58 +561,82 @@ function renderLed() {
 function chip(attr, val, cur, label, extra = "", disabled = false) {
   return `<button class="chip" ${attr}="${val}" aria-pressed="${cur}" ${disabled ? "disabled" : ""}>${label}${extra !== "" ? ` <small>${extra}</small>` : ""}</button>`;
 }
+// トップ画面の選択は、等分割の「セグメント」にそろえる（折り返さずに1行で並ぶ）
+function seg(attr, items, cur, label) {
+  return `<div class="seg" role="group" aria-label="${label}">${items.map((it) =>
+    `<button ${attr}="${it.v}" aria-pressed="${cur === it.v}" ${it.dis ? "disabled" : ""}>${it.label}${it.sub ? `<small>${it.sub}</small>` : ""}</button>`).join("")}</div>`;
+}
+const SOLO = ["normal", "survival", "review"], PARTY = ["online", "battle"];
 function renderIntro() {
   const total = QUESTIONS.length;
   const pct = Math.round(got.size / total * 100);
+  const party = PARTY.includes(prefs.mode);
   const leads = {
     normal: "早く答えるほど高得点。連続正解でボーナスも。",
     survival: "3回まちがえたら終了。だんだん難しくなります。",
     review: `前にまちがえた ${miss.size}問 から出題します。`,
-    battle: "1台を囲んで2〜4人で早押し勝負。正解+10点、お手つき−5点。",
-    online: "URLを共有して最大10人で対戦。全員同時に答えて、早いほど高得点。",
+    battle: "1台を囲んで2〜4人で早押し。正解+10点、お手つき−5点。",
+    online: "URLを送って最大10人で対戦。全員同時に答えて、早いほど高得点。",
   };
+  const lvSeg = seg("data-lv", LEVELS.map((l) => ({ v: l.id, label: l.name, sub: l.stars || "ぜんぶ" })), prefs.lv, "難易度");
+  const rounds = prefs.mode === "battle" ? [10, 15, 20] : [10, 20, 30];
+  if (!rounds.includes(prefs.round)) prefs.round = rounds[0];
+  const roundSeg = seg("data-round", rounds.map((n) => ({ v: n, label: `${n}問` })), prefs.round, "問題数");
+  let body = "";
+  if (prefs.mode === "online") {
+    body = `
+      <div class="field"><span class="lbl">名前</span><input id="oname" class="pname solo" maxlength="8" placeholder="ニックネーム" value="${esc(prefs.oname || "")}" aria-label="あなたの名前"></div>
+      <button class="go" id="ocreate">部屋を作る</button>
+      <div class="field"><span class="lbl">招待された人</span><div class="joinrow">
+        <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="例 1234" value="${esc(HASH_CODE)}" aria-label="部屋コード">
+        <button class="go sub" id="ojoin">参加</button></div></div>
+      ${IN_CLAUDE && !room ? `<p class="hint">※ claude.ai 上では、サインインして開いた人どうしで遊べます</p>` : ""}`;
+  } else if (prefs.mode === "battle") {
+    body = `
+      <div class="field"><span class="lbl">人数</span>${seg("data-players", [2, 3, 4].map((n) => ({ v: n, label: `${n}人` })), prefs.players, "人数")}</div>
+      <div class="names n${prefs.players}">${Array.from({ length: prefs.players }, (_, k) => `<input id="pname${k}" class="pname" style="--c:${PLAYER_COLORS[k]}" maxlength="8" placeholder="${k + 1}P" value="${esc(prefs.names[k] || "")}" aria-label="${k + 1}人目の名前">`).join("")}</div>
+      <div class="field"><span class="lbl">難易度</span>${lvSeg}</div>
+      <div class="field"><span class="lbl">問題数</span>${roundSeg}</div>
+      <button class="go" id="go">スタート！</button>`;
+  } else {
+    body = `
+      ${prefs.mode === "normal" ? `<div class="field"><span class="lbl">難易度</span>${lvSeg}</div>
+      <div class="field"><span class="lbl">問題数</span>${roundSeg}</div>` : ""}
+      <div class="toggles">
+        <button class="tgl" data-opt="timer" aria-pressed="${prefs.timer}">早押しタイマー<b>${prefs.timer ? "ON" : "OFF"}</b></button>
+        <button class="tgl" data-opt="auto" aria-pressed="${prefs.auto}">オート送り<b>${prefs.auto ? "ON" : "OFF"}</b></button>
+      </div>
+      <button class="go" id="go">スタート！</button>`;
+  }
   panel.innerHTML = `
     <div class="intro">
       <h1>サカナクション<br>クイズ大会</h1>
-      <p class="lead">全${total}問。${leads[prefs.mode]}</p>
-      <div class="pick"><span class="lbl">モード</span><div class="chips">
-        ${MODES.map((m) => chip("data-mode", m.id, prefs.mode === m.id, m.name, m.id === "review" ? String(miss.size) : "", m.id === "review" && !miss.size)).join("")}
-      </div></div>
-      ${prefs.mode === "battle" ? `
-      <div class="pick"><span class="lbl">人数と名前</span><div class="chips">
-        ${[2, 3, 4].map((n) => chip("data-players", n, prefs.players === n, `${n}人`)).join("")}
-      </div><div class="names">
-        ${Array.from({ length: prefs.players }, (_, k) => `<input id="pname${k}" class="pname" style="--c:${PLAYER_COLORS[k]}" maxlength="8" placeholder="${k + 1}P" value="${esc(prefs.names[k] || "")}" aria-label="${k + 1}人目の名前">`).join("")}
-      </div></div>` : ""}
-      ${prefs.mode === "online" ? `
-      <div class="pick"><span class="lbl">あなたの名前</span><input id="oname" class="pname solo" maxlength="8" placeholder="ニックネーム" value="${esc(prefs.oname || "")}" aria-label="あなたの名前"></div>
-      <div class="pick"><span class="lbl">部屋に参加する</span><div class="joinrow">
-        <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="例 1234" value="${esc(HASH_CODE)}" aria-label="部屋コード">
-        <button class="go sub" id="ojoin">参加</button></div></div>
-      <div class="pick"><span class="lbl">または</span><button class="go" id="ocreate">部屋を作る</button></div>
-      ${IN_CLAUDE && !room ? `<p class="hint">※ claude.ai 上では、サインインして開いた人どうしで遊べます</p>` : ""}` : ""}
-      ${prefs.mode === "normal" || prefs.mode === "battle" ? `
-      <div class="pick"><span class="lbl">難易度</span><div class="chips">
-        ${LEVELS.map((l) => chip("data-lv", l.id, prefs.lv === l.id, l.name, l.stars)).join("")}
-      </div></div>
-      <div class="pick"><span class="lbl">問題数</span><div class="chips">
-        ${(prefs.mode === "battle" ? [10, 15, 20] : [10, 20, 30]).map((n) => chip("data-round", n, prefs.round === n, `${n}問`)).join("")}
-      </div></div>` : ""}
-      ${prefs.mode !== "battle" && prefs.mode !== "online" ? `<div class="pick"><span class="lbl">設定</span><div class="chips">
-        ${chip("data-opt", "timer", prefs.timer, "早押しタイマー")}
-        ${chip("data-opt", "auto", prefs.auto, "オート送り")}
-      </div></div>` : ""}
-      ${prefs.mode !== "online" ? `<button class="go" id="go">スタート！</button>` : ""}
-      <div class="zukan">魚図鑑 ${got.size} / ${total}匹（${pct}%）<div class="meter"><i style="width:${pct}%"></i></div></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" data-group="solo" aria-selected="${!party}">ひとりで</button>
+        <button role="tab" data-group="party" aria-selected="${party}">みんなで</button>
+      </div>
+      ${party
+        ? seg("data-mode", [{ v: "online", label: "オンライン対戦" }, { v: "battle", label: "1台で対決" }], prefs.mode, "モード")
+        : seg("data-mode", [{ v: "normal", label: "通常" }, { v: "survival", label: "サバイバル" }, { v: "review", label: "復習", sub: miss.size ? `${miss.size}問` : "", dis: !miss.size }], prefs.mode, "モード")}
+      <p class="lead">${leads[prefs.mode]}</p>
+      ${body}
+      ${party ? "" : `<div class="zukan">魚図鑑 ${got.size} / ${total}匹（${pct}%）<div class="meter"><i style="width:${pct}%"></i></div></div>`}
     </div>`;
   answers.hidden = true;
   const set = (k, v) => { prefs[k] = v; save("prefs", prefs); render(); };
-  panel.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set("mode", b.dataset.mode));
+  panel.querySelectorAll("[data-group]").forEach((b) => b.onclick = () => {
+    const g = b.dataset.group;
+    if (g === "party" && !party) set("mode", PARTY.includes(prefs.lastParty) ? prefs.lastParty : "online");
+    if (g === "solo" && party) set("mode", SOLO.includes(prefs.lastSolo) && (prefs.lastSolo !== "review" || miss.size) ? prefs.lastSolo : "normal");
+  });
+  panel.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => {
+    const m = b.dataset.mode; prefs[PARTY.includes(m) ? "lastParty" : "lastSolo"] = m; set("mode", m);
+  });
   panel.querySelectorAll("[data-lv]").forEach((b) => b.onclick = () => set("lv", Number(b.dataset.lv)));
   panel.querySelectorAll("[data-round]").forEach((b) => b.onclick = () => set("round", Number(b.dataset.round)));
   panel.querySelectorAll("[data-opt]").forEach((b) => b.onclick = () => set(b.dataset.opt, !prefs[b.dataset.opt]));
   panel.querySelectorAll("[data-players]").forEach((b) => b.onclick = () => set("players", Number(b.dataset.players)));
-  panel.querySelectorAll(".pname").forEach((inp, k) => inp.oninput = () => { prefs.names[k] = inp.value; save("prefs", prefs); });
+  panel.querySelectorAll(".names .pname").forEach((inp, k) => inp.oninput = () => { prefs.names[k] = inp.value; save("prefs", prefs); });
   if ($("go")) $("go").onclick = prefs.mode === "battle" ? startBattle : start;
   if (prefs.mode === "online") {
     $("oname").oninput = () => { prefs.oname = $("oname").value; save("prefs", prefs); };
