@@ -1,0 +1,1161 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>サカナクション・クイズ</title>
+<meta name="description" content="全790問のサカナクション4択クイズ。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="サカナクション・クイズ大会">
+<meta property="og:description" content="全790問のサカナクション4択クイズ。難易度別・サバイバル・称号判定、最大10人のオンライン対戦も。">
+<meta property="og:url" content="https://asanokansuke-max.github.io/----/sakanaction/">
+<meta property="og:image" content="https://asanokansuke-max.github.io/----/sakanaction/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+</head><body>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800&family=DotGothic16&display=swap">
+<style>
+/* Layout: 昭和のテレビ局クイズスタジオ。放射状に光が走る背景の前に、電球で縁取った出題パネル、下に4色の解答ボタン、右上に電光得点板。1画面に収め、スクロールさせない。明るい単一テーマ。 */
+:root {
+  color-scheme: light;
+  --studio: #ffe08a;     /* スタジオの壁（明るい山吹） */
+  --ray: #ffcf4d;        /* 放射光 */
+  --board: #fffaf0;      /* 出題パネル */
+  --frame: #c0392b;      /* パネルの朱色の枠 */
+  --ink: #2b1a0e;        /* こげ茶の文字 */
+  --muted: #7a5a3a;
+  --red: #e63946;
+  --blue: #1f5fbf;
+  --yellow: #f4b400;
+  --green: #2a9d4b;
+  --navy: #1b2559;       /* 電光掲示板 */
+  --led: #ffd23f;
+  --font-display: "Dela Gothic One", "Hiragino Sans", "Yu Gothic", sans-serif;
+  --font-body: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-led: "DotGothic16", ui-monospace, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 15px;
+  line-height: 1.55;
+  background-color: var(--studio);
+  background-image:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--board) 75%, transparent) 0, transparent 42%),
+    repeating-conic-gradient(from 0deg at 50% 38%, var(--ray) 0deg 9deg, var(--studio) 9deg 18deg);
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button:focus-visible { outline: 4px solid var(--navy); outline-offset: 3px; }
+/* 日本語は文節で折り返す（BudouX が区切りを入れ、keep-all で文節の途中では切らない） */
+.q, .exp, .correct-is, .opt, .rank, .peek, .lead { word-break: keep-all; line-break: strict; overflow-wrap: anywhere; }
+budoux-ja { display: inline; }
+
+.app {
+  height: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 10px 14px;
+}
+
+/* ---- 上部：番組ロゴと電光掲示板 ---- */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }
+.logo { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.logo small { font-size: 11px; font-weight: 800; letter-spacing: .2em; color: var(--frame); }
+.logo b { font-family: var(--font-display); font-weight: 400; font-size: clamp(18px, 4.6vw, 26px); color: var(--ink); text-shadow: 2px 2px 0 var(--board); white-space: nowrap; }
+.right { display: flex; align-items: center; gap: 8px; flex: none; }
+.led {
+  background: var(--navy); color: var(--led); font-family: var(--font-led);
+  border-radius: 8px; padding: 4px 12px; display: flex; gap: 6px; align-items: baseline;
+  box-shadow: inset 0 0 0 2px #0e1433, 0 3px 0 #0e1433;
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.led span { font-size: 11px; opacity: .8; }
+.led b { font-weight: 400; font-size: 22px; letter-spacing: .05em; text-shadow: 0 0 6px color-mix(in srgb, var(--led) 70%, transparent); }
+.led .hearts { font-size: 14px; opacity: 1; letter-spacing: 0; }
+.led .hearts i { font-style: normal; color: #ff6b6b; }
+.led .hearts i.off { color: #3a4580; }
+.icon { width: 40px; height: 40px; border-radius: 50%; border: 3px solid var(--ink); background: var(--board); font-size: 14px; font-weight: 800; padding: 0; }
+.icon[aria-pressed="false"] { opacity: .45; }
+
+/* ---- 出題パネル（電球の縁取り） ---- */
+.board {
+  position: relative;
+  flex: 0 1 auto;
+  min-height: min(48vh, 380px);
+  background: var(--board);
+  border: 6px solid var(--frame);
+  border-radius: 22px;
+  box-shadow: 0 0 0 4px var(--board), 0 0 0 8px var(--ink), 0 10px 0 8px color-mix(in srgb, var(--ink) 25%, transparent);
+  margin: 8px;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.board::before {
+  content: ""; position: absolute; inset: 5px; border-radius: 14px; pointer-events: none;
+  background:
+    radial-gradient(circle, var(--yellow) 0 3px, transparent 3.5px) 0 0 / 22px 22px repeat-x,
+    radial-gradient(circle, var(--yellow) 0 3px, transparent 3.5px) 0 100% / 22px 22px repeat-x;
+  animation: blink 1.2s steps(2) infinite;
+}
+@keyframes blink { 50% { filter: brightness(1.35) saturate(1.4); } }
+.inner { position: relative; z-index: 1; flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; overflow: auto; padding-block: 4px; }
+
+.tags { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.no { font-family: var(--font-display); font-size: 20px; color: var(--frame); }
+.no small { font-size: 13px; color: var(--muted); }
+.tag { font-size: 12px; font-weight: 800; color: #fff; border-radius: 999px; padding: 2px 10px; background: var(--c, var(--blue)); }
+.lvl { font-size: 12px; font-weight: 800; color: var(--frame); letter-spacing: .1em; }
+.combo { margin-left: auto; font-family: var(--font-display); font-size: 15px; color: var(--red); animation: pop .3s ease-out both; }
+@keyframes pop { from { scale: .4; } to { scale: 1; } }
+.q { margin: auto 0; font-weight: 800; font-size: clamp(19px, 4.4vw, 28px); line-height: 1.45; text-wrap: pretty; text-align: center; }
+
+/* 早押しタイマー */
+.timer { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; flex: none; }
+.timer i { display: block; height: 100%; width: 100%; background: var(--green); border-radius: inherit; transform-origin: left; }
+.timer i.run { animation: drain var(--t) linear forwards; }
+@keyframes drain { 0% { transform: scaleX(1); background: var(--green); } 60% { background: var(--yellow); } 100% { transform: scaleX(0); background: var(--red); } }
+
+/* 正誤のスタンプ */
+.stamp {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%; z-index: 2;
+  font-family: var(--font-display); font-size: min(46vw, 220px); line-height: 1; pointer-events: none;
+  animation: stamp .25s cubic-bezier(.2,1.6,.4,1) both, fade .3s .45s forwards;
+}
+.stamp.ok { color: color-mix(in srgb, var(--red) 85%, transparent); }
+.stamp.ng { color: color-mix(in srgb, var(--blue) 85%, transparent); }
+@keyframes stamp { from { scale: 2; opacity: 0; } to { scale: 1; opacity: 1; } }
+@keyframes fade { to { opacity: 0; visibility: hidden; } }
+
+/* 解説 */
+.ans { display: grid; gap: 6px; align-content: center; flex: 1; text-align: center; animation: rise .2s ease-out both; }
+@keyframes rise { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+.verdict { font-family: var(--font-display); font-size: clamp(24px, 6.4vw, 36px); line-height: 1.1; display: flex; gap: 10px; justify-content: center; align-items: baseline; flex-wrap: wrap; }
+.verdict.ok { color: var(--red); }
+.verdict.ng { color: var(--blue); }
+.verdict small { font-size: 16px; color: var(--green); }
+.correct-is { font-weight: 800; font-size: 17px; }
+.correct-is em { font-style: normal; background: linear-gradient(transparent 55%, var(--ray) 55%); padding-inline: 4px; }
+.exp { margin: 0 auto; max-width: 38em; font-size: 15px; text-wrap: pretty; }
+.src { margin: 0; font-size: 11px; color: var(--muted); }
+.src a { color: inherit; }
+.nextbtn { position: relative; overflow: hidden; margin-top: 4px; }
+.nextbtn i { position: absolute; inset: 0; background: color-mix(in srgb, var(--board) 35%, transparent); transform-origin: left; transform: scaleX(0); pointer-events: none; }
+.nextbtn i.run { animation: fill var(--t) linear forwards; }
+@keyframes fill { to { transform: scaleX(1); } }
+.nextbtn span { position: relative; }
+.hint { font-size: 11px; color: var(--muted); margin: 0; }
+
+/* ---- 解答ボタン ---- */
+.answers { flex: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.answers.long { grid-template-columns: minmax(0, 1fr); }
+.opt {
+  --c: var(--red);
+  display: flex; align-items: center; gap: 10px; text-align: left;
+  min-height: 62px; padding: 10px 14px;
+  border: 3px solid var(--ink); border-radius: 14px;
+  background: var(--c); color: #fff;
+  font-weight: 800; font-size: clamp(14px, 3.6vw, 18px); line-height: 1.3;
+  box-shadow: 0 5px 0 var(--ink);
+  transition: transform .06s, box-shadow .06s, opacity .15s, filter .15s;
+}
+.answers.long .opt { min-height: 50px; }
+.opt:nth-child(2) { --c: var(--blue); }
+.opt:nth-child(3) { --c: var(--yellow); color: var(--ink); }
+.opt:nth-child(4) { --c: var(--green); }
+.opt .k { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--board); color: var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 16px; }
+.opt span:last-child { min-width: 0; flex: 1; }
+.opt:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); }
+.opt:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.opt:disabled { cursor: default; }
+.opt.dim { opacity: .35; filter: grayscale(.6); }
+.opt.hit { outline: 5px solid var(--red); outline-offset: 2px; }
+.opt.miss { text-decoration: line-through; text-decoration-thickness: 3px; }
+
+/* ---- 大きなボタン・選択チップ ---- */
+.go {
+  justify-self: center; align-self: center;
+  background: var(--red); color: #fff; border: 3px solid var(--ink); border-radius: 999px;
+  padding: 9px 34px; font-family: var(--font-display); font-size: 20px; box-shadow: 0 5px 0 var(--ink);
+  margin-bottom: 5px;
+}
+.go.sub { background: var(--board); color: var(--ink); font-size: 15px; padding: 7px 18px; }
+.go.xbtn { background: #111; color: #fff; text-decoration: none; display: inline-block; }
+.go:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
+.row { display: flex; flex-wrap: wrap; gap: 8px 10px; justify-content: center; }
+
+.intro { flex: 1; display: grid; align-content: center; gap: 12px; text-align: center; }
+.intro h1 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(26px, 7.4vw, 50px); line-height: 1.1; color: var(--frame); text-shadow: 3px 3px 0 var(--ray); text-wrap: balance; }
+.lead { margin: 0 auto; max-width: 34em; color: var(--muted); font-size: 14px; }
+.pick { display: grid; gap: 4px; justify-items: center; }
+.pick .lbl { font-size: 11px; font-weight: 800; letter-spacing: .15em; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.chip { border: 2px solid var(--ink); background: var(--board); border-radius: 999px; padding: 3px 12px; font-weight: 800; font-size: 13px; }
+.chip small { font-weight: 500; color: var(--muted); }
+.chip[aria-pressed="true"] { background: var(--navy); color: var(--led); }
+.chip[aria-pressed="true"] small { color: var(--led); }
+.chip:disabled { opacity: .35; cursor: default; }
+.zukan { display: grid; gap: 3px; justify-items: center; font-size: 12px; font-weight: 800; color: var(--muted); }
+.zukan .meter { width: min(260px, 70vw); height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.zukan .meter i { display: block; height: 100%; background: var(--blue); }
+
+/* ---- 早押し対決 ---- */
+.names { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 4px; }
+.pname { width: 6.5em; font: inherit; font-weight: 800; font-size: 13px; padding: 3px 8px; border: 2px solid var(--ink); border-left: 8px solid var(--c); border-radius: 8px; background: var(--board); color: var(--ink); }
+.pstrip { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; flex: none; }
+.pchip { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; border: 2px solid var(--ink); background: var(--board); font-size: 12px; font-weight: 800; }
+.pchip::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); align-self: center; }
+.pchip i { font-style: normal; max-width: 6em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pchip b { font-family: var(--font-led); font-weight: 400; font-size: 15px; }
+.pchip.on { background: var(--c); color: #fff; }
+.pchip.out { opacity: .4; }
+.bmsg { margin: 0; text-align: center; font-weight: 800; font-size: 13px; color: var(--muted); }
+.bmsg.ng { color: var(--blue); }
+.bwho { margin: 0; text-align: center; font-family: var(--font-display); font-size: 20px; color: var(--c); }
+.answers.buzzers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.answers.buzzers.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.buzz {
+  min-height: 92px; border-radius: 50% / 40%; border: 4px solid var(--ink); background: var(--c); color: #fff;
+  box-shadow: 0 8px 0 var(--ink); display: grid; place-content: center; gap: 2px; padding: 6px; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+}
+.buzz:nth-child(3) { color: var(--ink); }
+.buzz b { font-family: var(--font-display); font-weight: 400; font-size: 20px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.buzz small { font-size: 11px; font-weight: 800; opacity: .85; }
+.buzz:active:not(:disabled) { transform: translateY(6px); box-shadow: 0 2px 0 var(--ink); }
+.buzz:disabled { opacity: .3; filter: grayscale(.8); cursor: default; }
+.podium { list-style: none; margin: 0 auto; padding: 0; display: grid; gap: 6px; width: min(100%, 360px); }
+.podium li { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto auto; gap: 8px; align-items: baseline; padding: 6px 12px; border: 2px solid var(--ink); border-left: 10px solid var(--c); border-radius: 10px; background: var(--board); text-align: left; }
+.podium li span { font-size: 18px; }
+.podium li i { font-style: normal; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.podium li b { font-family: var(--font-led); font-weight: 400; font-size: 20px; }
+.podium li small { font-size: 11px; color: var(--muted); }
+
+/* ---- オンライン対戦 ---- */
+.pname.solo { width: 12em; border-left-width: 2px; text-align: center; font-size: 15px; padding: 5px 10px; }
+.joinrow { display: flex; gap: 8px; align-items: center; justify-content: center; }
+.code-in { width: 8em; border-left-width: 2px; text-align: center; font-family: var(--font-led); font-size: 18px; letter-spacing: .2em; }
+.big.code { font-size: clamp(34px, 10vw, 52px); letter-spacing: .15em; }
+.plist { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; max-width: 34em; }
+.plist span { border: 2px solid var(--ink); border-radius: 999px; padding: 1px 10px; font-size: 13px; font-weight: 800; background: var(--board); }
+.plist span.me { background: var(--ray); }
+.lobby { gap: 8px; }
+.lobby .rank small { color: var(--muted); font-size: 12px; }
+.mini { list-style: none; margin: 4px auto 0; padding: 0; display: grid; gap: 3px; width: min(100%, 320px); }
+.mini li { display: grid; grid-template-columns: 1.6em minmax(0, 1fr) 3em 3.4em; gap: 6px; align-items: baseline; font-size: 13px; font-weight: 800; text-align: left; padding: 1px 8px; border-radius: 6px; }
+.mini li.me { background: var(--ray); }
+.mini li i { font-style: normal; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini li em { font-style: normal; text-align: right; }
+.mini li em.ok { color: var(--green); }
+.mini li em.ng { color: var(--blue); }
+.mini li b { font-family: var(--font-led); font-weight: 400; font-size: 16px; text-align: right; }
+.podium.tight { gap: 3px; }
+.podium.tight li { padding: 2px 10px; }
+.podium.tight li span { font-size: 15px; }
+.podium.tight li b { font-size: 17px; }
+.podium li.me { background: var(--ray); }
+
+/* ---- 結果発表 ---- */
+.result { flex: 1; display: grid; align-content: center; gap: 10px; text-align: center; }
+.result h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 6.4vw, 38px); color: var(--frame); }
+.big { justify-self: center; background: var(--navy); color: var(--led); font-family: var(--font-led); border-radius: 12px; padding: 4px 20px; font-size: clamp(36px, 11vw, 58px); line-height: 1.1; box-shadow: 0 5px 0 #0e1433; font-variant-numeric: tabular-nums; }
+.big small { font-size: .4em; }
+.sub-stats { font-size: 13px; font-weight: 800; color: var(--muted); }
+.newbest { color: var(--red); }
+.rank { margin: 0; font-weight: 700; font-size: 14px; color: var(--muted); }
+.title-badge {
+  justify-self: center; display: grid; gap: 0; padding: 6px 22px 8px; border-radius: 14px;
+  background: var(--ray); border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
+  animation: pop .35s ease-out both;
+}
+.title-badge small { font-size: 11px; font-weight: 800; letter-spacing: .2em; color: var(--muted); }
+.title-badge b { font-family: var(--font-display); font-weight: 400; font-size: clamp(17px, 5vw, 28px); line-height: 1.2; color: var(--ink); white-space: nowrap; }
+.title-badge { max-width: 100%; padding-inline: 16px; }
+.title-badge.master { background: var(--navy); }
+.title-badge.master b { color: var(--led); }
+.title-badge.master small { color: var(--led); opacity: .8; }
+.title-badge.doctor, .title-badge.meijin { background: var(--red); }
+.title-badge.doctor b, .title-badge.meijin b, .title-badge.doctor small, .title-badge.meijin small { color: #fff; }
+.marks { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; }
+.mk { width: 30px; height: 30px; border-radius: 7px; border: 2px solid var(--ink); background: var(--board); font-family: var(--font-display); font-size: 14px; display: grid; place-items: center; padding: 0; line-height: 1; }
+.mk.ok { color: var(--red); }
+.mk.ng { color: var(--blue); }
+.mk[aria-pressed="true"] { background: var(--ray); }
+.peek { min-height: 3em; font-size: 13px; margin: 0 auto; max-width: 34em; }
+.peek b { font-weight: 800; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); translate: -50% 0; background: var(--navy); color: var(--led); padding: 6px 16px; border-radius: 999px; font-weight: 800; font-size: 13px; z-index: 5; }
+
+@media (max-width: 520px) {
+  .app { gap: 8px; padding-block: 8px 10px; }
+  .board { padding: 18px 14px 16px; border-width: 5px; margin: 6px; }
+  .answers { gap: 8px; }
+  .opt { min-height: 56px; padding: 8px 10px; gap: 8px; border-radius: 12px; font-size: 15px; }
+  .answers.long .opt { min-height: 46px; }
+  .opt .k { width: 26px; height: 26px; font-size: 13px; }
+  .led { padding: 3px 8px; }
+  .led b { font-size: 18px; }
+  .led .lb { display: none; }
+  .logo small { display: none; }
+  .logo b { font-size: 14px; }
+  .icon { width: 34px; height: 34px; }
+  .intro { gap: 10px; }
+}
+@media (max-height: 700px) {
+  .board { min-height: min(42vh, 380px); padding-block: 16px 14px; }
+  .exp { font-size: 14px; }
+  .intro h1 { font-size: 26px; }
+  .intro { gap: 8px; }
+  .go { padding: 7px 26px; font-size: 17px; }
+}
+@media (max-height: 640px) {
+  .intro h1 { font-size: 22px; }
+  .intro h1 br { display: none; }
+  .lead, .hint { display: none; }
+  .verdict { font-size: 22px; }
+  .exp { font-size: 13px; line-height: 1.45; }
+  .correct-is { font-size: 15px; }
+  .go { padding: 5px 22px; font-size: 16px; }
+  .board { padding-block: 14px 12px; }
+}
+.marks { max-height: 120px; overflow: auto; }
+@media (max-height: 760px) {
+  .result { gap: 6px; }
+  .result h2 { font-size: 22px; }
+  .big { font-size: 38px; }
+  .rank { font-size: 15px; }
+  .peek { min-height: 2.8em; font-size: 12px; }
+}
+@media (max-height: 640px) { .result h2 { display: none; } .marks { max-height: 60px; } }
+@media (max-width: 520px) { .mk { width: 26px; height: 26px; font-size: 12px; } .marks { gap: 3px; } }
+@media (max-height: 560px) {
+  .opt { min-height: 46px; }
+  .q { font-size: 18px; }
+  .lead { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board::before, .stamp, .ans, .combo { animation: none; }
+  .stamp { display: none; }
+}
+</style>
+
+<div class="app">
+  <header class="bar">
+    <div class="logo"><small>サカナクション検定</small><b>サカナクション・クイズ</b></div>
+    <div class="right">
+      <div class="led" id="led" aria-live="polite"></div>
+      <button class="icon" id="home" aria-label="トップに戻る" title="トップに戻る">⌂</button>
+      <button class="icon" id="sound" aria-pressed="true" aria-label="効果音" title="効果音">♪</button>
+    </div>
+  </header>
+  <main class="board" id="board"><div class="inner" id="panel"></div></main>
+  <div class="answers" id="answers"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/budoux@0.6.2/bundle/budoux-ja.min.js"></script>
+<script src="sakanaction-questions.js"></script>
+<script>
+const QUESTIONS = (window.QUESTIONS || []).map((q) => ({ lv: 2, ...q }));
+const KANA = ["イ", "ロ", "ハ", "ニ"];
+const CAT_COLOR = { "メンバー": "var(--red)", "こぼれ話": "#d9480f", "作品": "var(--blue)", "歴史": "var(--green)", "タイアップ": "#7b3fb5", "ライブ": "#c2185b" };
+const LEVELS = [
+  { id: 1, name: "かんたん", stars: "★" },
+  { id: 2, name: "ふつう", stars: "★★" },
+  { id: 3, name: "むずかしい", stars: "★★★" },
+  { id: 0, name: "ミックス", stars: "" },
+];
+const MODES = [
+  { id: "normal", name: "通常" },
+  { id: "survival", name: "サバイバル" },
+  { id: "review", name: "復習" },
+  { id: "online", name: "オンライン対戦" },
+  { id: "battle", name: "1台で対決" },
+];
+const TIME = { 1: 15, 2: 18, 3: 22 };       // 早押しの制限時間（秒）
+const AUTO = { ok: 2.6, ng: 4.2 };          // オート送りまでの秒数
+const LIVES = 3;
+// 称号：正解率（サバイバルは正解数）で決まる。むずかしい・ミックスで全問正解すると最上位の「マスター」
+const TITLES = [
+  { id: "master", name: "サカナクション・マスター", fish: "🐋", desc: "最高難度で全問正解。もはやメンバー級の知識です" },
+  { id: "doctor", name: "サカナクション博士", fish: "🐬", desc: "全問正解！ 次は「むずかしい」で頂点へ" },
+  { id: "meijin", name: "夜釣りの名人", fish: "🦈", desc: "相当なサカナクション通。大物を釣り上げました" },
+  { id: "fisher", name: "ナイトフィッシャー", fish: "🐟", desc: "なかなかの好成績。あと一歩で名人です" },
+  { id: "rookie", name: "浅瀬のルーキー", fish: "🐠", desc: "まずまず。アルバムを聴き直して再挑戦" },
+  { id: "chigyo", name: "稚魚", fish: "🐡", desc: "これから大きく育ちましょう" },
+  { id: "riku", name: "まだ陸の上", fish: "🎣", desc: "まずは「かんたん」から糸を垂らしてみよう" },
+];
+const T = (id) => TITLES.find((t) => t.id === id);
+function titleFor() {
+  const n = S.results.filter(Boolean).length, total = S.results.length;
+  if (prefs.mode === "survival") {
+    return n >= 50 ? T("master") : n >= 35 ? T("doctor") : n >= 22 ? T("meijin") : n >= 12 ? T("fisher") : n >= 5 ? T("rookie") : n >= 1 ? T("chigyo") : T("riku");
+  }
+  const pct = total ? n / total * 100 : 0;
+  if (pct === 100) return prefs.mode === "normal" && (prefs.lv === 3 || prefs.lv === 0) && total >= 10 ? T("master") : T("doctor");
+  return pct >= 80 ? T("meijin") : pct >= 60 ? T("fisher") : pct >= 40 ? T("rookie") : pct >= 20 ? T("chigyo") : T("riku");
+}
+
+const $ = (id) => document.getElementById(id);
+const panel = $("panel"), answers = $("answers"), led = $("led");
+
+/* ---- 保存（このブラウザだけ） ---- */
+function load(key, fallback) { try { const v = localStorage.getItem("sakana-quiz:" + key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } }
+function save(key, v) { try { localStorage.setItem("sakana-quiz:" + key, JSON.stringify(v)); } catch {} }
+const prefs = Object.assign({ sound: true, timer: true, auto: true, lv: 0, mode: "normal", round: 10, players: 2, names: ["", "", "", ""], oname: "" }, load("prefs", {}));
+// 招待リンク（#sq1234）で開いたら、オンライン対戦の参加画面にする
+const HASH_CODE = (location.hash.match(/^#sq(\d{4})$/) || [])[1] || "";
+if (HASH_CODE) prefs.mode = "online";
+let got = new Set(load("got", []));      // 魚図鑑：一度でも正解した問題
+let miss = new Set(load("miss", []));    // 復習リスト：間違えた問題
+let best = load("best", {});             // モード・難易度ごとの最高得点
+if (prefs.mode === "review" && !miss.size) prefs.mode = "normal";
+
+let S = { view: "intro", deck: [], i: 0, results: [], picked: null, score: 0, combo: 0, maxCombo: 0, lives: LIVES, gain: 0, peek: null, newBest: false };
+let tq = null, ta = null, qStart = 0;
+
+function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+// 文節区切りつきの文字列（BudouX のカスタム要素で包む）
+const J = (s) => `<budoux-ja>${esc(s)}</budoux-ja>`;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+const lvInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS[3];
+const bestKey = () => prefs.mode === "normal" ? `normal-${prefs.lv}-${prefs.round}` : prefs.mode;
+
+/* ---- 効果音 ---- */
+let ac;
+function tone(freq, start, dur, type = "sine", vol = .25) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(vol, ac.currentTime + start);
+  g.gain.exponentialRampToValueAtTime(.001, ac.currentTime + start + dur);
+  o.connect(g).connect(ac.destination);
+  o.start(ac.currentTime + start); o.stop(ac.currentTime + start + dur);
+}
+function sfx(kind) {
+  if (!prefs.sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    if (ac.state === "suspended") ac.resume();
+    if (kind === "ok") { tone(1319, 0, .3); tone(1047, .22, .5); }
+    else if (kind === "ng") { tone(140, 0, .2, "square", .12); tone(140, .25, .4, "square", .12); }
+    else if (kind === "buzz") { tone(988, 0, .12, "square", .15); tone(1319, .1, .25, "square", .15); }
+    else if (kind === "fan") { [523, 659, 784, 1047].forEach((f, i) => tone(f, i * .11, .3, "triangle", .2)); }
+  } catch {}
+}
+
+/* ---- 出題の組み立て ---- */
+function poolFor(lv) { return QUESTIONS.filter((q) => !lv || q.lv === lv); }
+function buildDeck() {
+  if (prefs.mode === "review") return shuffle(QUESTIONS.filter((q) => miss.has(q.q))).slice(0, 20);
+  if (prefs.mode === "survival") {
+    // だんだん難しくなる：かんたん5問 → ふつう5問 → あとは全部まぜて
+    const head = [...shuffle(poolFor(1)).slice(0, 5), ...shuffle(poolFor(2)).slice(0, 5)];
+    const used = new Set(head);
+    return [...head, ...shuffle(QUESTIONS.filter((q) => !used.has(q)))];
+  }
+  return shuffle(poolFor(prefs.lv)).slice(0, prefs.round);
+}
+function start() {
+  clearTimers();
+  const deck = buildDeck();
+  if (!deck.length) return;
+  S = { view: "quiz", deck: deck.map((q) => ({ ...q, order: shuffle(q.choices) })), i: 0, results: [], picked: null, score: 0, combo: 0, maxCombo: 0, lives: LIVES, gain: 0, peek: null, newBest: false };
+  render();
+}
+
+/* ---- 回答 ---- */
+function pick(c) {
+  if (S.view !== "quiz" || S.picked !== null) return;
+  clearTimers();
+  const q = S.deck[S.i];
+  const ok = c === q.choices[0];
+  const limit = TIME[q.lv] || 18;
+  const left = prefs.timer ? Math.max(0, limit - (performance.now() - qStart) / 1000) : 0;
+  S.picked = c ?? "";
+  S.gain = ok ? 10 + (prefs.timer ? Math.ceil(left / limit * 10) : 0) + Math.min(S.combo, 5) : 0;
+  S.score += S.gain;
+  S.combo = ok ? S.combo + 1 : 0;
+  S.maxCombo = Math.max(S.maxCombo, S.combo);
+  if (!ok && prefs.mode === "survival") S.lives--;
+  S.results.push(ok);
+  if (ok) { got.add(q.q); miss.delete(q.q); } else miss.add(q.q);
+  save("got", [...got]); save("miss", [...miss]);
+  sfx(ok ? "ok" : "ng");
+  render(true);
+}
+function isLast() { return S.i + 1 >= S.deck.length || (prefs.mode === "survival" && S.lives <= 0); }
+function next() {
+  if (S.view !== "quiz" || S.picked === null) return;
+  clearTimers();
+  if (isLast()) finish();
+  else { S.i++; S.picked = null; S.gain = 0; render(); }
+}
+function finish() {
+  const key = bestKey();
+  S.newBest = S.score > 0 && S.score > (best[key] || 0);
+  if (S.newBest) { best[key] = S.score; save("best", best); }
+  S.view = "result"; S.peek = null;
+  sfx("fan");
+  render();
+}
+function clearTimers() { clearTimeout(tq); clearTimeout(ta); tq = ta = null; }
+
+/* ---- 描画 ---- */
+function renderLed() {
+  if (S.view === "quiz") {
+    const hearts = prefs.mode === "survival" ? `<span class="hearts">${Array.from({ length: LIVES }, (_, k) => `<i class="${k < S.lives ? "" : "off"}">♥</i>`).join("")}</span>` : "";
+    led.innerHTML = `<span class="lb">第</span><b>${pad(S.i + 1)}</b><span>問</span>${hearts}<span>得点</span><b>${pad(S.score, 3)}</b>`;
+  } else if (S.view === "online") {
+    const g = game(), me = myPeer(), sc = g?.sc?.[me];
+    led.innerHTML = sc ? `<span>得点</span><b>${pad(sc[1], 3)}</b>` : `<span>部屋</span><b>${esc(O?.code || "----")}</b>`;
+  } else if (S.view === "battle") {
+    led.innerHTML = `<span class="lb">第</span><b>${pad(B.i + 1)}</b><span>問 / ${pad(B.deck.length)}</span>`;
+  } else if (S.view === "battleResult") {
+    led.innerHTML = `<span>早押し対決</span>`;
+  } else if (S.view === "result") {
+    led.innerHTML = `<span>得点</span><b>${pad(S.score, 3)}</b>`;
+  } else {
+    const b = best[bestKey()];
+    led.innerHTML = `<span>最高</span><b>${b ? pad(b, 3) : "---"}</b><span>点</span>`;
+  }
+  $("home").hidden = S.view === "intro";
+}
+
+function chip(attr, val, cur, label, extra = "", disabled = false) {
+  return `<button class="chip" ${attr}="${val}" aria-pressed="${cur}" ${disabled ? "disabled" : ""}>${label}${extra !== "" ? ` <small>${extra}</small>` : ""}</button>`;
+}
+function renderIntro() {
+  const total = QUESTIONS.length;
+  const pct = Math.round(got.size / total * 100);
+  const leads = {
+    normal: "早く答えるほど高得点。連続正解でボーナスも。",
+    survival: "3回まちがえたら終了。だんだん難しくなります。",
+    review: `前にまちがえた ${miss.size}問 から出題します。`,
+    battle: "1台を囲んで2〜4人で早押し勝負。正解+10点、お手つき−5点。",
+    online: "URLを共有して最大10人で対戦。全員同時に答えて、早いほど高得点。",
+  };
+  panel.innerHTML = `
+    <div class="intro">
+      <h1>サカナクション<br>クイズ大会</h1>
+      <p class="lead">全${total}問。${leads[prefs.mode]}</p>
+      <div class="pick"><span class="lbl">モード</span><div class="chips">
+        ${MODES.map((m) => chip("data-mode", m.id, prefs.mode === m.id, m.name, m.id === "review" ? String(miss.size) : "", m.id === "review" && !miss.size)).join("")}
+      </div></div>
+      ${prefs.mode === "battle" ? `
+      <div class="pick"><span class="lbl">人数と名前</span><div class="chips">
+        ${[2, 3, 4].map((n) => chip("data-players", n, prefs.players === n, `${n}人`)).join("")}
+      </div><div class="names">
+        ${Array.from({ length: prefs.players }, (_, k) => `<input id="pname${k}" class="pname" style="--c:${PLAYER_COLORS[k]}" maxlength="8" placeholder="${k + 1}P" value="${esc(prefs.names[k] || "")}" aria-label="${k + 1}人目の名前">`).join("")}
+      </div></div>` : ""}
+      ${prefs.mode === "online" ? `
+      <div class="pick"><span class="lbl">あなたの名前</span><input id="oname" class="pname solo" maxlength="8" placeholder="ニックネーム" value="${esc(prefs.oname || "")}" aria-label="あなたの名前"></div>
+      <div class="pick"><span class="lbl">部屋に参加する</span><div class="joinrow">
+        <input id="ocode" class="pname code-in" inputmode="numeric" maxlength="4" placeholder="4けたのコード" value="${esc(HASH_CODE)}" aria-label="部屋コード">
+        <button class="go sub" id="ojoin">参加</button></div></div>
+      <div class="pick"><span class="lbl">または</span><button class="go" id="ocreate">部屋を作る</button></div>
+      ${IN_CLAUDE && !room ? `<p class="hint">※ claude.ai 上では、サインインして開いた人どうしで遊べます</p>` : ""}` : ""}
+      ${prefs.mode === "normal" || prefs.mode === "battle" ? `
+      <div class="pick"><span class="lbl">難易度</span><div class="chips">
+        ${LEVELS.map((l) => chip("data-lv", l.id, prefs.lv === l.id, l.name, l.stars)).join("")}
+      </div></div>
+      <div class="pick"><span class="lbl">問題数</span><div class="chips">
+        ${(prefs.mode === "battle" ? [10, 15, 20] : [10, 20, 30]).map((n) => chip("data-round", n, prefs.round === n, `${n}問`)).join("")}
+      </div></div>` : ""}
+      ${prefs.mode !== "battle" && prefs.mode !== "online" ? `<div class="pick"><span class="lbl">設定</span><div class="chips">
+        ${chip("data-opt", "timer", prefs.timer, "早押しタイマー")}
+        ${chip("data-opt", "auto", prefs.auto, "オート送り")}
+      </div></div>` : ""}
+      ${prefs.mode !== "online" ? `<button class="go" id="go">スタート！</button>` : ""}
+      <div class="zukan">魚図鑑 ${got.size} / ${total}匹（${pct}%）<div class="meter"><i style="width:${pct}%"></i></div></div>
+    </div>`;
+  answers.hidden = true;
+  const set = (k, v) => { prefs[k] = v; save("prefs", prefs); render(); };
+  panel.querySelectorAll("[data-mode]").forEach((b) => b.onclick = () => set("mode", b.dataset.mode));
+  panel.querySelectorAll("[data-lv]").forEach((b) => b.onclick = () => set("lv", Number(b.dataset.lv)));
+  panel.querySelectorAll("[data-round]").forEach((b) => b.onclick = () => set("round", Number(b.dataset.round)));
+  panel.querySelectorAll("[data-opt]").forEach((b) => b.onclick = () => set(b.dataset.opt, !prefs[b.dataset.opt]));
+  panel.querySelectorAll("[data-players]").forEach((b) => b.onclick = () => set("players", Number(b.dataset.players)));
+  panel.querySelectorAll(".pname").forEach((inp, k) => inp.oninput = () => { prefs.names[k] = inp.value; save("prefs", prefs); });
+  if ($("go")) $("go").onclick = prefs.mode === "battle" ? startBattle : start;
+  if (prefs.mode === "online") {
+    $("oname").oninput = () => { prefs.oname = $("oname").value; save("prefs", prefs); };
+    $("ocreate").onclick = () => onlineEnter(newCode(), true);
+    $("ojoin").onclick = () => {
+      const code = $("ocode").value.replace(/\D/g, "");
+      if (code.length !== 4) { toast("4けたの部屋コードを入れてください"); return; }
+      onlineEnter(code, false);
+    };
+  }
+}
+
+function renderQuiz(justAnswered) {
+  const q = S.deck[S.i], done = S.picked !== null, correct = q.choices[0], ok = S.picked === correct;
+  const total = prefs.mode === "survival" ? "" : `<small> / ${S.deck.length}</small>`;
+  const tags = `<div class="tags"><span class="no">第${S.i + 1}問${total}</span>
+    <span class="tag" style="--c:${CAT_COLOR[q.cat] || "var(--blue)"}">${esc(q.cat)}</span>
+    <span class="lvl" title="難易度">${lvInfo(q.lv).stars}</span>
+    ${S.combo >= 2 && (!done || ok) ? `<span class="combo">${S.combo}連続正解！</span>` : ""}</div>`;
+  if (!done) {
+    const limit = TIME[q.lv] || 18;
+    panel.innerHTML = `${tags}${prefs.timer ? `<div class="timer"><i id="bar" style="--t:${limit}s"></i></div>` : ""}<h2 class="q">${J(q.q)}</h2>`;
+    qStart = performance.now();
+    if (prefs.timer) {
+      requestAnimationFrame(() => $("bar")?.classList.add("run"));
+      tq = setTimeout(() => pick(null), limit * 1000);
+    }
+  } else {
+    const src = q.src ? (q.url ? `<a href="${esc(q.url)}" target="_blank" rel="noopener">${esc(q.src)}</a>` : esc(q.src)) : "";
+    const verdict = ok ? "ピンポーン！" : S.picked === "" ? "時間切れ！" : "ブッブー！";
+    const last = isLast();
+    const wait = ok ? AUTO.ok : AUTO.ng;
+    const autoOn = prefs.auto && !last && justAnswered;
+    panel.innerHTML = `${tags}
+      <div class="ans">
+        <div class="verdict ${ok ? "ok" : "ng"}">${verdict}${ok ? `<small>+${S.gain}点</small>` : ""}</div>
+        ${ok ? "" : `<div class="correct-is">正解は <em>${J(correct)}</em></div>`}
+        <p class="exp">${J(q.exp)}</p>
+        ${src ? `<p class="src">出典：${src}</p>` : ""}
+        <button class="go nextbtn" id="next"><i id="fillbar" style="--t:${wait}s"></i><span>${last ? "結果発表へ" : "次の問題 ▶"}</span></button>
+        ${autoOn ? `<p class="hint">パネルをタップで一時停止</p>` : ""}
+      </div>`;
+    if (justAnswered) {
+      const st = document.createElement("div");
+      st.className = `stamp ${ok ? "ok" : "ng"}`; st.setAttribute("aria-hidden", "true"); st.textContent = ok ? "○" : "×";
+      $("board").appendChild(st); setTimeout(() => st.remove(), 900);
+    }
+    $("next").onclick = next;
+    if (autoOn) {
+      requestAnimationFrame(() => $("fillbar")?.classList.add("run"));
+      ta = setTimeout(next, wait * 1000);
+    }
+  }
+  answers.hidden = false; answers.className = "answers";
+  const longest = Math.max(...q.choices.map((c) => c.length));
+  const w = answers.clientWidth || innerWidth - 32, fs = innerWidth <= 520 ? 15 : 18;
+  answers.classList.toggle("long", longest > ((w - 10) / 2 - 64) / fs * 2);
+  answers.innerHTML = q.order.map((c, k) => {
+    let cls = "";
+    if (done) cls = c === correct ? "hit" : c === S.picked ? "miss dim" : "dim";
+    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(c)}</span></button>`;
+  }).join("");
+  answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => pick(q.order[Number(b.dataset.k)]));
+}
+
+function shareText() {
+  const n = S.results.filter(Boolean).length;
+  const mode = prefs.mode === "survival" ? "サバイバル" : prefs.mode === "review" ? "復習" : `${lvInfo(prefs.lv).name}・${S.deck.length}問`;
+  const marks = S.results.slice(0, 30).map((r) => r ? "○" : "×").join("") + (S.results.length > 30 ? "…" : "");
+  const t = titleFor();
+  return `${t.fish}称号「${t.name}」を獲得！\nサカナクション・クイズ（${mode}）で${n}/${S.results.length}問正解、${S.score}点\n${marks}`;
+}
+// X（旧Twitter）の投稿画面を開くリンク。ハッシュタグ付き
+function xUrl() {
+  const p = new URLSearchParams({ text: shareText(), hashtags: "サカナクションクイズ,サカナクション", ...(IN_CLAUDE ? {} : { url: PUBLIC_URL }) });
+  return `https://twitter.com/intent/tweet?${p}`;
+}
+function toast(msg) {
+  const t = document.createElement("div"); t.className = "toast"; t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 1800);
+}
+function renderResult() {
+  const n = S.results.filter(Boolean).length, total = S.results.length;
+  const t = titleFor();
+  const p = S.peek;
+  panel.innerHTML = `
+    <div class="result">
+      <h2>結果発表</h2>
+      <div class="big">${pad(S.score, 3)}<small> 点</small></div>
+      <div class="sub-stats">${n} / ${total}問正解・最大${S.maxCombo}連続${S.newBest ? `・<span class="newbest">自己ベスト更新！</span>` : ""}</div>
+      <div class="title-badge ${t.id}"><small>あなたの称号</small><b>${t.fish} ${t.name}</b></div>
+      <p class="rank">${t.desc}</p>
+      <div class="marks">${S.results.map((r, i) => `<button class="mk ${r ? "ok" : "ng"}" data-i="${i}" aria-pressed="${p === i}" aria-label="第${i + 1}問 ${r ? "正解" : "不正解"}">${r ? "○" : "×"}</button>`).join("")}</div>
+      <p class="peek">${p === null ? "○×をタップすると、その問題と答えを見られます" : `<b>第${p + 1}問</b> ${J(S.deck[p].q)}<br>答え：<b>${J(S.deck[p].choices[0])}</b>`}</p>
+      <div class="row"><button class="go" id="again">もう一度</button><a class="go xbtn" id="xshare" href="${esc(xUrl())}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
+      <div class="row"><button class="go sub" id="copy">結果をコピー</button><button class="go sub" id="top">トップへ</button></div>
+    </div>`;
+  answers.hidden = true;
+  panel.querySelectorAll(".mk").forEach((b) => b.onclick = () => { const i = Number(b.dataset.i); S.peek = S.peek === i ? null : i; render(); });
+  $("again").onclick = start;
+  $("top").onclick = goHome;
+  $("copy").onclick = () => {
+    const text = shareText();
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast("コピーしました"), () => toast("コピーできませんでした"));
+    else toast("コピーできませんでした");
+  };
+}
+
+/* ===== 早押し対決（1台の端末を囲んで2〜4人で遊ぶ） ===== */
+const PLAYER_COLORS = ["var(--red)", "var(--blue)", "var(--yellow)", "var(--green)"];
+const BUZZ_KEYS = ["q", "p", "z", "m"];      // パソコンでの早押しキー
+const ANSWER_TIME = 7;                        // 早押し後に答えるまでの秒数
+const MEDALS = ["🥇", "🥈", "🥉", "4位"];
+let B = null;
+
+function startBattle() {
+  clearTimers();
+  const deck = shuffle(poolFor(prefs.lv)).slice(0, Math.min(prefs.round, 20));
+  if (!deck.length) return;
+  B = {
+    deck: deck.map((q) => ({ ...q, order: shuffle(q.choices) })), i: 0,
+    players: Array.from({ length: prefs.players }, (_, k) => ({ name: (prefs.names[k] || `${k + 1}P`).trim() || `${k + 1}P`, score: 0, correct: 0 })),
+    phase: "buzz", who: null, locked: [], picked: null, last: null,
+  };
+  S.view = "battle";
+  render();
+}
+function buzz(k) {
+  if (S.view !== "battle" || B.phase !== "buzz" || k >= B.players.length || B.locked.includes(k)) return;
+  clearTimeout(tq);
+  B.phase = "answer"; B.who = k;
+  sfx("buzz");
+  render();
+}
+function battleAnswer(c) {
+  if (S.view !== "battle" || B.phase !== "answer") return;
+  clearTimers();
+  const q = B.deck[B.i], p = B.players[B.who], ok = c === q.choices[0];
+  if (ok) { p.score += 10; p.correct++; B.picked = c; B.last = { who: B.who, ok: true }; B.phase = "reveal"; sfx("ok"); render(true); return; }
+  // まちがい：減点して、その問題はもう押せない。残りの人がいれば早押し再開
+  p.score -= 5; B.locked.push(B.who); B.last = { who: B.who, ok: false, picked: c ?? "" };
+  sfx("ng");
+  if (B.locked.length >= B.players.length) { B.phase = "reveal"; B.picked = null; render(true); }
+  else { B.phase = "buzz"; B.who = null; render(); }
+}
+function battleTimeUp() { B.phase = "reveal"; B.picked = null; B.last = B.last && !B.last.ok ? B.last : null; sfx("ng"); render(true); }
+function battleNext() {
+  if (S.view !== "battle" || B.phase !== "reveal") return;
+  clearTimers();
+  if (B.i + 1 >= B.deck.length) { S.view = "battleResult"; sfx("fan"); render(); return; }
+  B.i++; B.phase = "buzz"; B.who = null; B.locked = []; B.picked = null; B.last = null;
+  render();
+}
+function ranking() { return B.players.map((p, k) => ({ ...p, k })).sort((a, b) => b.score - a.score || b.correct - a.correct); }
+
+function scoreStrip() {
+  return `<div class="pstrip">${B.players.map((p, k) => `<span class="pchip ${B.locked.includes(k) ? "out" : ""} ${B.who === k ? "on" : ""}" style="--c:${PLAYER_COLORS[k]}"><i>${esc(p.name)}</i><b>${p.score}</b></span>`).join("")}</div>`;
+}
+function renderBattle(justAnswered) {
+  const q = B.deck[B.i], correct = q.choices[0];
+  const tags = `<div class="tags"><span class="no">第${B.i + 1}問<small> / ${B.deck.length}</small></span>
+    <span class="tag" style="--c:${CAT_COLOR[q.cat] || "var(--blue)"}">${esc(q.cat)}</span><span class="lvl">${lvInfo(q.lv).stars}</span></div>`;
+  if (B.phase === "buzz") {
+    const limit = TIME[q.lv] || 18;
+    const msg = B.last && !B.last.ok ? `<p class="bmsg ng">${esc(B.players[B.last.who].name)} はブッブー！ 残りの人、早押しチャンス！</p>` : `<p class="bmsg">わかった人は自分のボタンを早押し！</p>`;
+    panel.innerHTML = `${scoreStrip()}${tags}<div class="timer"><i id="bar" style="--t:${limit}s"></i></div><h2 class="q">${J(q.q)}</h2>${msg}`;
+    requestAnimationFrame(() => $("bar")?.classList.add("run"));
+    tq = setTimeout(battleTimeUp, limit * 1000);
+    answers.hidden = false; answers.className = "answers buzzers n" + B.players.length;
+    answers.innerHTML = B.players.map((p, k) => `<button class="buzz" style="--c:${PLAYER_COLORS[k]}" data-p="${k}" ${B.locked.includes(k) ? "disabled" : ""}>
+      <b>${esc(p.name)}</b><small>${B.locked.includes(k) ? "お手つき" : `キー ${BUZZ_KEYS[k].toUpperCase()}`}</small></button>`).join("");
+    answers.querySelectorAll(".buzz").forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); buzz(Number(b.dataset.p)); }));
+    return;
+  }
+  if (B.phase === "answer") {
+    const p = B.players[B.who];
+    panel.innerHTML = `${scoreStrip()}${tags}<div class="timer"><i id="bar" style="--t:${ANSWER_TIME}s"></i></div>
+      <p class="bwho" style="--c:${PLAYER_COLORS[B.who]}">${esc(p.name)} の回答！</p><h2 class="q">${J(q.q)}</h2>`;
+    requestAnimationFrame(() => $("bar")?.classList.add("run"));
+    tq = setTimeout(() => battleAnswer(null), ANSWER_TIME * 1000);
+  } else {
+    const ok = B.last?.ok;
+    const head = ok ? `<div class="verdict ok">${esc(B.players[B.last.who].name)} 正解！<small>+10点</small></div>`
+      : `<div class="verdict ng">${B.locked.length ? "全員お手つき…" : "時間切れ！"}</div>`;
+    const last = B.i + 1 >= B.deck.length;
+    panel.innerHTML = `${scoreStrip()}${tags}
+      <div class="ans">${head}
+        <div class="correct-is">正解は <em>${J(correct)}</em></div>
+        <p class="exp">${J(q.exp)}</p>
+        <button class="go nextbtn" id="next"><i id="fillbar" style="--t:4s"></i><span>${last ? "結果発表へ" : "次の問題 ▶"}</span></button>
+      </div>`;
+    $("next").onclick = battleNext;
+    if (!last && justAnswered) { requestAnimationFrame(() => $("fillbar")?.classList.add("run")); ta = setTimeout(battleNext, 4000); }
+    if (justAnswered) {
+      const st = document.createElement("div");
+      st.className = `stamp ${ok ? "ok" : "ng"}`; st.textContent = ok ? "○" : "×";
+      $("board").appendChild(st); setTimeout(() => st.remove(), 900);
+    }
+  }
+  answers.hidden = false; answers.className = "answers";
+  const longest = Math.max(...q.choices.map((c) => c.length));
+  const w = answers.clientWidth || innerWidth - 32, fs = innerWidth <= 520 ? 15 : 18;
+  answers.classList.toggle("long", longest > ((w - 10) / 2 - 64) / fs * 2);
+  const done = B.phase === "reveal";
+  answers.innerHTML = q.order.map((c, k) => {
+    const cls = done ? (c === correct ? "hit" : "dim") : "";
+    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(c)}</span></button>`;
+  }).join("");
+  answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => battleAnswer(q.order[Number(b.dataset.k)]));
+}
+
+function battleShareText() {
+  const r = ranking();
+  return `サカナクション・クイズ 早押し対決（${lvInfo(prefs.lv).name}・${B.deck.length}問）\n`
+    + `優勝は ${r[0].name}！\n` + r.map((p, i) => `${MEDALS[i]} ${p.name} ${p.score}点`).join("\n");
+}
+function renderBattleResult() {
+  const r = ranking();
+  const tie = r.length > 1 && r[0].score === r[1].score && r[0].correct === r[1].correct;
+  const xu = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: battleShareText(), hashtags: "サカナクションクイズ,サカナクション", ...(IN_CLAUDE ? {} : { url: PUBLIC_URL }) })}`;
+  panel.innerHTML = `
+    <div class="result">
+      <h2>結果発表</h2>
+      <div class="title-badge meijin"><small>${tie ? "同点優勝" : "優勝"}</small><b>👑 ${esc(r[0].name)}</b></div>
+      <ol class="podium">${r.map((p, i) => `<li style="--c:${PLAYER_COLORS[p.k]}"><span>${MEDALS[i]}</span><i>${esc(p.name)}</i><b>${p.score}点</b><small>${p.correct}問正解</small></li>`).join("")}</ol>
+      <div class="row"><button class="go" id="again">もう一度対決</button><a class="go xbtn" href="${esc(xu)}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
+      <div class="row"><button class="go sub" id="top">トップへ</button></div>
+    </div>`;
+  answers.hidden = true;
+  $("again").onclick = startBattle;
+  $("top").onclick = goHome;
+}
+
+/* ===== オンライン対戦（URLを共有して最大10人。ホストの画面が進行役） =====
+   同期はすべて room の presence で行う（閲覧権限の人でも送れるため）。
+   ホストの presence.g に進行状況（問題番号・段階・得点）を、各参加者の presence に名前と回答を載せる。 */
+const ONLINE_URL = "https://claude.ai/artifact/WQcQXZPXWDF1YkWRBxatMp";
+/* ---- 通信の切り替え：claude.ai 上なら room、普通のURL（GitHub Pages など）なら PeerJS（ブラウザ同士を直接つなぐ） ----
+   PeerJS ではホストが中継役になり、全員の presence をまとめて配る。room と同じ presence / peers / onPeers / leave の形にそろえる */
+const IN_CLAUDE = !!window.claude?.use;
+const PEERJS_SRC = "https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js";
+const PEER_PREFIX = "sakanaquiz-v1-";
+const PUBLIC_URL = IN_CLAUDE ? ONLINE_URL : location.origin + location.pathname;
+function loadPeerJs() {
+  return new Promise((res, rej) => {
+    if (window.Peer) return res();
+    const s = document.createElement("script"); s.src = PEERJS_SRC; s.onload = res; s.onerror = () => rej(new Error("load"));
+    document.head.appendChild(s);
+  });
+}
+function safePresence(p) {
+  if (!p || typeof p !== "object" || Array.isArray(p)) return {};
+  try { if (JSON.stringify(p).length > 4096) return {}; } catch { return {}; }
+  return p;
+}
+async function peerJoin(name, asHost) {
+  await loadPeerJs();
+  const hostId = PEER_PREFIX + name;
+  const handlers = new Set();
+  let snap = Object.freeze([]), myId = "", mine = {}, closed = false;
+  const fire = () => handlers.forEach((h) => { try { h({ peers: snap }); } catch {} });
+  const build = (list) => {
+    snap = Object.freeze(list.filter((e) => Array.isArray(e) && typeof e[0] === "string").map(([id, pres]) => Object.freeze({
+      peer: id, presence: Object.freeze(safePresence(pres)), isMe: id === myId, sameTab: id === myId, kind: "viewer", guest: false, by: null, updatedAt: Date.now(),
+    })));
+  };
+  const merge = (patch) => { const m = { ...mine, ...patch }; for (const k in patch) if (patch[k] === null) delete m[k]; mine = m; };
+  const api = { peers: () => snap, onPeers: (h) => { handlers.add(h); return () => handlers.delete(h); } };
+  const opened = (peer) => new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error("timeout")), 10000);
+    peer.on("open", (id) => { clearTimeout(t); myId = id; res(); });
+    peer.on("error", (e) => { clearTimeout(t); rej(e); });
+  });
+
+  if (asHost) {
+    const peer = new Peer(hostId);
+    await opened(peer);
+    const conns = new Map(), others = new Map();
+    const list = () => [[myId, mine], ...others];
+    const broadcast = () => { build(list()); const msg = { t: "snap", list: list() }; conns.forEach((c) => { if (c.open) c.send(msg); }); fire(); };
+    peer.on("connection", (c) => {
+      if (conns.size >= 30) { c.on("open", () => c.close()); return; }
+      c.on("open", () => { conns.set(c.peer, c); c.send({ t: "snap", list: list() }); });
+      c.on("data", (d) => { if (d && d.t === "p") { others.set(c.peer, safePresence(d.presence)); broadcast(); } });
+      c.on("close", () => { conns.delete(c.peer); others.delete(c.peer); broadcast(); });
+    });
+    peer.on("disconnected", () => { if (!closed) peer.reconnect(); });
+    build(list());
+    return { ...api, presence: async (patch) => { merge(patch); broadcast(); }, leave: async () => { closed = true; peer.destroy(); } };
+  }
+
+  const peer = new Peer();
+  await opened(peer);
+  const c = peer.connect(hostId, { reliable: true });
+  await new Promise((res, rej) => {
+    const t = setTimeout(() => rej(new Error("timeout")), 10000);
+    c.on("open", () => { clearTimeout(t); res(); });
+    peer.on("error", (e) => { clearTimeout(t); rej(e); });
+  });
+  c.on("data", (d) => { if (d && d.t === "snap" && Array.isArray(d.list)) { build(d.list); fire(); } });
+  c.on("close", () => { build([[myId, mine]]); fire(); });
+  build([[myId, mine]]);
+  return { ...api, presence: async (patch) => { merge(patch); if (c.open) c.send({ t: "p", presence: mine }); }, leave: async () => { closed = true; peer.destroy(); } };
+}
+
+const MAX_PLAYERS = 10;
+const REVEAL_SEC = 5;
+let room = null, roomTried = false;
+let O = null;   // { code, host, R, unsub, g (ホストのみ：自分が配る状態), seen, qStart, ans, err, joinedAt }
+let hostTimer = null;
+
+function initRoom() {
+  if (roomTried) return; roomTried = true;
+  const p = window.claude?.use?.("room");
+  if (p && p.then) p.then((r) => { room = r; if (S.view === "intro") render(); }, () => {});
+}
+const roomName = (code) => `sq-${code}`;
+const newCode = () => String(Math.floor(1000 + Math.random() * 9000));
+const inviteUrl = (code) => `${PUBLIC_URL}#sq${code}`;
+function myName() { return (prefs.oname || "").trim().slice(0, 8) || "ななし"; }
+
+async function onlineEnter(code, asHost, tries = 0) {
+  if (IN_CLAUDE && !room) { O = { err: "claude.ai 上では、サインインしてこのページを開いたときにオンライン対戦が使えます。" }; S.view = "online"; render(); return; }
+  if (!IN_CLAUDE) { O = { connecting: true, code }; S.view = "online"; render(); }
+  try {
+    const R = IN_CLAUDE ? await room.join(roomName(code)) : await peerJoin(roomName(code), asHost);
+    O = { code, host: asHost, R, seen: -1, ans: null, qStart: 0, err: null, joinedAt: Date.now() };
+    await R.presence({ name: myName(), ans: null, g: null });
+    if (asHost) { O.g = { st: "lobby", lv: prefs.lv, n: Math.min(prefs.round, 20), qi: 0, deck: [], sc: {}, at: Date.now() }; pushG(); }
+    O.unsub = R.onPeers(() => { if (O?.host) hostTick(); render(); });
+    S.view = "online"; render();
+  } catch (e) {
+    // 作った部屋コードがたまたま使用中なら、別のコードで作り直す
+    if (asHost && e?.type === "unavailable-id" && tries < 3) return onlineEnter(newCode(), true, tries + 1);
+    const msg = e?.type === "peer-unavailable" ? `部屋 ${code} が見つかりません。コードを確かめるか、ホストに部屋を作り直してもらってください。`
+      : e?.message === "load" ? "通信の準備ができませんでした。電波のよいところでもう一度試してください。"
+      : "部屋に入れませんでした。少し待ってからもう一度試してください。";
+    O = { err: msg }; S.view = "online"; render();
+  }
+}
+function onlineLeave() {
+  clearTimeout(hostTimer); hostTimer = null;
+  try { O?.unsub?.(); O?.R?.leave(); } catch {}
+  O = null;
+}
+function pushG() { O.R.presence({ g: O.g }).catch(() => {}); }
+
+/* 部屋の中の人：presence に名前がある人。ホストは role ではなく g を持つ人 */
+function people() { return (O?.R?.peers() || []).filter((p) => typeof p.presence?.name === "string"); }
+function hostPeer() {
+  const hs = people().filter((p) => p.presence.g && typeof p.presence.g === "object");
+  return hs.sort((a, b) => (a.presence.g.at || 0) - (b.presence.g.at || 0))[0] || null;
+}
+function game() { return O?.host ? O.g : hostPeer()?.presence.g || null; }
+const cleanName = (s) => String(s || "").replace(/[\u0000-\u001f]/g, "").slice(0, 8) || "ななし";
+
+/* ---- ホストの進行 ---- */
+function hostStart() {
+  const g = O.g;
+  const pool = shuffle(QUESTIONS.map((_, i) => i).filter((i) => !g.lv || QUESTIONS[i].lv === g.lv));
+  g.deck = pool.slice(0, g.n); g.qi = 0; g.sc = {};
+  people().slice(0, MAX_PLAYERS).forEach((p) => { g.sc[p.peer] = [cleanName(p.presence.name), 0, 0, 0, 0]; });
+  hostAsk();
+}
+function hostAsk() {
+  const g = O.g, q = QUESTIONS[g.deck[g.qi]];
+  g.st = "q"; g.dur = (TIME[q.lv] || 18); g.at2 = Date.now();
+  // 途中から来た人も、空きがあれば次の問題から参加
+  people().forEach((p) => { if (!g.sc[p.peer] && Object.keys(g.sc).length < MAX_PLAYERS) g.sc[p.peer] = [cleanName(p.presence.name), 0, 0, 0, 0]; });
+  pushG();
+  clearTimeout(hostTimer); hostTimer = setTimeout(hostReveal, (g.dur + 1.5) * 1000);
+}
+function answerOf(p, qi) { const a = p?.presence?.ans; return a && a.q === qi && Number.isInteger(a.c) ? a : null; }
+function hostTick() {
+  const g = O.g; if (!g || g.st !== "q") return;
+  const here = people().filter((p) => g.sc[p.peer]);
+  if (here.length && here.every((p) => answerOf(p, g.qi))) { clearTimeout(hostTimer); hostTimer = setTimeout(hostReveal, 400); }
+}
+function hostReveal() {
+  const g = O.g; if (!g || g.st !== "q") return;
+  const byPeer = Object.fromEntries(people().map((p) => [p.peer, p]));
+  for (const [peer, row] of Object.entries(g.sc)) {
+    const a = answerOf(byPeer[peer], g.qi);
+    const ok = !!a && a.c === 0;
+    const ms = a ? Math.max(0, Math.min(Number(a.ms) || 0, g.dur * 1000)) : 0;
+    const gain = ok ? 10 + Math.ceil((1 - ms / (g.dur * 1000)) * 10) : 0;
+    row[1] += gain; row[2] += ok ? 1 : 0; row[3] = gain; row[4] = a ? (ok ? 1 : -1) : 0;
+  }
+  g.st = "rev"; pushG();
+  clearTimeout(hostTimer);
+  hostTimer = setTimeout(() => {
+    if (!O?.g) return;
+    if (O.g.qi + 1 >= O.g.deck.length) { O.g.st = "end"; pushG(); }
+    else { O.g.qi++; hostAsk(); }
+  }, REVEAL_SEC * 1000);
+}
+function hostBackToLobby() { clearTimeout(hostTimer); Object.assign(O.g, { st: "lobby", qi: 0, deck: [], sc: {} }); pushG(); }
+
+/* ---- 参加者の回答 ---- */
+function onlineAnswer(origIdx) {
+  const g = game(); if (!g || g.st !== "q" || O.ans) return;
+  if (!g.sc[myPeer()]) return;
+  const ms = Math.round(performance.now() - O.qStart);
+  O.ans = { q: g.qi, c: origIdx, ms };
+  O.R.presence({ ans: O.ans }).catch(() => {});
+  sfx("buzz");
+  if (O.host) hostTick();
+  render();
+}
+function myPeer() { return (O?.R?.peers() || []).find((p) => p.sameTab)?.peer || ""; }
+function standings(g) { return Object.entries(g.sc).map(([peer, r]) => ({ peer, name: r[0], score: r[1], correct: r[2], gain: r[3], res: r[4] })).sort((a, b) => b.score - a.score || b.correct - a.correct); }
+
+/* ---- 描画 ---- */
+function renderOnline() {
+  answers.hidden = true; answers.className = "answers";
+  if (O?.connecting) { panel.innerHTML = `<div class="result"><h2>部屋 ${esc(O.code)}</h2><p class="rank">接続しています…</p></div>`; return; }
+  if (O?.err || !O) {
+    panel.innerHTML = `<div class="result"><h2>オンライン対戦</h2><p class="rank">${esc(O?.err || "接続が切れました。")}</p><div class="row"><button class="go sub" id="top">トップへ</button></div></div>`;
+    $("top").onclick = goHome; return;
+  }
+  const g = game(), me = myPeer();
+  if (g) O.hadHost = true;
+  if (!g && O.hadHost && !O.host) { O.err = "ホストが部屋を出たため、対戦は終了しました。"; return renderOnline(); }
+  if (!g) {
+    const waited = Date.now() - O.joinedAt > 6000;
+    panel.innerHTML = `<div class="result"><h2>部屋 ${esc(O.code)}</h2><p class="rank">${waited ? "この部屋にホストが見つかりません。コードを確かめてください。" : "ホストを探しています…"}</p><div class="row"><button class="go sub" id="top">トップへ</button></div></div>`;
+    $("top").onclick = goHome;
+    if (!waited) setTimeout(() => { if (S.view === "online" && !game()) render(); }, 6500);
+    return;
+  }
+  if (!O.host && !hostPeer()) { O.err = "ホストが部屋を出たため、対戦は終了しました。"; return renderOnline(); }
+  if (g.st === "lobby") return renderLobby(g);
+  if (g.st === "end") return renderOnlineEnd(g, me);
+  const q = QUESTIONS[g.deck[g.qi]]; if (!q) return;
+  const playing = !!g.sc[me];
+  // 新しい問題が来たら、手元の時計を始める
+  const key = `${g.qi}-${g.at2}`;
+  if (O.seen !== key) { O.seen = key; O.ans = null; O.qStart = performance.now(); O.order = shuffle([0, 1, 2, 3]); }
+  const st = standings(g);
+  const answered = people().filter((p) => g.sc[p.peer] && answerOf(p, g.qi)).length;
+  const total = people().filter((p) => g.sc[p.peer]).length;
+  const tags = `<div class="tags"><span class="no">第${g.qi + 1}問<small> / ${g.deck.length}</small></span>
+    <span class="tag" style="--c:${CAT_COLOR[q.cat] || "var(--blue)"}">${esc(q.cat)}</span><span class="lvl">${lvInfo(q.lv).stars}</span>
+    <span class="combo" style="color:var(--muted)">部屋 ${esc(O.code)}</span></div>`;
+  if (g.st === "q") {
+    const left = Math.max(0, g.dur - (performance.now() - O.qStart) / 1000);
+    const status = !playing ? "観戦中（次の対戦から参加できます）" : O.ans ? `回答しました。ほかの人を待っています（${answered}/${total}）` : `みんなで同時に回答！ 早いほど高得点（${answered}/${total}）`;
+    panel.innerHTML = `${tags}<div class="timer"><i id="bar" style="--t:${left}s"></i></div><h2 class="q">${J(q.q)}</h2><p class="bmsg">${status}</p>`;
+    requestAnimationFrame(() => $("bar")?.classList.add("run"));
+    answers.hidden = false;
+    const longest = Math.max(...q.choices.map((c) => c.length));
+    const w = answers.clientWidth || innerWidth - 32, fs = innerWidth <= 520 ? 15 : 18;
+    answers.classList.toggle("long", longest > ((w - 10) / 2 - 64) / fs * 2);
+    answers.innerHTML = O.order.map((ci, k) => {
+      const cls = O.ans ? (O.ans.c === ci ? "hit" : "dim") : "";
+      return `<button class="opt ${cls}" data-c="${ci}" ${O.ans || !playing ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(q.choices[ci])}</span></button>`;
+    }).join("");
+    answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => onlineAnswer(Number(b.dataset.c)));
+    return;
+  }
+  // 正解発表
+  const mine = g.sc[me];
+  const verdict = !mine ? `<div class="verdict">正解発表</div>` : mine[4] === 1 ? `<div class="verdict ok">正解！<small>+${mine[3]}点</small></div>` : mine[4] === -1 ? `<div class="verdict ng">ざんねん…</div>` : `<div class="verdict ng">時間切れ</div>`;
+  if (O.revealed !== key) { O.revealed = key; if (mine) sfx(mine[4] === 1 ? "ok" : "ng"); }
+  panel.innerHTML = `${tags}<div class="ans">${verdict}
+      <div class="correct-is">正解は <em>${J(q.choices[0])}</em></div>
+      <p class="exp">${J(q.exp)}</p>
+      <ol class="mini">${st.slice(0, 5).map((p, i) => `<li class="${p.peer === me ? "me" : ""}"><span>${i + 1}</span><i>${esc(p.name)}</i><em class="${p.res === 1 ? "ok" : "ng"}">${p.res === 1 ? `+${p.gain}` : "×"}</em><b>${p.score}</b></li>`).join("")}</ol>
+      <p class="hint">${g.qi + 1 >= g.deck.length ? "まもなく結果発表…" : "まもなく次の問題…"}</p></div>`;
+}
+
+function renderLobby(g) {
+  const ps = people(), host = hostPeer(), me = myPeer();
+  const list = ps.slice(0, MAX_PLAYERS);
+  panel.innerHTML = `
+    <div class="intro lobby">
+      <div class="pick"><span class="lbl">部屋コード</span><div class="big code">${esc(O.code)}</div></div>
+      <div class="row"><button class="go sub" id="copylink">招待リンクをコピー</button></div>
+      <p class="hint">リンクを開くか、トップで「オンライン対戦」→コード ${esc(O.code)} を入力すると参加できます</p>
+      <div class="pick"><span class="lbl">参加者 ${list.length} / ${MAX_PLAYERS}人</span>
+        <div class="plist">${list.map((p) => `<span class="${p.peer === me ? "me" : ""}">${p.peer === host?.peer ? "👑 " : ""}${esc(cleanName(p.presence.name))}${p.peer === me ? "（あなた）" : ""}</span>`).join("")}</div>
+        ${ps.length > MAX_PLAYERS ? `<p class="hint">11人目以降は観戦になります</p>` : ""}</div>
+      ${O.host ? `
+      <div class="pick"><span class="lbl">難易度</span><div class="chips">${LEVELS.map((l) => chip("data-olv", l.id, g.lv === l.id, l.name, l.stars)).join("")}</div></div>
+      <div class="pick"><span class="lbl">問題数</span><div class="chips">${[5, 10, 15, 20].map((n) => chip("data-on", n, g.n === n, `${n}問`)).join("")}</div></div>
+      <button class="go" id="ostart">スタート！</button>`
+      : `<p class="rank">ホストのスタートを待っています…<br><small>${lvInfo(g.lv).name}・${g.n}問</small></p>`}
+      <button class="go sub" id="oleave">部屋を出る</button>
+    </div>`;
+  $("copylink").onclick = () => {
+    const text = inviteUrl(O.code);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast("招待リンクをコピーしました"), () => toast(text));
+    else toast(text);
+  };
+  $("oleave").onclick = goHome;
+  if (O.host) {
+    panel.querySelectorAll("[data-olv]").forEach((b) => b.onclick = () => { O.g.lv = Number(b.dataset.olv); prefs.lv = O.g.lv; save("prefs", prefs); pushG(); render(); });
+    panel.querySelectorAll("[data-on]").forEach((b) => b.onclick = () => { O.g.n = Number(b.dataset.on); pushG(); render(); });
+    $("ostart").onclick = hostStart;
+  }
+}
+
+function onlineShareText(g, me) {
+  const st = standings(g), rank = st.findIndex((p) => p.peer === me) + 1, mine = st[rank - 1];
+  const head = mine ? `${st.length}人中${rank}位、${mine.score}点（${mine.correct}/${g.deck.length}問正解）！` : `${st.length}人で対戦しました！`;
+  return `サカナクション・クイズ オンライン対戦（${lvInfo(g.lv).name}・${g.deck.length}問）で${head}\n優勝は ${st[0]?.name || "?"}`;
+}
+function renderOnlineEnd(g, me) {
+  const st = standings(g);
+  const xu = `https://twitter.com/intent/tweet?${new URLSearchParams({ text: onlineShareText(g, me), hashtags: "サカナクションクイズ,サカナクション", ...(IN_CLAUDE ? {} : { url: PUBLIC_URL }) })}`;
+  if (O.revealed !== "end") { O.revealed = "end"; sfx("fan"); }
+  panel.innerHTML = `
+    <div class="result">
+      <h2>最終結果</h2>
+      <div class="title-badge meijin"><small>優勝</small><b>👑 ${esc(st[0]?.name || "")}</b></div>
+      <ol class="podium tight">${st.map((p, i) => `<li class="${p.peer === me ? "me" : ""}" style="--c:${i < 3 ? ["#d4a017", "#9aa3ad", "#b0703a"][i] : "var(--rule, #ccc)"}"><span>${MEDALS[i] || `${i + 1}位`}</span><i>${esc(p.name)}${p.peer === me ? "（あなた）" : ""}</i><b>${p.score}点</b><small>${p.correct}問</small></li>`).join("")}</ol>
+      <div class="row">${O.host ? `<button class="go" id="orematch">もう一度（同じ部屋）</button>` : ""}<a class="go xbtn" href="${esc(xu)}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
+      <div class="row"><button class="go sub" id="oleave">部屋を出る</button></div>
+    </div>`;
+  if (O.host) $("orematch").onclick = hostBackToLobby;
+  $("oleave").onclick = goHome;
+}
+
+function goHome() { clearTimers(); if (O) { onlineLeave(); history.replaceState?.(null, "", location.pathname + location.search); } S.view = "intro"; if (prefs.mode === "review" && !miss.size) prefs.mode = "normal"; render(); }
+function render(justAnswered) {
+  if (!justAnswered) document.querySelectorAll(".stamp").forEach((e) => e.remove());
+  renderLed();
+  if (S.view === "quiz") renderQuiz(justAnswered);
+  else if (S.view === "result") renderResult();
+  else if (S.view === "battle") renderBattle(justAnswered);
+  else if (S.view === "online") renderOnline();
+  else if (S.view === "battleResult") renderBattleResult();
+  else renderIntro();
+}
+
+/* ---- 操作 ---- */
+$("home").onclick = goHome;
+function syncSound() { $("sound").setAttribute("aria-pressed", String(prefs.sound)); }
+$("sound").onclick = () => { prefs.sound = !prefs.sound; save("prefs", prefs); syncSound(); };
+// 解説中にパネルをタップすると、オート送りを止める
+$("board").addEventListener("click", (e) => {
+  const reveal = (S.view === "quiz" && S.picked !== null) || (S.view === "battle" && B.phase === "reveal");
+  if (!reveal || !ta || e.target.closest("button, a")) return;
+  clearTimeout(ta); ta = null;
+  const f = $("fillbar"); if (f) { f.classList.remove("run"); f.style.transform = "scaleX(0)"; }
+  const h = panel.querySelector(".hint"); if (h) h.textContent = "一時停止中。「次の問題」で進みます";
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest?.("input")) return;
+  if (S.view === "battle") {
+    const key = e.key.toLowerCase();
+    if (B.phase === "buzz" && BUZZ_KEYS.includes(key)) buzz(BUZZ_KEYS.indexOf(key));
+    else if (B.phase === "answer") { const k = ["1", "2", "3", "4"].indexOf(e.key); if (k >= 0) battleAnswer(B.deck[B.i].order[k]); }
+    else if (B.phase === "reveal" && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); battleNext(); }
+    return;
+  }
+  if (S.view !== "quiz") return;
+  if (S.picked === null) {
+    const k = ["1", "2", "3", "4"].indexOf(e.key);
+    if (k >= 0) pick(S.deck[S.i].order[k]);
+  } else if ((e.key === "Enter" || e.key === " ") && document.activeElement?.id !== "next") { e.preventDefault(); next(); }
+});
+
+initRoom();
+syncSound();
+function boot(data) { if (data && data.S && !["quiz", "battle", "battleResult", "online"].includes(data.S.view)) S = data.S; render(); }
+window.claude?.hot?.snapshot?.(() => ({ S }));
+window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
+</script>
+
+</body></html>
