@@ -477,6 +477,8 @@ const hangCls = (c) => /^[「『（]/.test(c) ? "hang" : "";
 // 折り返し位置を入れる。これで閉じかっこや長音だけが次の行に落ちるのを防ぎ、文字の大きさはそろえたままにする
 const NO_LINE_START = /[」』）、。！？ー・―…\u2060ァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎ]/;
 const NO_LINE_END = /[「『（]/;
+// 文字の種類（切れ目の選び方に使う）
+const scriptOf = (c) => /[\u4e00-\u9fff々〆]/.test(c) ? "k" : /[\u30a0-\u30ffー]/.test(c) ? "K" : /[\u3040-\u309f]/.test(c) ? "h" : /[A-Za-z0-9]/.test(c) ? "l" : "o";
 const LATIN = /[A-Za-z0-9'’.\-‑&]/;
 // j 文字目の前で改行してよいか（行頭禁則・行末禁則・英数字の途中を避ける）
 const canBreak = (ch, j) => j > 0 && j < ch.length && !NO_LINE_START.test(ch[j]) && !NO_LINE_END.test(ch[j - 1]) && !(LATIN.test(ch[j - 1]) && LATIN.test(ch[j]));
@@ -514,7 +516,13 @@ function fitOptions() {
         const target = total * m / n; let acc = 0, j = prev + 1;
         while (j < ch.length - 1 && acc + W[j - 1] < target) { acc += W[j - 1]; j++; }
         acc = lineW(0, j);
-        let best = -1;
+        // 目標の位置の近くで、文字の種類が変わるところ（漢字→カタカナなど）を優先して切る
+        let best = -1, bestCost = Infinity;
+        for (let c = Math.max(prev + 1, j - 3); c <= Math.min(ch.length - 1, j + 3); c++) {
+          if (!canBreak(ch, c) || lineW(prev, c) > avail) continue;
+          const cost = Math.abs(lineW(0, c) - target) - (scriptOf(ch[c - 1]) !== scriptOf(ch[c]) ? W[c] * 1.5 : 0);
+          if (cost < bestCost) { bestCost = cost; best = c; }
+        }
         for (let d = 0; d < ch.length && best < 0; d++) {
           for (const c of [j - d, j + d]) if (c > prev && c < ch.length && canBreak(ch, c)) { best = c; break; }
         }
