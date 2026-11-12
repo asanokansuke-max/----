@@ -236,8 +236,8 @@ budoux-ja { display: inline; }
 .names { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; width: min(100%, 360px); justify-self: center; margin-top: 0; }
 .names.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .names .pname { width: 100%; }
-.intro.compact h1 { font-size: clamp(22px, 6vw, 34px); }
-.intro.compact h1 br { display: none; }
+/* タイトルはどのモードでも1行（タブを切り替えても高さが変わらないように） */
+.intro h1 { font-size: clamp(19px, 5.4vw, 40px); white-space: nowrap; }
 .intro.compact { gap: 8px; }
 @media (max-height: 640px) { .intro.compact .lead { display: none; } }
 .fan-note { word-break: keep-all; overflow-wrap: anywhere; margin: 0; font-size: 11px; font-weight: 800; color: var(--ink); text-align: center; }
@@ -351,13 +351,10 @@ budoux-ja { display: inline; }
 @media (max-height: 700px) {
   .board { min-height: min(42vh, 380px); padding-block: 16px 14px; }
   .exp { font-size: 14px; }
-  .intro h1 { font-size: 26px; }
   .intro { gap: 8px; }
   .go { padding: 7px 26px; font-size: 17px; }
 }
 @media (max-height: 640px) {
-  .intro h1 { font-size: 22px; }
-  .intro h1 br { display: none; }
   .lead, .hint { display: none; }
   .verdict { font-size: 22px; }
   .exp { font-size: 13px; line-height: 1.45; }
@@ -622,7 +619,7 @@ function renderIntro() {
   panel.innerHTML = `
     <div class="intro ${party ? "compact" : ""}">
       <span class="unofficial">非公式・ファンメイド</span>
-      <h1>サカナクション<br>クイズ大会</h1>
+      <h1>サカナクションクイズ大会</h1>
       <div class="tabs" role="tablist">
         <button role="tab" data-group="solo" aria-selected="${!party}">ひとりで</button>
         <button role="tab" data-group="party" aria-selected="${party}">みんなで</button>
