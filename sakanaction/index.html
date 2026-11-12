@@ -345,6 +345,8 @@ budoux-ja { display: inline; }
   .led .lb { display: none; }
   .logo small { display: none; }
   .logo b { font-size: 14px; }
+  body:not([data-view="intro"]) .logo { display: none; }
+  body:not([data-view="intro"]) .bar { justify-content: flex-end; }
   .icon { width: 34px; height: 34px; }
   .intro { gap: 10px; }
 }
@@ -370,7 +372,7 @@ budoux-ja { display: inline; }
   .rank { font-size: 15px; }
   .peek { min-height: 2.8em; font-size: 12px; }
 }
-@media (max-height: 640px) { .result h2 { display: none; } .marks { max-height: 60px; } }
+@media (max-height: 640px) { .result h2 { display: none; } .marks { max-height: 60px; } .ans { gap: 3px; } .ans .src { font-size: 10px; } .nextbtn { margin-top: 0; } }
 @media (max-height: 640px) { .lobby .hint { display: none; } .big.code { font-size: 30px; padding: 2px 16px; } .lobby { gap: 5px; } .plist span { font-size: 12px; padding: 0 8px; } }
 @media (max-width: 520px) { .mk { width: 26px; height: 26px; font-size: 12px; } .marks { gap: 3px; } }
 @media (max-height: 560px) {
@@ -453,6 +455,8 @@ if (HASH_CODE) prefs.mode = "online";
 let got = new Set(load("got", []));      // 魚図鑑：一度でも正解した問題
 let miss = new Set(load("miss", []));    // 復習リスト：間違えた問題
 let best = load("best", {});             // モード・難易度ごとの最高得点
+// 問題を直したときに、保存済みの記録が今の問題と合わなくならないよう、存在する問題だけ残す
+{ const now = new Set(QUESTIONS.map((q) => q.q)); got = new Set([...got].filter((t) => now.has(t))); miss = new Set([...miss].filter((t) => now.has(t))); }
 if (prefs.mode === "review" && !miss.size) prefs.mode = "normal";
 
 let S = { view: "intro", deck: [], i: 0, results: [], picked: null, score: 0, combo: 0, maxCombo: 0, lives: LIVES, gain: 0, peek: null, newBest: false };
@@ -556,7 +560,7 @@ function renderLed() {
   } else if (S.view === "battle") {
     led.innerHTML = `<span class="lb">第</span><b>${pad(B.i + 1)}</b><span>問 / ${pad(B.deck.length)}</span>`;
   } else if (S.view === "battleResult") {
-    led.innerHTML = `<span>早押し対決</span>`;
+    led.innerHTML = `<span>1台で対決</span>`;
   } else if (S.view === "result") {
     led.innerHTML = `<span>得点</span><b>${pad(S.score, 3)}</b>`;
   } else {
@@ -619,7 +623,7 @@ function renderIntro() {
   panel.innerHTML = `
     <div class="intro ${party ? "compact" : ""}">
       <span class="unofficial">非公式・ファンメイド</span>
-      <h1>サカナクションクイズ大会</h1>
+      <h1>サカナクション・クイズ大会</h1>
       <div class="tabs" role="tablist">
         <button role="tab" data-group="solo" aria-selected="${!party}">ひとりで</button>
         <button role="tab" data-group="party" aria-selected="${party}">みんなで</button>
@@ -759,7 +763,10 @@ function renderResult() {
 const PLAYER_COLORS = ["var(--red)", "var(--blue)", "var(--yellow)", "var(--green)"];
 const BUZZ_KEYS = ["q", "p", "z", "m"];      // パソコンでの早押しキー
 const ANSWER_TIME = 7;                        // 早押し後に答えるまでの秒数
-const MEDALS = ["🥇", "🥈", "🥉", "4位"];
+const MEDALS = ["🥇", "🥈", "🥉"];
+// 並べ替え済みの一覧に、同点を同じ順位として 1 始まりの順位を付ける
+function withRanks(list) { return list.map((p, i, a) => ({ ...p, rank: i && a[i - 1].score === p.score && a[i - 1].correct === p.correct ? null : i + 1 })).map((p, i, a) => { if (p.rank === null) { let j = i; while (a[j].rank === null) j--; p.rank = a[j].rank; } return p; }); }
+const medal = (rank) => MEDALS[rank - 1] || `${rank}位`;
 let B = null;
 
 function startBattle() {
@@ -860,8 +867,8 @@ function renderBattle(justAnswered) {
 
 function battleShareText() {
   const r = ranking();
-  return `サカナクション・クイズ 早押し対決（${lvInfo(prefs.lv).name}・${B.deck.length}問）\n`
-    + `優勝は ${r[0].name}！\n` + r.map((p, i) => `${MEDALS[i]} ${p.name} ${p.score}点`).join("\n");
+  return `サカナクション・クイズ 1台で対決（${lvInfo(prefs.lv).name}・${B.deck.length}問）\n`
+    + `優勝は ${withRanks(r).filter((p) => p.rank === 1).map((p) => p.name).join("・")}！\n` + withRanks(r).map((p) => `${medal(p.rank)} ${p.name} ${p.score}点`).join("\n");
 }
 function renderBattleResult() {
   const r = ranking();
@@ -871,7 +878,7 @@ function renderBattleResult() {
     <div class="result">
       <h2>結果発表</h2>
       <div class="title-badge meijin"><small>${tie ? "同点優勝" : "優勝"}</small><b>👑 ${esc(r[0].name)}</b></div>
-      <ol class="podium">${r.map((p, i) => `<li style="--c:${PLAYER_COLORS[p.k]}"><span>${MEDALS[i]}</span><i>${esc(p.name)}</i><b>${p.score}点</b><small>${p.correct}問正解</small></li>`).join("")}</ol>
+      <ol class="podium">${withRanks(r).map((p) => `<li style="--c:${PLAYER_COLORS[p.k]}"><span>${medal(p.rank)}</span><i>${esc(p.name)}</i><b>${p.score}点</b><small>${p.correct}問正解</small></li>`).join("")}</ol>
       <div class="row"><button class="go" id="again">もう一度対決</button><a class="go xbtn" href="${esc(xu)}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
       <div class="row"><button class="go sub" id="top">トップへ</button></div>
     </div>`;
@@ -1155,9 +1162,9 @@ function renderLobby(g) {
 }
 
 function onlineShareText(g, me) {
-  const st = standings(g), rank = st.findIndex((p) => p.peer === me) + 1, mine = st[rank - 1];
-  const head = mine ? `${st.length}人中${rank}位、${mine.score}点（${mine.correct}/${g.deck.length}問正解）！` : `${st.length}人で対戦しました！`;
-  return `サカナクション・クイズ オンライン対戦（${lvInfo(g.lv).name}・${g.deck.length}問）で${head}\n優勝は ${st[0]?.name || "?"}`;
+  const st = withRanks(standings(g)), mine = st.find((p) => p.peer === me);
+  const head = mine ? `${st.length}人中${mine.rank}位、${mine.score}点（${mine.correct}/${g.deck.length}問正解）！` : `${st.length}人で対戦しました！`;
+  return `サカナクション・クイズ オンライン対戦（${lvInfo(g.lv).name}・${g.deck.length}問）で${head}\n優勝は ${st.filter((p) => p.rank === 1).map((p) => p.name).join("・") || "?"}`;
 }
 function renderOnlineEnd(g, me) {
   const st = standings(g);
@@ -1167,7 +1174,7 @@ function renderOnlineEnd(g, me) {
     <div class="result">
       <h2>最終結果</h2>
       <div class="title-badge meijin"><small>優勝</small><b>👑 ${esc(st[0]?.name || "")}</b></div>
-      <ol class="podium tight">${st.map((p, i) => `<li class="${p.peer === me ? "me" : ""}" style="--c:${i < 3 ? ["#d4a017", "#9aa3ad", "#b0703a"][i] : "var(--rule, #ccc)"}"><span>${MEDALS[i] || `${i + 1}位`}</span><i>${esc(p.name)}${p.peer === me ? "（あなた）" : ""}</i><b>${p.score}点</b><small>${p.correct}問</small></li>`).join("")}</ol>
+      <ol class="podium tight">${withRanks(st).map((p) => `<li class="${p.peer === me ? "me" : ""}" style="--c:${p.rank <= 3 ? ["#d4a017", "#9aa3ad", "#b0703a"][p.rank - 1] : "var(--muted)"}"><span>${medal(p.rank)}</span><i>${esc(p.name)}${p.peer === me ? "（あなた）" : ""}</i><b>${p.score}点</b><small>${p.correct}問</small></li>`).join("")}</ol>
       <div class="row">${O.host ? `<button class="go" id="orematch">もう一度（同じ部屋）</button>` : ""}<a class="go xbtn" href="${esc(xu)}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
       <div class="row"><button class="go sub" id="oleave">部屋を出る</button></div>
     </div>`;
@@ -1177,6 +1184,7 @@ function renderOnlineEnd(g, me) {
 
 function goHome() { clearTimers(); if (O) { onlineLeave(); history.replaceState?.(null, "", location.pathname + location.search); } S.view = "intro"; if (prefs.mode === "review" && !miss.size) prefs.mode = "normal"; render(); }
 function render(justAnswered) {
+  document.body.dataset.view = S.view;
   if (!justAnswered) document.querySelectorAll(".stamp").forEach((e) => e.remove());
   renderLed();
   if (S.view === "quiz") renderQuiz(justAnswered);
