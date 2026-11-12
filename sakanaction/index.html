@@ -180,6 +180,7 @@ budoux-ja { display: inline; }
 .opt:nth-child(4) { --c: var(--green); }
 .opt .k { flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--board); color: var(--ink); display: grid; place-items: center; font-family: var(--font-display); font-size: 16px; }
 .opt span:last-child { min-width: 0; flex: 1; }
+.opt span.hang { text-indent: -.5em; }
 .opt:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 7px 0 var(--ink); }
 .opt:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 1px 0 var(--ink); }
 .opt:disabled { cursor: default; }
@@ -467,6 +468,96 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 function esc(s) { return String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 // 文節区切りつきの文字列（BudouX のカスタム要素で包む）
 const J = (s) => `<budoux-ja>${esc(s)}</budoux-ja>`;
+// 選択肢用：英数字の間のハイフン（CX-5 など）で改行しないよう、改行しないハイフンに置き換える
+const JO = (s) => J(String(s).replace(/([A-Za-z0-9])-([A-Za-z0-9])/g, "$1\u2011$2").replace(/ (\d{1,2})(?![\dA-Za-z])/g, "\u00a0$1").replace(/(\S)―(?=$|[」』）])/g, "$1\u2060―"));
+// 「や『で始まる選択肢は、かっこの空き分だけ左にぶら下げて文字の頭をそろえる
+const hangCls = (c) => /^[「『（]/.test(c) ? "hang" : "";
+// 選択肢の中で、ボタンの幅に1語で入らない長い言葉（長いカタカナ語など）は、
+// 日本語の改行ルール（行頭に「ー」「」」や小さい文字を置かない、行末に「「」を残さない）を守れる位置で
+// 折り返し位置を入れる。これで閉じかっこや長音だけが次の行に落ちるのを防ぎ、文字の大きさはそろえたままにする
+const NO_LINE_START = /[」』）、。！？ー・―…\u2060ァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎ]/;
+const NO_LINE_END = /[「『（]/;
+const LATIN = /[A-Za-z0-9'’.\-‑&]/;
+// j 文字目の前で改行してよいか（行頭禁則・行末禁則・英数字の途中を避ける）
+const canBreak = (ch, j) => j > 0 && j < ch.length && !NO_LINE_START.test(ch[j]) && !NO_LINE_END.test(ch[j - 1]) && !(LATIN.test(ch[j - 1]) && LATIN.test(ch[j]));
+// 選択肢だけでなく、問題文・解説・「正解は〜」にも同じ折り返しの調整をかける
+const FIT_TARGETS = ".opt span:last-child, .q, .exp, .correct-is em";
+function fitOptions() {
+  const ctx = (fitOptions.c ||= document.createElement("canvas").getContext("2d"));
+  document.querySelectorAll(FIT_TARGETS).forEach((sp) => {
+    const cs = getComputedStyle(sp), avail = sp.clientWidth - 2;
+    if (avail <= 0) return;
+    ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const wid = (t) => ctx.measureText(t).width;
+    // 1語で幅に入らない言葉を、各行がなるべく同じ長さになる位置で分ける
+    const split = (seg) => {
+      if (!seg || wid(seg) <= avail) return seg;
+      if (/[ \t]/.test(seg)) return seg.split(/([ \t]+)/).map((w) => (/^[ \t]+$/.test(w) ? w : split(w))).join("");
+      // 英数字だけの長い単語は、均等な長さで分ける
+      if (/^[「『]?[A-Za-z0-9'’.\-‑&\u00a0]+[」』]?$/.test(seg)) {
+        const c = [...seg], n = Math.ceil(wid(seg) / avail);
+        return c.map((x, k) => (k && n > 1 && k % Math.ceil(c.length / n) === 0 ? "\u200b" : "") + x).join("");
+      }
+      const ch = [...seg], W = ch.map(wid), total = W.reduce((x, y) => x + y, 0);
+      const lineW = (from, to) => W.slice(from, to).reduce((x, y) => x + y, 0);
+      // まず詰めて何行になるかを数える
+      const greedy = []; let st = 0;
+      for (let i = 1; i < ch.length; i++) {
+        if (lineW(st, i + 1) <= avail) continue;
+        let j = i; while (j > st + 1 && !canBreak(ch, j)) j--;
+        greedy.push(j); st = j;
+      }
+      const n = greedy.length + 1;
+      // 同じ行数で、各行の長さをそろえた切れ目を探す
+      const cuts = []; let prev = 0, ok = true;
+      for (let m = 1; m < n; m++) {
+        const target = total * m / n; let acc = 0, j = prev + 1;
+        while (j < ch.length - 1 && acc + W[j - 1] < target) { acc += W[j - 1]; j++; }
+        acc = lineW(0, j);
+        let best = -1;
+        for (let d = 0; d < ch.length && best < 0; d++) {
+          for (const c of [j - d, j + d]) if (c > prev && c < ch.length && canBreak(ch, c)) { best = c; break; }
+        }
+        if (best < 0 || lineW(prev, best) > avail) { ok = false; break; }
+        cuts.push(best); prev = best;
+      }
+      if (ok && lineW(prev, ch.length) > avail) ok = false;
+      if (!ok && greedy.length) {
+        const last = greedy[greedy.length - 1];
+        if (ch.slice(last).filter((c) => !/[」』）、。！？]/.test(c)).length <= 1) {
+          const lo = greedy.length > 1 ? greedy[greedy.length - 2] : 0;
+          for (let j = last - 1; j > lo + 1 && j >= last - 3; j--) if (canBreak(ch, j)) { greedy[greedy.length - 1] = j; break; }
+        }
+      }
+      // ルールを守れる切れ目がない（長い英単語など）ときは、真ん中あたりで分ける
+      if (!ok && greedy.some((j) => !canBreak(ch, j)) && greedy.length === 1) greedy[0] = Math.max(1, Math.round(ch.length / 2));
+      const use = ok ? cuts : greedy;
+      return ch.map((c, k) => (use.includes(k) ? "\u200b" : "") + c).join("");
+    };
+    // 1つの英単語がボタンの幅より長いときだけ、そのボタンの文字を少し小さくして1語を収める
+    sp.style.fontSize = "";
+    const words = sp.textContent.replace(/\u200b/g, "").match(/[「『]?[A-Za-z0-9'’.\-‑&]+[」』]?/g) || [];
+    const longest = Math.max(0, ...words.map(wid));
+    if (longest > avail) {
+      const size = Math.max(11, Math.floor(parseFloat(cs.fontSize) * avail / longest * 2) / 2);
+      sp.style.fontSize = size + "px";
+      ctx.font = `${cs.fontWeight} ${size}px ${cs.fontFamily}`;
+    }
+    const walker = document.createTreeWalker(sp, NodeFilter.SHOW_TEXT);
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    for (const node of nodes) {
+      let segs = node.data.split("\u200b");
+      // 行頭に置けない文字で始まるかたまりは、前のかたまりにつなげる
+      segs = segs.reduce((acc, t) => { if (acc.length && t && NO_LINE_START.test(t[0])) acc[acc.length - 1] += t; else acc.push(t); return acc; }, []);
+      // 最後のかたまりが1文字だけなら、前の言葉とつなげてから分け直す（「…の／後」のような1文字の行を防ぐ）
+      if (segs.length > 1 && [...segs[segs.length - 1].replace(/[」』）、。！？]/g, "")].length <= 1) {
+        const last = segs.pop(); segs[segs.length - 1] += last;
+      }
+      const next = segs.map(split).join("\u200b");
+      if (next !== node.data) node.data = next;
+    }
+  });
+}
 const pad = (n, w = 2) => String(n).padStart(w, "0");
 const lvInfo = (id) => LEVELS.find((l) => l.id === id) || LEVELS[3];
 const bestKey = () => prefs.mode === "normal" ? `normal-${prefs.lv}-${prefs.round}` : prefs.mode;
@@ -673,7 +764,7 @@ function renderQuiz(justAnswered) {
     ${S.combo >= 2 && (!done || ok) ? `<span class="combo">${S.combo}連続正解！</span>` : ""}</div>`;
   if (!done) {
     const limit = TIME[q.lv] || 18;
-    panel.innerHTML = `${tags}${prefs.timer ? `<div class="timer"><i id="bar" style="--t:${limit}s"></i></div>` : ""}<h2 class="q">${J(q.q)}</h2>`;
+    panel.innerHTML = `${tags}${prefs.timer ? `<div class="timer"><i id="bar" style="--t:${limit}s"></i></div>` : ""}<h2 class="q">${JO(q.q)}</h2>`;
     qStart = performance.now();
     if (prefs.timer) {
       requestAnimationFrame(() => $("bar")?.classList.add("run"));
@@ -688,8 +779,8 @@ function renderQuiz(justAnswered) {
     panel.innerHTML = `${tags}
       <div class="ans">
         <div class="verdict ${ok ? "ok" : "ng"}">${verdict}${ok ? `<small>+${S.gain}点</small>` : ""}</div>
-        ${ok ? "" : `<div class="correct-is">正解は <em>${J(correct)}</em></div>`}
-        <p class="exp">${J(q.exp)}</p>
+        ${ok ? "" : `<div class="correct-is">正解は <em>${JO(correct)}</em></div>`}
+        <p class="exp">${JO(q.exp)}</p>
         ${src ? `<p class="src">出典：${src}</p>` : ""}
         <button class="go nextbtn" id="next"><i id="fillbar" style="--t:${wait}s"></i><span>${last ? "結果発表へ" : "次の問題 ▶"}</span></button>
         ${autoOn ? `<p class="hint">パネルをタップで一時停止</p>` : ""}
@@ -709,7 +800,7 @@ function renderQuiz(justAnswered) {
   answers.innerHTML = q.order.map((c, k) => {
     let cls = "";
     if (done) cls = c === correct ? "hit" : c === S.picked ? "miss dim" : "dim";
-    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(c)}</span></button>`;
+    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span class="${hangCls(c)}">${JO(c)}</span></button>`;
   }).join("");
   answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => pick(q.order[Number(b.dataset.k)]));
 }
@@ -817,7 +908,7 @@ function renderBattle(justAnswered) {
   if (B.phase === "buzz") {
     const limit = TIME[q.lv] || 18;
     const msg = B.last && !B.last.ok ? `<p class="bmsg ng">${esc(B.players[B.last.who].name)} はブッブー！ 残りの人、早押しチャンス！</p>` : `<p class="bmsg">わかった人は自分のボタンを早押し！</p>`;
-    panel.innerHTML = `${scoreStrip()}${tags}<div class="timer"><i id="bar" style="--t:${limit}s"></i></div><h2 class="q">${J(q.q)}</h2>${msg}`;
+    panel.innerHTML = `${scoreStrip()}${tags}<div class="timer"><i id="bar" style="--t:${limit}s"></i></div><h2 class="q">${JO(q.q)}</h2>${msg}`;
     requestAnimationFrame(() => $("bar")?.classList.add("run"));
     tq = setTimeout(battleTimeUp, limit * 1000);
     answers.hidden = false; answers.className = "answers buzzers n" + B.players.length;
@@ -829,7 +920,7 @@ function renderBattle(justAnswered) {
   if (B.phase === "answer") {
     const p = B.players[B.who];
     panel.innerHTML = `${scoreStrip()}${tags}<div class="timer"><i id="bar" style="--t:${ANSWER_TIME}s"></i></div>
-      <p class="bwho" style="--c:${PLAYER_COLORS[B.who]}">${esc(p.name)} の回答！</p><h2 class="q">${J(q.q)}</h2>`;
+      <p class="bwho" style="--c:${PLAYER_COLORS[B.who]}">${esc(p.name)} の回答！</p><h2 class="q">${JO(q.q)}</h2>`;
     requestAnimationFrame(() => $("bar")?.classList.add("run"));
     tq = setTimeout(() => battleAnswer(null), ANSWER_TIME * 1000);
   } else {
@@ -839,8 +930,8 @@ function renderBattle(justAnswered) {
     const last = B.i + 1 >= B.deck.length;
     panel.innerHTML = `${scoreStrip()}${tags}
       <div class="ans">${head}
-        <div class="correct-is">正解は <em>${J(correct)}</em></div>
-        <p class="exp">${J(q.exp)}</p>
+        <div class="correct-is">正解は <em>${JO(correct)}</em></div>
+        <p class="exp">${JO(q.exp)}</p>
         <button class="go nextbtn" id="next"><i id="fillbar" style="--t:4s"></i><span>${last ? "結果発表へ" : "次の問題 ▶"}</span></button>
       </div>`;
     $("next").onclick = battleNext;
@@ -855,7 +946,7 @@ function renderBattle(justAnswered) {
   const done = B.phase === "reveal";
   answers.innerHTML = q.order.map((c, k) => {
     const cls = done ? (c === correct ? "hit" : "dim") : "";
-    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(c)}</span></button>`;
+    return `<button class="opt ${cls}" data-k="${k}" ${done ? "disabled" : ""}><span class="k">${KANA[k]}</span><span class="${hangCls(c)}">${JO(c)}</span></button>`;
   }).join("");
   answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => battleAnswer(q.order[Number(b.dataset.k)]));
 }
@@ -1096,12 +1187,12 @@ function renderOnline() {
   if (g.st === "q") {
     const left = Math.max(0, g.dur - (performance.now() - O.qStart) / 1000);
     const status = !playing ? "観戦中（次の対戦から参加できます）" : O.ans ? `回答しました。ほかの人を待っています（${answered}/${total}）` : `みんなで同時に回答！ 早いほど高得点（${answered}/${total}）`;
-    panel.innerHTML = `${tags}<div class="timer"><i id="bar" style="--t:${left}s"></i></div><h2 class="q">${J(q.q)}</h2><p class="bmsg">${status}</p>`;
+    panel.innerHTML = `${tags}<div class="timer"><i id="bar" style="--t:${left}s"></i></div><h2 class="q">${JO(q.q)}</h2><p class="bmsg">${status}</p>`;
     requestAnimationFrame(() => $("bar")?.classList.add("run"));
     answers.hidden = false;
     answers.innerHTML = O.order.map((ci, k) => {
       const cls = O.ans ? (O.ans.c === ci ? "hit" : "dim") : "";
-      return `<button class="opt ${cls}" data-c="${ci}" ${O.ans || !playing ? "disabled" : ""}><span class="k">${KANA[k]}</span><span>${J(q.choices[ci])}</span></button>`;
+      return `<button class="opt ${cls}" data-c="${ci}" ${O.ans || !playing ? "disabled" : ""}><span class="k">${KANA[k]}</span><span class="${hangCls(q.choices[ci])}">${JO(q.choices[ci])}</span></button>`;
     }).join("");
     answers.querySelectorAll(".opt").forEach((b) => b.onclick = () => onlineAnswer(Number(b.dataset.c)));
     return;
@@ -1111,8 +1202,8 @@ function renderOnline() {
   const verdict = !mine ? `<div class="verdict">正解発表</div>` : mine[4] === 1 ? `<div class="verdict ok">正解！<small>+${mine[3]}点</small></div>` : mine[4] === -1 ? `<div class="verdict ng">ざんねん…</div>` : `<div class="verdict ng">時間切れ</div>`;
   if (O.revealed !== key) { O.revealed = key; if (mine) sfx(mine[4] === 1 ? "ok" : "ng"); }
   panel.innerHTML = `${tags}<div class="ans">${verdict}
-      <div class="correct-is">正解は <em>${J(q.choices[0])}</em></div>
-      <p class="exp">${J(q.exp)}</p>
+      <div class="correct-is">正解は <em>${JO(q.choices[0])}</em></div>
+      <p class="exp">${JO(q.exp)}</p>
       <ol class="mini">${st.slice(0, 5).map((p, i) => `<li class="${p.peer === me ? "me" : ""}"><span>${i + 1}</span><i>${esc(p.name)}</i><em class="${p.res === 1 ? "ok" : "ng"}">${p.res === 1 ? `+${p.gain}` : "×"}</em><b>${p.score}</b></li>`).join("")}</ol>
       <p class="hint">${g.qi + 1 >= g.deck.length ? "まもなく結果発表…" : "まもなく次の問題…"}</p></div>`;
 }
@@ -1177,6 +1268,7 @@ function renderOnlineEnd(g, me) {
 function goHome() { clearTimers(); if (O) { onlineLeave(); history.replaceState?.(null, "", location.pathname + location.search); } S.view = "intro"; if (prefs.mode === "review" && !miss.size) prefs.mode = "normal"; render(); }
 function render(justAnswered) {
   document.body.dataset.view = S.view;
+  requestAnimationFrame(fitOptions);
   if (!justAnswered) document.querySelectorAll(".stamp").forEach((e) => e.remove());
   renderLed();
   if (S.view === "quiz") renderQuiz(justAnswered);
@@ -1217,6 +1309,9 @@ document.addEventListener("keydown", (e) => {
 
 initRoom();
 syncSound();
+// フォントの読み込みが終わったときと画面サイズが変わったときにも、選択肢の文字の大きさを合わせ直す
+document.fonts?.ready?.then(fitOptions);
+window.addEventListener("resize", () => fitOptions());
 function boot(data) { if (data && data.S && !["quiz", "battle", "battleResult", "online"].includes(data.S.view)) S = data.S; render(); }
 window.claude?.hot?.snapshot?.(() => ({ S }));
 window.claude?.hot?.ready ? window.claude.hot.ready(boot) : boot(window.claude?.hot?.data ?? {});
