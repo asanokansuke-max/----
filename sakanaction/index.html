@@ -303,14 +303,6 @@ budoux-ja { display: inline; }
 .podium.tight li b { font-size: 17px; }
 .podium li.me { background: var(--ray); }
 
-/* ---- 挑戦状 ---- */
-.letter { justify-self: center; display: grid; gap: 4px; justify-items: center; width: min(100%, 340px); padding: 12px 14px; border: 3px dashed var(--frame); border-radius: 14px; background: color-mix(in srgb, var(--ray) 35%, var(--board)); }
-.letter b { font-family: var(--font-display); font-weight: 400; font-size: 20px; color: var(--frame); }
-.letter p { margin: 0; font-size: 13px; font-weight: 700; }
-.versus { justify-self: center; font-size: 14px; font-weight: 800; padding: 3px 14px; border-radius: 999px; border: 2px solid var(--ink); background: var(--board); }
-.versus.win b { color: var(--red); }
-.versus.lose b { color: var(--blue); }
-
 /* ---- 結果発表 ---- */
 .result { flex: 1; display: grid; align-content: center; gap: 10px; text-align: center; }
 .result h2 { margin: 0; font-family: var(--font-display); font-weight: 400; font-size: clamp(24px, 6.4vw, 38px); color: var(--frame); }
@@ -458,14 +450,6 @@ const prefs = Object.assign({ sound: true, timer: true, auto: true, lv: 0, mode:
 // 招待リンク（#sq1234）で開いたら、オンライン対戦の参加画面にする
 const HASH_CODE = (location.hash.match(/^#sq(\d{4})$/) || [])[1] || "";
 if (HASH_CODE) prefs.mode = "online";
-// 挑戦状リンク（#c-相手の点数-問題番号-…、問題番号は36進数）。同じ問題で勝負できる
-let challenge = (() => {
-  const m = location.hash.match(/^#c-(\d{1,4})-([0-9a-z]{1,3}(?:-[0-9a-z]{1,3}){0,29})$/);
-  if (!m) return null;
-  const ids = m[2].split("-").map((x) => parseInt(x, 36)).filter((i) => i >= 0 && i < QUESTIONS.length);
-  return ids.length ? { score: Number(m[1]), ids } : null;
-})();
-const clearHash = () => { try { history.replaceState(null, "", location.pathname + location.search); } catch {} };
 let got = new Set(load("got", []));      // 魚図鑑：一度でも正解した問題
 let miss = new Set(load("miss", []));    // 復習リスト：間違えた問題
 let best = load("best", {});             // モード・難易度ごとの最高得点
@@ -516,13 +500,11 @@ function buildDeck() {
   }
   return shuffle(poolFor(prefs.lv)).slice(0, prefs.round);
 }
-function start(ch) {
+function start() {
   clearTimers();
-  const vs = ch && Array.isArray(ch.ids) ? ch : null;
-  if (vs) prefs.mode = "normal";
-  const deck = vs ? vs.ids.map((i) => QUESTIONS[i]) : buildDeck();
+  const deck = buildDeck();
   if (!deck.length) return;
-  S = { view: "quiz", deck: deck.map((q) => ({ ...q, idx: QUESTIONS.indexOf(q), order: shuffle(q.choices) })), i: 0, results: [], picked: null, score: 0, combo: 0, maxCombo: 0, lives: LIVES, gain: 0, peek: null, newBest: false, challenge: vs };
+  S = { view: "quiz", deck: deck.map((q) => ({ ...q, order: shuffle(q.choices) })), i: 0, results: [], picked: null, score: 0, combo: 0, maxCombo: 0, lives: LIVES, gain: 0, peek: null, newBest: false };
   render();
 }
 
@@ -555,7 +537,7 @@ function next() {
 }
 function finish() {
   const key = bestKey();
-  S.newBest = !S.challenge && S.score > 0 && S.score > (best[key] || 0);
+  S.newBest = S.score > 0 && S.score > (best[key] || 0);
   if (S.newBest) { best[key] = S.score; save("best", best); }
   S.view = "result"; S.peek = null;
   sfx("fan");
@@ -593,27 +575,7 @@ function seg(attr, items, cur, label) {
     `<button ${attr}="${it.v}" aria-pressed="${cur === it.v}" ${it.dis ? "disabled" : ""}>${it.label}${it.sub ? `<small>${it.sub}</small>` : ""}</button>`).join("")}</div>`;
 }
 const SOLO = ["normal", "survival", "review"], PARTY = ["online", "battle"];
-function renderChallenge() {
-  const c = challenge;
-  panel.innerHTML = `
-    <div class="intro">
-      <span class="unofficial">非公式・ファンメイド</span>
-      <h1>サカナクションクイズ大会</h1>
-      <div class="letter">
-        <b>📮 挑戦状が届きました！</b>
-        <div class="big">${pad(c.score, 3)}<small> 点</small></div>
-        <p>相手の記録（${c.ids.length}問）。同じ問題で勝負！<br>早く答えるほど高得点です。</p>
-      </div>
-      <button class="go" id="chgo">挑戦する</button>
-      <button class="go sub" id="chskip">ふつうに遊ぶ</button>
-      <p class="fan-note"><budoux-ja>※ファンが作った非公式クイズです。サカナクション公式とは関係ありません。</budoux-ja></p>
-    </div>`;
-  answers.hidden = true;
-  $("chgo").onclick = () => { const c2 = challenge; challenge = null; clearHash(); start(c2); };
-  $("chskip").onclick = () => { challenge = null; clearHash(); render(); };
-}
 function renderIntro() {
-  if (challenge) return renderChallenge();
   const total = QUESTIONS.length;
   const pct = Math.round(got.size / total * 100);
   const party = PARTY.includes(prefs.mode);
@@ -755,25 +717,11 @@ function shareText() {
   const mode = prefs.mode === "survival" ? "サバイバル" : prefs.mode === "review" ? "復習" : `${lvInfo(prefs.lv).name}・${S.deck.length}問`;
   const marks = S.results.slice(0, 30).map((r) => r ? "○" : "×").join("") + (S.results.length > 30 ? "…" : "");
   const t = titleFor();
-  const vs = versus();
-  const head = vs ? `挑戦状に${vs.label}（相手${vs.them}点 vs ${S.score}点）\n` : "";
-  const cta = prefs.mode === "survival" ? "あなたは何問いける？👇" : vs ? "次はあなたの番。同じ問題で挑戦してみて👇" : "同じ問題に挑戦してみて👇";
-  return `${head}${t.fish}称号「${t.name}」を獲得！\nサカナクション・クイズ（${vs ? "挑戦状" : mode}）で${n}/${S.results.length}問正解、${S.score}点\n${marks}\n${cta}`;
-}
-// 挑戦状との勝ち負け
-function versus() {
-  const c = S.challenge; if (!c) return null;
-  const r = S.score > c.score ? "win" : S.score < c.score ? "lose" : "draw";
-  return { r, them: c.score, label: { win: "勝ちました！", lose: "負けました…", draw: "引き分け！" }[r] };
-}
-// 同じ問題で挑戦できるリンク（サバイバルは問題数が多いので通常のURL）
-function challengeUrl() {
-  if (prefs.mode === "survival" || S.deck.length > 30 || S.deck.some((q) => !(q.idx >= 0))) return PUBLIC_URL;
-  return `${PUBLIC_URL}#c-${Math.min(S.score, 9999)}-${S.deck.map((q) => q.idx.toString(36)).join("-")}`;
+  return `${t.fish}称号「${t.name}」を獲得！\nサカナクション・クイズ（${mode}）で${n}/${S.results.length}問正解、${S.score}点\n${marks}\nあなたも挑戦してみて👇`;
 }
 // X（旧Twitter）の投稿画面を開くリンク。ハッシュタグ付き
 function xUrl() {
-  const p = new URLSearchParams({ text: shareText(), hashtags: "サカナクションクイズ,サカナクション", ...(IN_CLAUDE ? {} : { url: challengeUrl() }) });
+  const p = new URLSearchParams({ text: shareText(), hashtags: "サカナクションクイズ,サカナクション", ...(IN_CLAUDE ? {} : { url: PUBLIC_URL }) });
   return `https://twitter.com/intent/tweet?${p}`;
 }
 function toast(msg) {
@@ -789,9 +737,8 @@ function renderResult() {
       <h2>結果発表</h2>
       <div class="big">${pad(S.score, 3)}<small> 点</small></div>
       <div class="sub-stats">${n} / ${total}問正解・最大${S.maxCombo}連続${S.newBest ? `・<span class="newbest">自己ベスト更新！</span>` : ""}</div>
-      ${versus() ? `<div class="versus ${versus().r}">挑戦状：相手 ${versus().them}点 → <b>${versus().label}</b></div>` : ""}
       <div class="title-badge ${t.id}"><small>あなたの称号</small><b>${t.fish} ${t.name}</b></div>
-      ${versus() ? "" : `<p class="rank">${t.desc}</p>`}
+      <p class="rank">${t.desc}</p>
       <div class="marks">${S.results.map((r, i) => `<button class="mk ${r ? "ok" : "ng"}" data-i="${i}" aria-pressed="${p === i}" aria-label="第${i + 1}問 ${r ? "正解" : "不正解"}">${r ? "○" : "×"}</button>`).join("")}</div>
       <p class="peek">${p === null ? "○×をタップすると、その問題と答えを見られます" : `<b>第${p + 1}問</b> ${J(S.deck[p].q)}<br>答え：<b>${J(S.deck[p].choices[0])}</b>`}</p>
       <div class="row"><button class="go" id="again">もう一度</button><a class="go xbtn" id="xshare" href="${esc(xUrl())}" target="_blank" rel="noopener">𝕏 でシェア</a></div>
@@ -799,10 +746,10 @@ function renderResult() {
     </div>`;
   answers.hidden = true;
   panel.querySelectorAll(".mk").forEach((b) => b.onclick = () => { const i = Number(b.dataset.i); S.peek = S.peek === i ? null : i; render(); });
-  $("again").onclick = () => start(S.challenge);
+  $("again").onclick = start;
   $("top").onclick = goHome;
   $("copy").onclick = () => {
-    const text = shareText() + (IN_CLAUDE ? "" : "\n" + challengeUrl());
+    const text = shareText() + (IN_CLAUDE ? "" : "\n" + PUBLIC_URL);
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => toast("コピーしました"), () => toast("コピーできませんでした"));
     else toast("コピーできませんでした");
   };
