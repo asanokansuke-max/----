@@ -80,3 +80,12 @@ frontHTML=(o=>function(){
 .fp .mainhl{z-index:4}
 .fp .cap1{width:244px}.fp .cap2{width:244px}
 .fp .body{width:120px}`;document.head.appendChild(st);})();
+/* centre the number in the badge by its actual ink (the display face sits its digits off the em box's centre) */
+function fpCenterBadge(){const nb=document.querySelector('#fpwrap .nobadge');if(!nb)return;const cs=getComputedStyle(nb),font=`${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  const go=()=>{const c=document.createElement('canvas').getContext('2d');c.font=font;c.textAlign='center';c.textBaseline='alphabetic';const t=nb.textContent.trim(),m=c.measureText(t);
+    const fA=m.fontBoundingBoxAscent,fD=m.fontBoundingBoxDescent,A=m.actualBoundingBoxAscent,D=m.actualBoundingBoxDescent;if(!(fA>0))return;
+    const dy=-((fA-fD)/2+(D-A)/2),dx=-(m.actualBoundingBoxRight-m.actualBoundingBoxLeft)/2;
+    nb.innerHTML=`<span style="display:block;line-height:1;transform:translate(${dx.toFixed(1)}px,${dy.toFixed(1)}px)">${t}</span>`;
+    const sp=nb.firstChild,lh=parseFloat(cs.fontSize);sp.style.lineHeight=(fA+fD)/lh;};
+  (document.fonts&&document.fonts.load?document.fonts.load(font).then(go,go):go());}
+{const pa=ACT.paper;ACT.paper=d=>{const r=pa(d);fpCenterBadge();return r;};}
