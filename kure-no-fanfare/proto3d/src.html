@@ -365,7 +365,7 @@ const CLOTHN=(()=>{const c=document.createElement('canvas');c.width=c.height=256
   for(let y=0;y<256;y+=4)for(let x=0;x<256;x+=4){const o=((x+y)>>2)&1;g.fillStyle=o?'rgb(150,128,240)':'rgb(106,128,240)';g.fillRect(x,y,2,4);g.fillStyle=o?'rgb(128,150,240)':'rgb(128,106,240)';g.fillRect(x+2,y,2,4);}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(10,20);return t;})();
 let GRADE=QS.get('grade')||'G1';if(!CLOTH[GRADE])GRADE='G1';
-const HOODS=['#1d2a6b','#7d1220','#111111','#f2f2f2','#1d6b3a','#5b2a86','#c26b00'];
+const HOODS=['#1d2a6b','#111111','#f2f2f2','#7d1220','#2b5fae','#1d6b3a','#1d2a6b','#111111'];   // navy, black and white are the usual; a few colours
 /* the jockey's silks as a texture: body colour + pattern band, used on the torso */
 function silksTex(a,b,pat){return canvasTex(256,256,(c,w,h)=>{c.fillStyle=a;c.fillRect(0,0,w,h);c.fillStyle=b;
   if(pat===0){c.fillRect(0,h*.42,w,h*.16);}else if(pat===1){for(let x=0;x<w;x+=42)c.fillRect(x,0,18,h);}else if(pat===2){c.beginPath();c.moveTo(0,h*.3);c.lineTo(w/2,h*.6);c.lineTo(w,h*.3);c.lineTo(w,h*.45);c.lineTo(w/2,h*.75);c.lineTo(0,h*.45);c.fill();}
@@ -388,11 +388,11 @@ function smoothHorse(g){const m=g.scene.children[0],geo=m.geometry,pa=geo.attrib
 function makeRunner(i){const g=new THREE.Group();
   const src=horseGLTF.scene.children[0];const mesh=src.clone();const coat=IN&&COATS[IN.field[i].coat]?IN.field[i].coat:Object.keys(COATS)[i%5];
   // own geometry so each horse can carry its own coat & hood colours (painted per vertex; the morphs keep working)
-  mesh.geometry=src.geometry.clone();const pa=mesh.geometry.attributes.position,col=new Float32Array(pa.count*3),cc=new THREE.Color(COATS[coat]),hood=new THREE.Color(HOODS[(i*3)%HOODS.length]),hasHood=i%3!==2,dark=new THREE.Color('#151515'),white=new THREE.Color('#f2efe8');
+  mesh.geometry=src.geometry.clone();const pa=mesh.geometry.attributes.position,col=new Float32Array(pa.count*3),cc=new THREE.Color(COATS[coat]),hood=new THREE.Color(HOODS[(i*3)%HOODS.length]),hasHood=i%5===0||i%5===2||i%5===3,dark=new THREE.Color('#151515'),white=new THREE.Color('#f2efe8');
   let muzzle=0,mz=-1e9;
   for(let k=0;k<pa.count;k++){const x=pa.getX(k),y=pa.getY(k),z=pa.getZ(k);let c=cc;
     const head=y>112&&z>84,muz=head&&z>112&&y<142,eye=head&&y>146&&y<166&&z>104&&z<126&&Math.abs(x)>9;
-    if(eye)c=dark;if(muz&&y<132&&z>118&&i%4===1)c=white;   // a little white on the nose for some
+    if(muz&&y<132&&z>118&&i%4===1)c=white;   // a little white on the nose for some
     if(y<34&&coat!=='芦毛')c=new THREE.Color(COATS[coat]).multiplyScalar(.45);   // darker lower legs
     col[k*3]=c.r;col[k*3+1]=c.g;col[k*3+2]=c.b;if(head&&z+(-y)*.2>mz){mz=z-y*.2;muzzle=k;}}
   mesh.geometry.setAttribute('color',new THREE.BufferAttribute(col,3));
@@ -408,11 +408,16 @@ function makeRunner(i){const g=new THREE.Group();
     const map=new Map(),keep=[],tri=[];for(let t=0;t<ix.count;t+=3){const v3=[ix.getX(t),ix.getX(t+1),ix.getX(t+2)];if(v3.every(inHead)&&v3.some(v=>alphaAt(v)>.02))v3.forEach(v=>{if(!map.has(v)){map.set(v,keep.length);keep.push(v);}tri.push(map.get(v));});}
     if(keep.length){const take=(a,o)=>{const r=new Float32Array(keep.length*3);keep.forEach((v,j)=>{r[j*3]=a.getX(v)+(o?nr.getX(v)*o:0);r[j*3+1]=a.getY(v)+(o?nr.getY(v)*o:0);r[j*3+2]=a.getZ(v)+(o?nr.getZ(v)*o:0);});return new THREE.BufferAttribute(r,3);};
       const hg=new THREE.BufferGeometry();hg.setAttribute('position',take(pa,1.3));hg.morphAttributes.position=(geo.morphAttributes.position||[]).map(a=>take(a,0));hg.morphTargetsRelative=geo.morphTargetsRelative;hg.setIndex(tri);hg.computeVertexNormals();
-      const ca=new Float32Array(keep.length*4);keep.forEach((v,j)=>{ca[j*4]=hood.r;ca[j*4+1]=hood.g;ca[j*4+2]=hood.b;ca[j*4+3]=alphaAt(v);});hg.setAttribute('color',new THREE.BufferAttribute(ca,4));
+      const lum=hood.r*.3+hood.g*.59+hood.b*.11,trim=new THREE.Color(lum<.35?'#e9e6dc':'#1d2a6b'),tc=new THREE.Color();
+      const trimAt=k=>{const x=pa.getX(k),y=pa.getY(k),z=pa.getZ(k);const nose=rp((y-.35*(z-112))-142.5,1.6),poll=rp(z-90.5,1.6),de=Math.hypot(y-156,z-114.5),eye=Math.abs(x)>6.5?rp(de-8.6,1.2):1;return Math.min(nose,poll,eye);};
+      const ca=new Float32Array(keep.length*4);keep.forEach((v,j)=>{tc.copy(hood);ca[j*4]=tc.r;ca[j*4+1]=tc.g;ca[j*4+2]=tc.b;ca[j*4+3]=alphaAt(v);});hg.setAttribute('color',new THREE.BufferAttribute(ca,4));
       const hm=new THREE.Mesh(hg,new THREE.MeshStandardMaterial({vertexColors:true,alphaTest:.5,roughness:.86,metalness:0,side:THREE.DoubleSide,normalMap:CLOTHN,normalScale:new THREE.Vector2(.45,.45)}));
       hm.morphTargetInfluences=mesh.morphTargetInfluences;hm.castShadow=true;hm.frustumCulled=false;mesh.add(hm);}}
   mesh.material=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.4,metalness:.06});
   mesh.castShadow=true;const S=2.65/322;mesh.scale.setScalar(S);g.add(mesh);
+  const eyes=[1,-1].map(sd=>{let best=0,bd=1e9;for(let k=0;k<pa.count;k++){const d=Math.hypot(pa.getX(k)-sd*12.5,pa.getY(k)-156,pa.getZ(k)-114.5);if(d<bd){bd=d;best=k;}}
+    const nr0=mesh.geometry.attributes.normal,e=new THREE.Mesh(new THREE.SphereGeometry(2.7,12,10),new THREE.MeshStandardMaterial({color:'#0d0a08',roughness:.12,metalness:.1}));e.scale.set(.75,1,1.25);mesh.add(e);
+    return {e,k:best,n:new THREE.Vector3(nr0.getX(best),nr0.getY(best),nr0.getZ(best))};});
   const mixer=new THREE.AnimationMixer(mesh);const act=mixer.clipAction(horseGLTF.animations[0]);act.play();act.time=rnd()*act.getClip().duration;
   /* ---- jockey: crouched race-riding position (back flat, seat up, knees high by the withers, short irons) ---- */
   const [ca,cb]=SILKS[i%SILKS.length],J=new THREE.Group();
@@ -515,13 +520,13 @@ function makeRunner(i){const g=new THREE.Group();
   // raised fist (hidden until the winning run)
   const fist=new THREE.Group();{const S0=V(-.17,1.64,.26),E1=V(-.3,1.86,.22),H1=V(-.27,2.1,.3),inner=new THREE.Group();inner.position.set(-S0.x,-S0.y,-S0.z);inner.add(limbBetween(S0,E1,.055,.05,sleeve),limbBetween(E1,H1,.048,.04,sleeve),joint(E1,.052,sleeve),joint(H1,.055,glove));fist.add(inner);fist.position.copy(S0);}
   fist.visible=false;J.add(fist);
-  return {i,no:i+1,name:NAMES[i],g,mesh,mixer,act,J,arms,reins,muzzle,S,coat,cloths,fist,TACK,BK,JW,mine:IN?!!IN.field[i].mine:i===0};}
+  return {i,no:i+1,name:NAMES[i],g,mesh,mixer,act,J,arms,reins,muzzle,S,coat,cloths,fist,TACK,BK,JW,eyes,mine:IN?!!IN.field[i].mine:i===0};}
 /* where a vertex of the galloping (morphing) horse is right now, in the runner's local space */
 const _mv=new THREE.Vector3();
 const _ra=new THREE.Vector3(),_rb=new THREE.Vector3(),_UP=new THREE.Vector3(0,1,0);
 function reinSet(o,ax,ay,az,bx,by,bz){_ra.set(ax,ay,az);_rb.set(bx,by,bz);o.position.lerpVectors(_ra,_rb,.5);_rb.sub(_ra);const L=_rb.length();o.scale.y=L;o.quaternion.setFromUnitVectors(_UP,_rb.multiplyScalar(1/L));}
 const _tv=new THREE.Vector3();
-function tackFollow(r){const b=r.BK;if(!b||!r.TACK)return;const ym=morphedVertex(r,b.m.k,_tv).y-b.m.y,yf=morphedVertex(r,b.f.k,_tv).y-b.f.y,yr=morphedVertex(r,b.r.k,_tv).y-b.r.y;
+function tackFollow(r){if(r.eyes)r.eyes.forEach(o=>{morphedVertex(r,o.k,_tv);o.e.position.set(_tv.x/r.S+o.n.x*.6,_tv.y/r.S+o.n.y*.6,_tv.z/r.S+o.n.z*.6);});const b=r.BK;if(!b||!r.TACK)return;const ym=morphedVertex(r,b.m.k,_tv).y-b.m.y,yf=morphedVertex(r,b.f.k,_tv).y-b.f.y,yr=morphedVertex(r,b.r.k,_tv).y-b.r.y;
   r.TACK.position.y=1.12+ym*.92;r.TACK.rotation.x=-Math.atan2(yf-yr,b.f.z-b.r.z)*.85;r.JW.position.y=ym*.55;}
 function morphedVertex(r,k,out){const geo=r.mesh.geometry,pa=geo.attributes.position,mt=geo.morphAttributes.position,inf=r.mesh.morphTargetInfluences;
   let x=pa.getX(k),y=pa.getY(k),z=pa.getZ(k);if(mt&&inf){const rel=geo.morphTargetsRelative;for(let t=0;t<mt.length;t++){const w=inf[t];if(!w)continue;const a=mt[t];if(rel){x+=w*a.getX(k);y+=w*a.getY(k);z+=w*a.getZ(k);}else{x+=w*(a.getX(k)-pa.getX(k));y+=w*(a.getY(k)-pa.getY(k));z+=w*(a.getZ(k)-pa.getZ(k));}}}
