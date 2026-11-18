@@ -60,6 +60,12 @@ frontHTML=(o=>function(){
     const word=h1.pop>=6?['激走','必至']:h1.pop===1?['鉄板','宣言']:['V','宣言'];
     const nb=mh.querySelector('.nobadge'),nR=nb?parseFloat(nb.style.right)||0:0,nT=nb?parseFloat(nb.style.top)||300:300;
     mh.insertAdjacentHTML('beforeend',`<div class="star" style="right:${Math.min(292-66,nR+62)}px;top:${Math.max(0,nT-46)}px;left:auto;bottom:auto"><svg viewBox="0 0 100 100"><polygon points="${[...Array(24)].map((_,k)=>{const a=k/24*Math.PI*2-Math.PI/2,rr=k%2?36:50;return (50+Math.cos(a)*rr).toFixed(1)+','+(50+Math.sin(a)*rr).toFixed(1);}).join(' ')}" fill="#ffd400" stroke="#c8161d" stroke-width="3"/></svg><b>${word[0]}<small>${word[1]}</small></b></div>`);}
+  // the number badge in the horse's frame colour (枠色): white 1枠 with a black number, black 2枠, red 3枠 … pink 8枠
+  {const nb=q('.mainhl .nobadge'),hi=d.marks.findIndex(x=>x[0]==='◎'),h1=F[hi];if(nb&&h1){const w=wakuOf(h1.no,n),c=FRAMEC[w-1],t=FRAMET[w-1];
+    const sh=(hex,k)=>{const v=parseInt(hex.slice(1),16),f=x=>Math.max(0,Math.min(255,Math.round(x*k)));return `rgb(${f(v>>16)},${f((v>>8)&255)},${f(v&255)})`;};
+    const ring=w===1?'#141210':sh(c,.55),hiC=w===2?'#555':sh(c,1.25);
+    nb.style.background=`radial-gradient(circle at 38% 32%,${hiC},${c} 58%,${sh(c,w===1?.86:.78)} 100%)`;nb.style.color=t;
+    nb.style.boxShadow=`0 0 0 3px ${ring},4px 4px 0 3px rgba(0,0,0,.28)`;nb.style.webkitTextStroke=`1.5px ${t==='#fff'?ring:'#fff'}`;nb.style.textShadow='none';}}
   // 本紙予想 replaces the second side box
   const sb=tpl.querySelectorAll('.side .sbox');
   if(sb[1]){const by=m=>F.map((f,i)=>({f,m:d.marks[i][0]})).filter(x=>x.m===m).map(x=>x.f);
