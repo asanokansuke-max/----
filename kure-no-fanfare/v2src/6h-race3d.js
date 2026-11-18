@@ -35,7 +35,7 @@ let R3D=null;
 #r3d .side{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;overflow:auto}
 #r3d.wide .side{max-width:260px;padding-left:4px}#r3d.wide .hd{padding:2px 0 0;flex-wrap:wrap}#r3d.wide .hd b{font-size:15px;flex-basis:70%}#r3d.wide .calls{font-size:11px}#r3d.wide .ctl button{min-height:34px;font-size:11px}#r3d.wide .cheer{min-height:38px;font-size:15px}#r3d.wide .card{padding:7px 9px}#r3d.wide .side{gap:6px;padding-top:8px;overflow:hidden}#r3d.wide .calls{flex:1;min-height:0;overflow:hidden;justify-content:flex-end}#r3d.wide .hd small{font-size:10px}#r3d.wide .live{display:none}#r3d.wide .me .pos{font-size:22px}#r3d.wide .bar{margin-top:5px}
 #r3d .ctl{display:flex;gap:6px}
-#r3d .ctl button{flex:1;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
+#r3d .ctl button{flex:1;min-width:0;white-space:nowrap;padding:0 2px;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
 #r3d .ctl button.on{background:#c9a227;color:#111;border-color:#c9a227}
 #r3d .ctl button.pri{background:#1f7a48;border-color:#1f7a48}
 #r3d .card{border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:10px 12px}
@@ -63,7 +63,7 @@ function open3D(RC){
   ov.innerHTML=`<div class="hd"><span class="gb ${gcls}">${esc(r.grade||'')}</span><b>${esc(r.name)}</b><small>${esc(r.course)} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m・${esc(r.going||'良')}</small><span class="live"><i></i>LIVE</span></div>
     <div class="vid" id="r3dvid"><div class="prep"><i></i>中継準備中</div><iframe id="r3dif" allow="autoplay; fullscreen"></iframe></div>
     <div class="side">
-      <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3d2d">2D中継</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button></div>
+      <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3d2d">2D</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button><button id="r3dvc" class="${VOICE_ON?'on':''}" style="flex:.7">実況</button></div>
       ${me?`<div class="card"><div class="me">${typeof silk==='function'?silk(me.silks,34):''}<span class="nm">${esc(me.name)}</span><span class="pos" id="r3dpos">—<small>番手</small></span><span class="sub">${me.no}番・${esc(me.jname||'')}</span></div>
         <div class="bar"><i id="r3dbar"></i></div><div class="rem"><span id="r3dph">発走前</span><span id="r3drem">${r.dist}m</span></div></div>`:''}
       <div class="card calls" id="r3dcalls"><div class="lb">実況</div><p>まもなく発走です</p></div>
@@ -78,24 +78,27 @@ function open3D(RC){
   fit();addEventListener('resize',fit);R3D.fit=fit;
   const post=m=>{try{f.contentWindow.postMessage(m,'*');}catch(e){}};
   document.getElementById('r3dff').onclick=e=>{R3D.ff=!R3D.ff;e.target.classList.toggle('on',R3D.ff);e.target.textContent=R3D.ff?'通常速度':'早送り';post({type:'ff',on:R3D.ff});if(R3D.snd)R3D.snd.cad=2.15*(R3D.ff?1.6:1);};
+  document.getElementById('r3dvc').onclick=e=>{VOICE_ON=!VOICE_ON;try{localStorage.setItem('kure-voice',VOICE_ON?'1':'0');}catch(x){}e.target.classList.toggle('on',VOICE_ON);if(!VOICE_ON)spStop();else{if(!SND.on){SND.on=true;try{localStorage.setItem('kure-snd','1');}catch(x){}document.getElementById('r3dsnd').classList.add('on');try{sndInit();sndStart();}catch(x){}}r3dVoiceUnlock();speak('実況をお伝えします');}};
   document.getElementById('r3dsnd').onclick=e=>{SND.on=!SND.on;try{localStorage.setItem('kure-snd',SND.on?'1':'0');}catch(x){}e.target.classList.toggle('on',SND.on);if(!SND.on)sndStop();else{sndInit();sndStart();}};
   document.getElementById('r3dsk').onclick=()=>post({type:'skip'});
   document.getElementById('r3d2d').onclick=()=>{S.flags.r3d=0;save();close3D();showRaceView(RC.long);};
   const ch=document.getElementById('r3dcheer');if(ch)ch.onclick=()=>{const v=document.getElementById('r3dvid'),d=document.createElement('div');d.className='shout';d.textContent=pick(['行けー！！','差せー！！','そのまま！！','粘れー！！']);v.appendChild(d);setTimeout(()=>d.remove(),950);try{sndCrowd(.6);}catch(e){}try{se&&se('select');if(navigator.vibrate)navigator.vibrate(30);}catch(e){}};
   try{sndStop&&sndStop();}catch(e){}
-  try{sndInit();}catch(e){}R3D.hoofT=setInterval(()=>{if(R3D&&R3D.snd&&SND.nodes)sndHoofs(R3D.snd.run,R3D.snd.cad,R3D.snd.vol);},90);}
+  try{sndInit();}catch(e){}if(VOICE_ON)r3dVoiceUnlock();R3D.hoofT=setInterval(()=>{if(R3D&&R3D.snd&&SND.nodes)sndHoofs(R3D.snd.run,R3D.snd.cad,R3D.snd.vol);},90);}
 function r3dSound(d){if(!SND.on)return;const R=R3D;if(!SND.ac)sndInit();if(!SND.nodes)sndStart();
   if(d.phase==='race'&&!R.gated){R.gated=1;try{sGate();}catch(e){}}
   R.snd={run:d.phase==='race'||(d.phase==='after'&&!R.eased),cad:2.15*(R.ff?1.6:1),vol:d.phase==='after'?.6:.85};
   const D=R.RC.race.dist,c=d.phase==='gate'?.012:d.phase==='race'?(d.rem>600?.03:.03+(600-d.rem)/600*.45):d.phase==='after'?Math.max(.06,.45-(d.t-(R.goalT||(R.goalT=d.t)))*.08):.05;sndCrowd(c);
   if(d.phase==='after'&&!R.won){R.won=1;if(R.RC.order&&R.RC.order[0]&&R.RC.order[0].mine)try{sWin();}catch(e){}setTimeout(()=>{if(R3D)R3D.eased=1;},4000);}}
-function r3dState(d){if(!R3D)return;try{r3dSound(d);}catch(e){}const pos=document.getElementById('r3dpos'),bar=document.getElementById('r3dbar'),ph=document.getElementById('r3dph'),rem=document.getElementById('r3drem'),D=R3D.RC.race.dist;
+function r3dState(d){if(!R3D)return;if(d.rem!=null)R3D.rem=d.rem;try{r3dSound(d);}catch(e){}const pos=document.getElementById('r3dpos'),bar=document.getElementById('r3dbar'),ph=document.getElementById('r3dph'),rem=document.getElementById('r3drem'),D=R3D.RC.race.dist;
   if(pos&&d.me)pos.innerHTML=`${d.phase==='race'||d.phase==='after'?d.me.pos:'—'}<small>番手 / ${d.n}頭</small>`;
   if(bar)bar.style.width=(d.phase==='race'?(1-d.rem/D)*100:d.phase==='after'?100:0)+'%';
   if(ph)ph.textContent={race:'レース中',gate:'ゲートイン完了',after:'ゴール',load:'ゲートイン',canter:'返し馬',starter:'ファンファーレ'}[d.phase]||'発走前';
   {const cb=document.getElementById('r3dcheer');if(cb){const on=d.phase==='race'&&d.rem<600;if(on!==!cb.disabled){cb.disabled=!on;cb.textContent=on?'行けー！！':d.phase==='after'?'ゴール！':'直線で応援できます';}}}
   if(rem)rem.textContent=d.phase==='race'?`残り ${d.rem}m`:d.phase==='after'?'確定待ち':`${D}m`;}
-function r3dCall(t){if(!R3D||!t)return;const c=document.getElementById('r3dcalls');if(!c)return;const p=document.createElement('p');p.textContent=t;c.appendChild(p);const ps=c.querySelectorAll('p');if(ps.length>3)ps[0].remove();}
+/* the 3D commentary is read aloud with the device's Japanese voice (same queue as the 2D race) */
+function r3dVoiceUnlock(){try{const ss=window.speechSynthesis;if(!ss||r3dVoiceUnlock.done)return;r3dVoiceUnlock.done=1;const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang='ja-JP';ss.speak(u);}catch(e){}}
+function r3dCall(t){if(!R3D||!t)return;try{speak(t,(R3D.rem!=null&&R3D.rem<600)||/ゴール/.test(t));}catch(e){}const c=document.getElementById('r3dcalls');if(!c)return;const p=document.createElement('p');p.textContent=t;c.appendChild(p);const ps=c.querySelectorAll('p');if(ps.length>3)ps[0].remove();}
 function close3D(){if(!R3D)return;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D.ov.remove();R3D=null;}
 addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-ready'){document.querySelectorAll('#r3dif,iframe.r3demb').forEach(f=>{if(f.contentWindow===e.source){f.classList.add('on');const pr=f.parentNode.querySelector('.prep');if(pr)setTimeout(()=>pr.remove(),500);}});return;}if(!R3D)return;if(d.type==='race3d-done'){const o=R3D.ov;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D=null;showBoard();requestAnimationFrame(()=>o.classList.add('out'));setTimeout(()=>o.remove(),500);}else if(d.type==='race3d-state')r3dState(d);else if(d.type==='race3d-call')r3dCall(d.text);});
 showRaceView=(o=>function(long){const RC=UI.race;if(RC)RC.long=long;

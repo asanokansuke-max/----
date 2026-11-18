@@ -40,7 +40,7 @@ function sndHoofs(running,cad,vol){
 function sndClap(){if(!SND.ac||!SND.on)return;const ac=SND.ac,t0=ac.currentTime;for(let i=0;i<14;i++){const t=t0+Math.random()*.05,len=.04,b=ac.createBuffer(1,ac.sampleRate*len,ac.sampleRate),x=b.getChannelData(0);for(let j=0;j<x.length;j++)x[j]=(Math.random()*2-1)*Math.pow(1-j/x.length,3);const s=ac.createBufferSource();s.buffer=b;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1200+Math.random()*1400;f.Q.value=1.2;const g=ac.createGain();g.gain.value=.05;s.connect(f);f.connect(g);g.connect(ac.destination);s.start(t);}}
 function sndCrowd(v){const n=SND.nodes;if(!n)return;const t=SND.ac.currentTime;n.cg.gain.setTargetAtTime(v,t,.6);n.clp.frequency.setTargetAtTime(380+v*1400,t,.6);}
 function sndStop(){if(!SND.nodes)return;const n=SND.nodes,t=SND.ac.currentTime;n.master.gain.setTargetAtTime(0,t,.8);SND.nodes=null;setTimeout(()=>{try{n.cs.stop();}catch(e){}},4000);spStop();}
-let VOICE_ON=false;try{VOICE_ON=localStorage.getItem('kure-voice')==='1';}catch(e){}
+let VOICE_ON=true;try{VOICE_ON=localStorage.getItem('kure-voice')!=='0';}catch(e){}
 const SPQ={q:[],busy:false};
 function spStop(){SPQ.q=[];SPQ.busy=false;try{speechSynthesis.cancel();}catch(e){}}
 function speak(t,fast){if(!SND.on||!VOICE_ON)return;try{const ss=window.speechSynthesis;if(!ss)return;
