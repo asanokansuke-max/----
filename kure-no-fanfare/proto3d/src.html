@@ -351,7 +351,9 @@ drawVisionBoard(null,false);
 const COATS={鹿毛:'#7a4a2a',黒鹿毛:'#4a2e1f',青鹿毛:'#272120',栗毛:'#a8642f',芦毛:'#b9b8b2'};
 const SILKS=[['#c8262e','#f2c230'],['#1f4ea3','#ffffff'],['#f2f2f2','#2b3a55'],['#1d8a4a','#f2c230'],['#e04f8a','#ffffff'],['#2b2b2b','#d62828'],['#f2c230','#1f4ea3'],['#7b2cbf','#f2f2f2'],['#ff7f11','#1d1d1d'],['#14b8a6','#ffffff'],['#9d2a2a','#f2f2f2'],['#33415c','#ffd166'],['#ffffff','#e11d48'],['#3f9a6a','#f2f2f2']];
 const NAMES_DEF=['アケボノハヤテ','クジョウレガリア','ハートスター','カノンナイト','ムーンホマレ','ゼファーゲート','ダイヤサンダー','ブルードリーム','オリオンムーン','ナギランナー','アークレグナム','レガシーウイング','ゴールドヒカリ','コマチゴールド'];
-const NAMES=IN?IN.field.map(f=>f.name):NAMES_DEF;if(IN){SILKS.length=0;IN.field.forEach(f=>SILKS.push([f.a,f.b]));}
+const NAMES=IN?IN.field.map(f=>f.name):NAMES_DEF;
+const JK_DEF=['佐伯','高森','早川','久住','藤代','真壁','柏木','森永','上原','吉岡','浅野','宮下','桐生','滝本','水谷','黒田'];
+const JKN=i=>{const j=IN&&IN.field[i]&&IN.field[i].j||JK_DEF[i%JK_DEF.length];return String(j).split(/[ 　]/)[0];};if(IN){SILKS.length=0;IN.field.forEach(f=>SILKS.push([f.a,f.b]));}
 const PATI={'一本輪':0,'二本輪':0,'縦縞':1,'山形':2,'横縞':3,'段違い':3};
 let horseGLTF=null;
 function numTex(n,bg,fg){return canvasTex(128,96,(g,w,h)=>{g.fillStyle=bg;g.fillRect(0,0,w,h);g.fillStyle=fg||(bg==='#ffffff'?'#111':'#fff');g.font='bold 64px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(n,w/2,h/2+4);});}
@@ -510,7 +512,7 @@ let RUN=[],t0=null,started=false;
 function setupRace(){if(IN)return setupFromGame();const n=14;const styles=['逃げ','先行','先行','先行','差し','差し','差し','差し','追込','追込','先行','差し','追込','先行'];
   const perf=[...Array(n).keys()].map(()=>rnd()*10);const ord=[...Array(n).keys()].sort((a,b)=>perf[b]-perf[a]);
   RUN=[...Array(n).keys()].map(i=>{const r=makeRunner(i);r.style=styles[i];r.early={逃げ:0,先行:4,差し:13,追込:24}[r.style]+rnd()*6;r.gap=ord.indexOf(i)===0?0:(perf[ord[0]]-perf[i])*.35;
-    r.gl=i*.95;r.tl={逃げ:.3,先行:1.4,差し:2.8,追込:4}[r.style]+rnd()*1.6;r.wide={逃げ:0,先行:.8,差し:2.2,追込:3.2}[r.style]+rnd();r.ph=rnd()*7;r.odds=Math.max(1.3,Math.round((1.6+ord.indexOf(i)*2.4+rnd()*6)*10)/10);return r;});}
+    r.gl=i*.95;r.tl={逃げ:.3,先行:1.4,差し:2.8,追込:4}[r.style]+rnd()*1.6;r.wide={逃げ:0,先行:.8,差し:2.2,追込:3.2}[r.style]+rnd();r.jn=JKN(i);r.ph=rnd()*7;r.odds=Math.max(1.3,Math.round((1.6+ord.indexOf(i)*2.4+rnd()*6)*10)/10);return r;});}
 /* 馬主席 after the real one: open-fronted, under the stand roof — long stepped rows of cream desks, each seat with a tablet
    set into the desk, black seat dividers, a pale ceiling with lights, the whole course in front */
 const BOXV={x:STX+38,y:30.2,z:STZ-62};
@@ -543,7 +545,7 @@ function buildBoxRoom(){const g=new THREE.Group();scene.add(g);
 function setupFromGame(){const F=IN.field,n=F.length;
   RUN=F.map((f,i)=>{const r=makeRunner(i);r.no=f.no;r.style=f.used||'差し';const lead=f.no===IN.leadNo;
     r.early=lead?0:IN.shape==='競り合い'&&r.style==='逃げ'?rnd()*1.5:({逃げ:1,先行:3,差し:13,追込:24}[r.style]??12)+rnd()*6;
-    r.gap=f.gapL||0;r.gl=i*.95;r.tl={逃げ:.3,先行:1.4,差し:2.8,追込:4}[r.style]??2;r.tl+=rnd()*1.6;r.wide=({逃げ:0,先行:.8,差し:2.2,追込:3.2}[r.style]??1.5)+rnd();r.ph=rnd()*7;r.odds=f.odds||9.9;return r;});}
+    r.gap=f.gapL||0;r.gl=i*.95;r.tl={逃げ:.3,先行:1.4,差し:2.8,追込:4}[r.style]??2;r.tl+=rnd()*1.6;r.wide=({逃げ:0,先行:.8,差し:2.2,追込:3.2}[r.style]??1.5)+rnd();r.jn=JKN(i);r.ph=rnd()*7;r.odds=f.odds||9.9;return r;});}
 const lateF=1-600/D;
 function posOf(r,tau){const s0=sm(lateF,1,tau),cl=r.early>12?Math.pow(s0,1.6):r.early<3?Math.pow(s0,.8):s0;
   return D*tau-(r.early*(1-cl)*sm(0,.09,tau)+r.gap*(2.4+1.7*sm(.86,1,tau))*cl)+Math.sin(tau*D/170+r.ph)*.6*sm(.06,.15,tau)*(1-s0);}
@@ -887,15 +889,21 @@ function preStep(dt){PRE.t+=dt;if(PONIES.length)ponyStep(dt);
 /* ---------- live commentary: built from the running order, the gaps and the clock ---------- */
 const CM={said:{},lastLead:null,leadT:0};const LEN=2.4;
 const nm=r=>r.name,lenTxt=m=>{const L=m/LEN;if(L<.15)return 'ハナ差';if(L<.3)return 'アタマ差';if(L<.5)return 'クビ差';if(L<.8)return '半馬身';if(L<1.25)return '1馬身';if(L<1.75)return '1馬身半';if(L<2.5)return '2馬身';if(L<10)return `${Math.round(L)}馬身`;return '大差';};
+const jk=r=>r.jn||'鞍上';
 const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};
 function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[2],last=byD[byD.length-1],me=RUN.find(r=>r.mine),pm=byD.indexOf(me)+1,gap=(a,b)=>a.d-b.d;
   once('s',()=>{const slow=[...RUN].sort((a,b)=>b.early-a.early)[0];return slow.early>22?`${slow.no}番${nm(slow)}は、ややダッシュがつきません`:'各馬そろった、きれいなスタートです';});
-  if(d>180)once('lead',()=>`ハナを切ったのは${L.no}番${nm(L)}。2番手に${nm(S2)}、その外${nm(S3)}`);
-  if(d>300)once('pos',()=>{const fr=byD.slice(0,4);return `先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
-  if(d>420)once('me1',()=>`${nm(me)}は${pm}番手、${pm<=4?'好位につけました':pm>=RUN.length-3?'後方からの競馬':'中団で脚をためます'}`);
+  if(d>180)once('lead',()=>`ハナを切ったのは${L.no}番${nm(L)}、鞍上${jk(L)}。2番手に${nm(S2)}、その外${nm(S3)}`);
+  if(d>270)once('look',()=>{L.look=1.4;return `${jk(L)}、後ろを振り返って隊列を確認します`;});
+  if(d>300)once('pos',()=>{const fr=byD.slice(0,4);return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
+  if(d>420)once('me1',()=>`${nm(me)}、鞍上${jk(me)}は${pm}番手、${pm<=4?'好位につけました':pm>=RUN.length-3?'後方からの競馬':'中団で脚をためます'}`);
   if(d>1000)once('1000',()=>{const t=SIMT*1000/d,f=t<58.5?'速い流れ！':t>61.5?'ゆったりとした流れです':'平均的なペース';return `1000メートルの通過は${Math.floor(t/60)?Math.floor(t/60)+'分':''}${(t%60).toFixed(1).replace('.','秒')}。${f}`;});
   if(d>D*.5&&D>=1600&&RUN.length>=9)once('half',()=>{const m=byD.slice(3,7).map(nm);return `中団は${m.slice(0,2).join('、')}。その後ろに${m.slice(2).join('、')}。最後方は${nm(last)}`;});
   if(d>D*.62&&D>=1800)once('me3',()=>`${nm(me)}は${pm}番手。${pm<=3?'手応え十分、絶好の位置です':pm<=8?'ここからどこで動くか':'まだ後方、仕掛けどころを待ちます'}`);
+  if(d>D*.45&&D>=1400)once('press',()=>gap(L,S2)<1.3*LEN?`${S2.no}番の${jk(S2)}がじわっと外から並びかけ、${nm(L)}にプレッシャーをかける`:`${jk(L)}、${nm(L)}をマイペースに持ち込みました。後続の${jk(S2)}は動かない`);
+  if(rem<720&&rem>260&&!CM.said.move){const x=byD.slice(2).find(r=>r.drv>.15);if(x){CM.said.move=1;say(`${jk(x)}の手が動いた！ ${nm(x)}、早めに仕掛ける`);}}
+  if(rem<470)once('still',()=>L.drv<.35?(L.look=1.4,`${jk(L)}はまだ持ったまま！ 後ろを振り返る余裕があります`):`${jk(L)}、もう追い出している！ 押して押して${nm(L)}`);
+  if(rem<410)once('out',()=>{const c=byD.slice(1,7).sort((a,b)=>laneOf(b,Math.min(tau,1))-laneOf(a,Math.min(tau,1)))[0];return `${jk(c)}、${nm(c)}を外に持ち出した！`;});
   if(d>1200)once('len',()=>{const sp=gap(L,last)/LEN;return `先頭から最後方まで、およそ${Math.round(sp)}馬身。${sp>14?'縦長の隊列':'一団の馬群'}です`;});
   if(rem<760)once('3c',()=>`3コーナーカーブ。先頭は${nm(L)}、リードは${lenTxt(gap(L,S2))}。${pm>6?nm(me)+'もじわっと進出！':'後続も差を詰めにかかる'}`);
   if(rem<520)once('4c',()=>`4コーナーを回って直線！ ${nm(L)}が先頭、${nm(S2)}が外から並びかける！`);
@@ -904,12 +912,13 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
   if(rem<330)once('400',()=>`残り300！ 先頭は${nm(L)}、リード${lenTxt(gap(L,S2))}。${nm(S2)}、${nm(S3)}が迫る！`);
   if(rem<170)once('200',()=>{const g=gap(L,S2);return g<1.5*LEN?`${nm(L)}か！ ${nm(S2)}か！ 並んでゴールへ！`:`${nm(L)}、抜け出した！ これは強い！`;});
   if(rem<70&&me!==L&&pm<=3)once('me2',()=>`${nm(me)}も来ている！ ${nm(me)}も来ている！`);
-  if(tau>=1)once('goal',()=>{const w=byD[0];RUN.forEach(r=>r.won=r===w);return `${nm(w)}、ゴールイン！ 2着${nm(byD[1])}、着差は${lenTxt(gap(byD[0],byD[1]))}${w.mine?'。やりました、あの勝負服が先頭でゴール！':''}`;});}
+  if(tau>=1)once('goal',()=>{const w=byD[0];RUN.forEach(r=>r.won=r===w);return `${nm(w)}、ゴールイン！ 鞍上${jk(w)}、ガッツポーズ！ 2着${nm(byD[1])}、着差は${lenTxt(gap(byD[0],byD[1]))}${w.mine?'。やりました、あの勝負服が先頭でゴール！':''}`;});}
 /* ---------- loop ---------- */
 const clock=new THREE.Clock();let last=0,calls=[];
 const say=s=>{document.getElementById('call').textContent=s;if(IN){try{parent.postMessage({type:'race3d-call',text:s},'*');}catch(e){}}};
 addEventListener('message',e=>{const d=e.data||{};if(d.type==='tomare'&&PAD.on){PAD.stage='mount';PAD.t=0;}if(d.type==='ff'){FFWD=d.on?3:1;}
   if(d.type==='skip'){if(started){SIMT=Math.max(SIMT,TT*1.17);}else if(window.__seek)window.__seek(.995);}});
+const RPF=(()=>{const c=document.createElement('canvas');c.width=384;c.height=216;return {c,x:c.getContext('2d'),list:[],t:0};})();
 let INGATE=false,STATEF=0,FFWD=1,SIMT=0,SLOW=1,TS=0,LOAD=null;
 /* ゲートイン: odd numbers load first, then evens (as JRA does), each walked in by a handler; the back doors shut behind them;
    when the last is in, a short pause, then the doors fly open */
@@ -955,7 +964,7 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(IN&&(MODE==='race')&&(STATEF=(STATEF||0)+1)%8===0){const byD=[...RUN].sort((a,b)=>b.d-a.d),me=RUN.find(r=>r.mine),ld=byD[0];
     try{parent.postMessage({type:'race3d-state',phase:started?(SIMT/TT>=1?'after':'race'):INGATE?'gate':LOAD?'load':PRE.stage||'pre',rem:started?Math.max(0,Math.round(D-ld.d)):D,
       me:me?{no:me.no,name:me.name,pos:byD.indexOf(me)+1}:null,lead:{no:ld.no,name:ld.name},n:RUN.length,t:SIMT},'*');}catch(e){}}
-  if(IN&&!DONE&&started&&SIMT/TT>1.16){DONE=true;const b=document.getElementById('emb_done');if(b)b.textContent='結果へ ▶';setTimeout(()=>{try{parent.postMessage({type:'race3d-done'},'*');}catch(e){}},2500);}
+  if(IN&&!DONE&&started&&SIMT/TT>1.16){DONE=true;const b=document.getElementById('emb_done');if(b)b.textContent='結果へ ▶';setTimeout(()=>{try{if(!RPF.list.length){RPF.x.drawImage(R3.domElement,0,0,384,216);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}parent.postMessage({type:'race3d-replay',frames:RPF.list},'*');parent.postMessage({type:'race3d-done'},'*');}catch(e){}},2500);}
   if(PAD.on){PAD.t+=dt0;}
   if(PRE.stage)preStep(dt0);
   if(LOAD&&!started){LOAD.t+=dt0;if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
@@ -965,7 +974,8 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
     const sp=INGATE?0:started?(tau<=1?1:Math.max(.42,Math.exp(-(tau-1)*5))):0;r.spd=sp;r.act.timeScale=sp*3.35;r.mixer.update(dt);   // ~2.2 strides a second, like a real gallop
     {const m=morphedVertex(r,r.muzzle,_mv);const h0=r.arms[0].hd.position,h1=r.arms[1].hd.position;
      reinSet(r.reins.children[0],h0.x,h0.y+r.J.position.y,h0.z+r.J.position.z,m.x+.06,m.y,m.z-.12);reinSet(r.reins.children[1],h1.x,h1.y+r.J.position.y,h1.z+r.J.position.z,m.x-.06,m.y,m.z-.12);}
-    const drive=started?Math.max(0,Math.min(1,(tau-(1-430/D))*D/230))*(tau<1.004?1:0):0;r.J.position.y=-.1+Math.sin(TS*14.2+r.ph)*.018*sp*(1+drive*1.5);r.J.position.z=Math.sin(TS*14.2+r.ph+1.2)*.02*sp*(1+drive*2);r.J.rotation.x=-Math.sin(TS*14.2+r.ph)*.03*drive;
+    const go=r.go??(r.go=({逃げ:390,先行:460,差し:570,追込:660}[r.style]??480)+rnd()*70),drive=started&&tau<1.004?Math.max(0,Math.min(1,(go-(D-r.d))/180)):0;r.drv=drive;r.J.position.y=-.1+Math.sin(TS*14.2+r.ph)*.018*sp*(1+drive*1.5);r.J.position.z=Math.sin(TS*14.2+r.ph+1.2)*.02*sp*(1+drive*2);r.J.rotation.x=-Math.sin(TS*14.2+r.ph)*.03*drive;
+    if(r.look>0){r.look-=dt0;const k=Math.sin(Math.max(0,Math.min(1,(1.4-r.look)/1.4))*Math.PI);r.J.rotation.y=k*.55;}else if(r.J.rotation.y)r.J.rotation.y=0;   // the rider glances back over his shoulder
     if(r.won){const k=Math.min(1,Math.max(0,(tau-1.004)*14));r.J.rotation.x=-.16*k+Math.sin(TS*14.2+r.ph)*.03;r.J.position.y+=.05*k;const a=r.arms[1];[a.up,a.lo,a.el,a.hd,a.cu].forEach(m=>m.visible=k<.25);r.fist.visible=k>=.25;
       const pump=Math.max(0,Math.sin(TS*7.1));r.fist.rotation.x=(.5-pump*.6)*(1-k)+(-.15-pump*.55)*k;r.fist.rotation.z=-.15+pump*.15;r.fist.scale.setScalar(.6+.4*k);}
     r.cloths.forEach(cl=>{const pa=cl.geo.attributes.position,b=cl.base;for(let k=0;k<pa.count;k++){const w=cl.hang[k];if(!w)continue;const x=b[k*3],z=b[k*3+2],sw=w*w*(.045*sp*Math.sin(TS*9+r.ph+z*5)+.012*Math.sin(TS*3.1+z*9));pa.setX(k,x+Math.sign(x)*Math.abs(sw)*.8);pa.setZ(k,z-sw*.6);}pa.needsUpdate=true;});});
@@ -990,6 +1000,8 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(SPL.on){R3.setScissorTest(true);const hb=Math.round(H*.75);cam.aspect=W/hb;cam.updateProjectionMatrix();R3.setViewport(0,0,W,hb);R3.setScissor(0,0,W,hb);R3.render(scene,cam);
     cam2.aspect=W/(H-hb);cam2.updateProjectionMatrix();R3.setViewport(0,hb,W,H-hb);R3.setScissor(0,hb,W,H-hb);R3.clear();R3.render(scene,cam2);R3.setScissorTest(false);R3.setViewport(0,0,W,H);cam.aspect=W/H;cam.updateProjectionMatrix();}
   else R3.render(scene,cam);
+  /* the finish, recorded small for the replay on the result board's turf vision */
+  if(IN&&started&&!SPL.on){const rem0=D-(byDsorted[0]?byDsorted[0].d:0);if(rem0<150&&tau<1.025&&SIMT-(RPF.t||0)>.11&&RPF.list.length<34){RPF.t=SIMT;try{RPF.x.drawImage(R3.domElement,0,0,RPF.c.width,RPF.c.height);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}catch(e){}}}
   if(IN&&!window.__ready&&(started||INGATE||PRE.stage||PAD.on||LOAD)){window.__ready=(window.__ready||0)+1;if(window.__ready===1)setTimeout(()=>{try{parent.postMessage({type:'race3d-ready'},'*');}catch(e){}},350);}
   requestAnimationFrame(frame);}
 

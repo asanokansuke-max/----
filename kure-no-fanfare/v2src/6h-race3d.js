@@ -11,7 +11,7 @@ function r3dDoc(RC,mode){const inp=r3dInput(RC);inp.mode=mode||'race';return R3D
 function r3dInput(RC){const r=RC.race,hex=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#888888';
   return {course:R3D_CRS[r.course]||'tokyo',dist:r.dist,surf:r.surf,going:r.going||'良',grade:r3dGrade(r),race:r.key==='有馬記念'?'arima':'',time:r.key==='有馬記念'?'evening':'',
     title:r.name,leadNo:RC.leadNo,shape:RC.shape,
-    field:[...RC.field].sort((a,b)=>a.no-b.no).map(f=>({no:f.no,name:f.name,a:hex(f.silks&&f.silks.a),b:hex(f.silks&&f.silks.b),p:f.silks&&f.silks.p,coat:f.coat||(f.h&&f.h.coat)||'鹿毛',used:f.used||f.style,gapL:f.gapL||0,odds:f.odds,mine:!!f.mine}))};}
+    field:[...RC.field].sort((a,b)=>a.no-b.no).map(f=>({no:f.no,name:f.name,a:hex(f.silks&&f.silks.a),b:hex(f.silks&&f.silks.b),p:f.silks&&f.silks.p,coat:f.coat||(f.h&&f.h.coat)||'鹿毛',used:f.used||f.style,j:f.jname||'',gapL:f.gapL||0,odds:f.odds,mine:!!f.mine}))};}
 let R3D=null;
 (function(){const st=document.createElement('style');st.textContent=`
 #r3d{position:fixed;inset:0;z-index:80;background:radial-gradient(120% 80% at 50% 0%,#17301f,#070d09 70%);color:#eef3ef;display:flex;font-family:"Zen Kaku Gothic New",sans-serif;
@@ -100,7 +100,7 @@ function r3dState(d){if(!R3D)return;if(d.rem!=null)R3D.rem=d.rem;try{r3dSound(d)
 function r3dVoiceUnlock(){try{const ss=window.speechSynthesis;if(!ss||r3dVoiceUnlock.done)return;r3dVoiceUnlock.done=1;const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang='ja-JP';ss.speak(u);}catch(e){}}
 function r3dCall(t){if(!R3D||!t)return;try{speak(t,(R3D.rem!=null&&R3D.rem<600)||/ゴール/.test(t));}catch(e){}const c=document.getElementById('r3dcalls');if(!c)return;const p=document.createElement('p');p.textContent=t;c.appendChild(p);const ps=c.querySelectorAll('p');if(ps.length>3)ps[0].remove();}
 function close3D(){if(!R3D)return;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D.ov.remove();R3D=null;}
-addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-ready'){document.querySelectorAll('#r3dif,iframe.r3demb').forEach(f=>{if(f.contentWindow===e.source){f.classList.add('on');const pr=f.parentNode.querySelector('.prep');if(pr)setTimeout(()=>pr.remove(),500);}});return;}if(!R3D)return;if(d.type==='race3d-done'){const o=R3D.ov;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D=null;showBoard();requestAnimationFrame(()=>o.classList.add('out'));setTimeout(()=>o.remove(),500);}else if(d.type==='race3d-state')r3dState(d);else if(d.type==='race3d-call')r3dCall(d.text);});
+addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-ready'){document.querySelectorAll('#r3dif,iframe.r3demb').forEach(f=>{if(f.contentWindow===e.source){f.classList.add('on');const pr=f.parentNode.querySelector('.prep');if(pr)setTimeout(()=>pr.remove(),500);}});return;}if(!R3D)return;if(d.type==='race3d-done'){const o=R3D.ov;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D=null;showBoard();requestAnimationFrame(()=>o.classList.add('out'));setTimeout(()=>o.remove(),500);}else if(d.type==='race3d-state')r3dState(d);else if(d.type==='race3d-call')r3dCall(d.text);else if(d.type==='race3d-replay')r3dReplay(d.frames);});
 showRaceView=(o=>function(long){const RC=UI.race;if(RC)RC.long=long;
   if(RC&&r3dOn()&&typeof R3D_HTML==='string'){if(typeof ensureRival==='function')ensureRival(RC);closeModal();open3D(RC);return;}
   const r=o.apply(this,arguments);
@@ -126,3 +126,10 @@ bgmApply=(o=>function(){if(r3dLive())AUD.over='none';return o.apply(this,argumen
 notifIdle=(o=>function(){return !r3dLive()&&o.apply(this,arguments);})(notifIdle);
 maybeCall=(o=>function(){if(r3dLive())return;return o.apply(this,arguments);})(maybeCall);
 open3D=(o=>function(){const r=o.apply(this,arguments);try{AUD.over='none';bgmApply();}catch(e){}return r;})(open3D);
+
+/* the result board's turf vision plays the 3D finish back in slow motion (frames sent by the broadcast just before it hands back) */
+function r3dReplay(frames){const RC=R3D&&R3D.RC||UI.race;if(!RC||!frames||!frames.length)return;const imgs=frames.map(src=>{const i=new Image();i.src=src;return i;});
+  const cv=document.createElement('canvas');cv.width=384;cv.height=216;const x=cv.getContext('2d');let k=0,hold=0;
+  const t0=Date.now(),tick=()=>{if(RC.boardDone||Date.now()-t0>300000)return;const im=imgs[Math.floor(k)];if(im&&im.complete&&im.naturalWidth)x.drawImage(im,0,0,384,216);
+    if(k>=imgs.length-1){if(++hold>14){k=0;hold=0;}}else k+=.5;setTimeout(tick,110);};tick();
+  RC.goalShot={cv,full:true,W:384,H:216};}
