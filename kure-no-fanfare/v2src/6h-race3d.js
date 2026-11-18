@@ -35,7 +35,7 @@ let R3D=null;
 #r3d .side{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;overflow:auto}
 #r3d.wide .side{max-width:260px;padding-left:4px}#r3d.wide .hd{padding:2px 0 0;flex-wrap:wrap}#r3d.wide .hd b{font-size:15px;flex-basis:70%}#r3d.wide .calls{font-size:11px}#r3d.wide .ctl button{min-height:34px;font-size:11px}#r3d.wide .cheer{min-height:38px;font-size:15px}#r3d.wide .card{padding:7px 9px}#r3d.wide .side{gap:6px;padding-top:8px;overflow:hidden}#r3d.wide .calls{flex:1;min-height:0;overflow:hidden;justify-content:flex-end}#r3d.wide .hd small{font-size:10px}#r3d.wide .live{display:none}#r3d.wide .me .pos{font-size:22px}#r3d.wide .bar{margin-top:5px}
 #r3d .ctl{display:flex;gap:6px}
-#r3d.tall .side{overflow:hidden}#r3d.tall .calls{flex:1 1 auto;min-height:0;overflow:hidden}#r3d.tall .cheer{flex:none}
+#r3d.tall .side{overflow:hidden}#r3d.tall .calls{flex:1 1 auto;min-height:0;overflow:hidden;justify-content:flex-end}#r3d .calls .lb{flex:none}#r3d.tall .cheer{flex:none}
 #r3d .ctl button{flex:1;min-width:0;white-space:nowrap;padding:0 2px;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
 #r3d .ctl button.on{background:#c9a227;color:#111;border-color:#c9a227}
 #r3d .ctl button.pri{background:#1f7a48;border-color:#1f7a48}

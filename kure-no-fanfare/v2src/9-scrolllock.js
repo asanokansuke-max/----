@@ -43,3 +43,12 @@ renderStart=(o=>function(){const r=o.apply(this,arguments);document.documentElem
 const _st2=window.scrollTo;
 window.scrollTo=function(x,y){const m=document.querySelector('#app>main');if(m&&document.documentElement.classList.contains('shell')&&typeof y==='number'){if(!LOCK.on)m.scrollTop=y;return;}return _st2.apply(window,arguments);};
 document.documentElement.classList.toggle('shell',!!S);
+/* conversations fit on one screen: the sheet never scrolls, only the conversation log does (newest line kept in view) */
+(function(){const st=document.createElement('style');st.textContent=`
+.sheet.fit{display:flex;flex-direction:column;overflow:hidden;gap:12px}
+.sheet.fit>*{flex:none;min-height:0}
+.sheet.fit>.talklog{flex:1 1 auto;min-height:72px;max-height:none;overflow-y:auto;overscroll-behavior:contain}
+.sheet.fit .choices{gap:6px}.sheet.fit .choices .btn{min-height:42px;padding-top:8px;padding-bottom:8px}`;document.head.appendChild(st);})();
+function sheetFit(){const sh=$('#sheet');if(!sh||!sh.querySelector('.talklog'))return;sh.classList.add('fit');const lg=sh.querySelector('.talklog');if(lg)lg.scrollTop=lg.scrollHeight;}
+drawTalk=(o=>function(){const r=o.apply(this,arguments);sheetFit();return r;})(drawTalk);
+drawTouch=(o=>function(){const r=o.apply(this,arguments);sheetFit();return r;})(drawTouch);
