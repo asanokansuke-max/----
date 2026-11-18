@@ -557,7 +557,7 @@ function camFor(lead,mid,tau){const sL=((START+mid)%P+P)%P;   // leader's spot o
   if(window.__closeW&&LOAD&&!started)return LOAD.t>=LOAD.end-3?'gatedoor':'walkclose';
   if(PAD.on)return 'paddock';if(MODE==='box')return 'box';if(PRE.stage==='canter')return 'canter';if(PRE.stage==='starter')return 'starter';
   if(LOAD&&!started){const t=LOAD.t;return t<7?'gateback':t<LOAD.end-6?(Math.floor(t/6)%2?'gate':'gateback'):'startpan';}
-  if(tau<=0&&IN&&!BIG&&!PRE.stage&&MODE==='race')return 'startpan';if(tau<=0){const w=performance.now()/1000-(window.__t0w||(window.__t0w=performance.now()/1000));return w<6?'stand':w<11?'vision':'gate';}if(tau>=1.06){return ((SIMT-TT*1.06)%12)<6?'after':'vision';}if(tau>=1)return 'finish';
+  if(tau<=0&&IN&&!BIG&&!PRE.stage&&MODE==='race')return 'startpan';if(tau<=0){const w=performance.now()/1000-(window.__t0w||(window.__t0w=performance.now()/1000));return w<6?'stand':w<11?'vision':'gate';}if(IN&&tau>=1)return SIMT-TT<.9?'finish':'after';if(tau>=1.06){return ((SIMT-TT*1.06)%12)<6?'after':'vision';}if(tau>=1)return 'finish';
   if(INGATE)return 'startpan';if(started&&SIMT<6.2&&tau<1)return 'startpan';if(started&&SIMT<8&&tau<1)return 'startrun';
   const rem=D-lead;if(rem<300)return 'side';if(rem<440)return 'front';if(rem<720)return 'head';
   if(sL<LS)return 'side';if(sL<LS+Math.PI*RAD)return 'turn12';if(sL<2*LS+Math.PI*RAD)return 'back';return 'turn34';}
@@ -573,7 +573,7 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   if(name==='stand'){const w=performance.now()/1000-window.__t0w;cpos.set(STX-90+w*9,7,-RAD+40);tgt.set(STX-60+w*9,15,STZ-45);fov=40;}
   else if(name==='vision'){const w=Math.min(5,Math.max(0,performance.now()/1000-window.__t0w-6));cpos.set(VX+12-w*2,8,-RAD-30);tgt.set(VX,13,-RAD+42);fov=44;}
   else if(name==='goal'){const f=pathAt(FIN+3,-13);cpos.set(f.x,2.4,f.z);const lp=pathAt(START+lead.d-1.5,3);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,13);}
-  else if(name==='after'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),ah=pathAt(START+w.d+12,-14);cpos.set(ah.x,3.2,ah.z);tgt.set(wp.x,1.6,wp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7.5/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.6;}}
+  else if(name==='after'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),ah=pathAt(START+w.d+9,26);cpos.set(ah.x,3.6,ah.z);tgt.set(wp.x,1.6,wp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7.5/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.6;}}
   else if(name==='paddock'){const w=performance.now()/1000,cyc=Math.floor(w/6)%3,f=RUN[Math.floor(w/6)%RUN.length],fp=f.g.position;
     /* like the paddock feed: mostly one horse at a time, walked past the camera; now and then a few together from the terrace */
     // work in the ring's own frame: forward along the walking line, 'in' toward the lawn (the camera stays on the inside, the crowd behind the horse)
@@ -604,9 +604,9 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
     if(rem<160||name==='finish'){const lp=pathAt(START+lead.d+1,4),k2=name==='finish'?1:Math.min(1,(160-rem)/90);cx=cx*(1-k2)+lp.x*k2;cz=cz*(1-k2)+lp.z*k2;}if(name==='finish')w=24;cpos.set(cx-4,16,-RAD-56);tgt.set(cx,1.3,cz);fov=frame(cpos.x,cpos.y,cpos.z,w);}
   else if(name==='front'){const c=pathAt(START+lead.d+110,5);cpos.set(c.x,4.5,c.z);const lp=pathAt(START+lead.d-6,4);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,22);}
   else if(name==='head'){const c=pathAt(FIN-120,-5);cpos.set(c.x,12,c.z-4);const l1=pathAt(START+lead.d-4,4);tgt.set(l1.x,1.4,l1.z);{const d=cpos.distanceTo(tgt);fov=Math.max(1.2,2*Math.atan(13/2/d)*180/Math.PI/Math.max(.6,cam.aspect));}}
-  else if(name==='turn12'){const m=pathAt(START+(lead.d+tail.d)/2+22,58);cpos.set(m.x,13,m.z);tgt.set(fx,1.2,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9+4,60));}
+  else if(name==='turn12'){/* from the stand side: a high camera in front of the stand at that end, panning with the field round the bend */const ex=(CRS.lh?-1:1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-48);tgt.set(fx,1.2,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9+4,60));}
   else if(name==='back'){cpos.set(fx,10,RAD-14);tgt.set(fx,1.4,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread,85));}
-  else if(name==='turn34'){cpos.set((CRS.lh?1:-1)*(LS/2-50),20,-10);tgt.set(fx,1,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9,60));}
+  else if(name==='turn34'){const ex=(CRS.lh?1:-1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-48);tgt.set(fx,1,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9,60));}
   fov=Math.max(1.2,Math.min(name==='box'?56:40,fov));
   if(started&&tau<1&&!['goal','gateback','gate','paddock','canter','starter'].includes(name)&&!SPL.on){const lp=pathAt(START+lead.d+1.2,laneOf(lead,Math.min(tau,1)));const L=new THREE.Vector3(lp.x,1.4,lp.z);
     const tc=KEEP.cam;tc.fov=fov;tc.aspect=cam.aspect;tc.position.copy(cpos);tc.updateProjectionMatrix();
@@ -724,7 +724,7 @@ const SLOPES={tokyo:[[1500,1200,-.6],[1100,900,.8],[800,520,-.7],[480,260,.9]],n
 function slopeAt(s){const d0=((FIN-s)%P+P)%P;let g=0;(SLOPES[CKEY]||[]).forEach(([a,b,gr])=>{[d0,d0-P].forEach(d=>{if(d<=a&&d>=b){const e=Math.min(1,(a-d)/30,(d-b)/30);g+=gr*Math.max(0,e);}});});return g;}
 let lastLead=0,kmh=0,slv=0;const fav=[];
 function hud(byD,tau,dt){if(!mapDone){document.getElementById('crsnm').textContent=CRS.jp+'  '+CRS.en;document.getElementById('dstnm').textContent=D.toLocaleString()+'m';document.getElementById('rcnm').textContent=(QS.get('surf')==='ダ'?'ダ':'芝')+D+'m';document.getElementById('sfnm').textContent=QS.get('surf')==='ダ'?'DIRT':'TURF';document.getElementById('rcttl').textContent=IN&&IN.title?IN.title:(RACE_TITLE||CRS.name);drawMap();document.getElementById('mark').innerHTML=logoSVG(28,'#ffffff');document.getElementById('mark').style.opacity='.85';}const T=window.__mapT,n=RUN.length,lead=byD[0];
-  const el=started?SIMT:0,sec=Math.floor(el),ds=Math.floor((el-sec)*10);document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}.${String(sec%60).padStart(2,'0')}.${ds}`;
+  const el=started?Math.min(SIMT,TT):0,sec=Math.floor(el),ds=Math.floor((el-sec)*10);document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}.${String(sec%60).padStart(2,'0')}.${ds}`;
   const nowS=SIMT;if(started&&tau<1.0&&lead.pd!=null&&nowS>lastLead){const v=(lead.d-lead.pd)/(nowS-lastLead)*3.6;if(v>20&&v<90)kmh+=(v-kmh)*.15;}RUN.forEach(r=>r.pd=r.d);lastLead=nowS;document.getElementById('kmh').textContent=kmh.toFixed(1);
   {const g=slopeAt(START+(started?lead.d:0));slv+=(g-slv)*.2;const sv=Math.abs(slv)<.05?0:slv;document.getElementById('slp').textContent=sv.toFixed(1);document.getElementById('slh').style.transform=`rotate(${Math.max(-14,Math.min(14,-sv*7)).toFixed(1)}deg)`;}
   // map progress: from the start to the leader
@@ -895,14 +895,14 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
   once('s',()=>{const slow=[...RUN].sort((a,b)=>b.early-a.early)[0];return slow.early>22?`${slow.no}番${nm(slow)}は、ややダッシュがつきません`:'各馬そろった、きれいなスタートです';});
   if(d>180)once('lead',()=>`ハナを切ったのは${L.no}番${nm(L)}、鞍上${jk(L)}。2番手に${nm(S2)}、その外${nm(S3)}`);
   if(d>270)once('look',()=>{L.look=1.4;return `${jk(L)}、後ろを振り返って隊列を確認します`;});
-  if(d>300)once('pos',()=>{const fr=byD.slice(0,4);return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
+  if(d>300)once('pos',()=>{const fr=byD.slice(0,4);if(gap(fr[0],fr[1])<1.2*LEN)CM.settle=fr[1];return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
   if(d>420)once('me1',()=>`${nm(me)}、鞍上${jk(me)}は${pm}番手、${pm<=4?'好位につけました':pm>=RUN.length-3?'後方からの競馬':'中団で脚をためます'}`);
   if(d>1000)once('1000',()=>{const t=SIMT*1000/d,f=t<58.5?'速い流れ！':t>61.5?'ゆったりとした流れです':'平均的なペース';return `1000メートルの通過は${Math.floor(t/60)?Math.floor(t/60)+'分':''}${(t%60).toFixed(1).replace('.','秒')}。${f}`;});
   if(d>D*.5&&D>=1600&&RUN.length>=9)once('half',()=>{const m=byD.slice(3,7).map(nm);return `中団は${m.slice(0,2).join('、')}。その後ろに${m.slice(2).join('、')}。最後方は${nm(last)}`;});
   if(d>D*.62&&D>=1800)once('me3',()=>`${nm(me)}は${pm}番手。${pm<=3?'手応え十分、絶好の位置です':pm<=8?'ここからどこで動くか':'まだ後方、仕掛けどころを待ちます'}`);
-  if(d>D*.45&&D>=1400)once('press',()=>gap(L,S2)<1.3*LEN?`${S2.no}番の${jk(S2)}がじわっと外から並びかけ、${nm(L)}にプレッシャーをかける`:`${jk(L)}、${nm(L)}をマイペースに持ち込みました。後続の${jk(S2)}は動かない`);
-  if(rem<720&&rem>260&&!CM.said.move){const x=byD.slice(2).find(r=>r.drv>.15);if(x){CM.said.move=1;say(`${jk(x)}の手が動いた！ ${nm(x)}、早めに仕掛ける`);}}
-  if(rem<470)once('still',()=>L.drv<.35?(L.look=1.4,`${jk(L)}はまだ持ったまま！ 後ろを振り返る余裕があります`):`${jk(L)}、もう追い出している！ 押して押して${nm(L)}`);
+  if(d>D*.45&&D>=1400)once('press',()=>gap(L,S2)<1.3*LEN&&S2!==CM.settle?`${S2.no}番の${jk(S2)}がじわっと外から並びかけ、${nm(L)}にプレッシャーをかける`:`${jk(L)}、${nm(L)}をマイペースに持ち込みました。${S2===CM.settle?'2番手の':'後続の'}${jk(S2)}はじっと折り合いに専念`);
+  if(rem<720&&rem>260&&!CM.said.move){const x=byD.slice(2).find(r=>r.drv>.15);if(x){CM.said.move=1;CM.mover=x;say(`${jk(x)}の手が動いた！ ${nm(x)}、早めに仕掛ける`);}}
+  if(rem<470)once('still',()=>L.drv<.35&&CM.mover!==L?(L.look=1.4,`${jk(L)}はまだ持ったまま！ 後ろを振り返る余裕があります`):`${jk(L)}、もう追い出している！ 押して押して${nm(L)}`);
   if(rem<410)once('out',()=>{const c=byD.slice(1,7).sort((a,b)=>laneOf(b,Math.min(tau,1))-laneOf(a,Math.min(tau,1)))[0];return `${jk(c)}、${nm(c)}を外に持ち出した！`;});
   if(d>1200)once('len',()=>{const sp=gap(L,last)/LEN;return `先頭から最後方まで、およそ${Math.round(sp)}馬身。${sp>14?'縦長の隊列':'一団の馬群'}です`;});
   if(rem<760)once('3c',()=>`3コーナーカーブ。先頭は${nm(L)}、リードは${lenTxt(gap(L,S2))}。${pm>6?nm(me)+'もじわっと進出！':'後続も差を詰めにかかる'}`);
@@ -964,7 +964,7 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(IN&&(MODE==='race')&&(STATEF=(STATEF||0)+1)%8===0){const byD=[...RUN].sort((a,b)=>b.d-a.d),me=RUN.find(r=>r.mine),ld=byD[0];
     try{parent.postMessage({type:'race3d-state',phase:started?(SIMT/TT>=1?'after':'race'):INGATE?'gate':LOAD?'load':PRE.stage||'pre',rem:started?Math.max(0,Math.round(D-ld.d)):D,
       me:me?{no:me.no,name:me.name,pos:byD.indexOf(me)+1}:null,lead:{no:ld.no,name:ld.name},n:RUN.length,t:SIMT},'*');}catch(e){}}
-  if(IN&&!DONE&&started&&SIMT/TT>1.16){DONE=true;const b=document.getElementById('emb_done');if(b)b.textContent='結果へ ▶';setTimeout(()=>{try{if(!RPF.list.length){RPF.x.drawImage(R3.domElement,0,0,384,216);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}parent.postMessage({type:'race3d-replay',frames:RPF.list},'*');parent.postMessage({type:'race3d-done'},'*');}catch(e){}},2500);}
+  if(IN&&!DONE&&started&&SIMT-TT>3.4){DONE=true;const b=document.getElementById('emb_done');if(b)b.textContent='結果へ ▶';setTimeout(()=>{try{if(!RPF.list.length){RPF.x.drawImage(R3.domElement,0,0,384,216);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}parent.postMessage({type:'race3d-replay',frames:RPF.list},'*');parent.postMessage({type:'race3d-done'},'*');}catch(e){}},600);}
   if(PAD.on){PAD.t+=dt0;}
   if(PRE.stage)preStep(dt0);
   if(LOAD&&!started){LOAD.t+=dt0;if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
@@ -976,7 +976,7 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
      reinSet(r.reins.children[0],h0.x,h0.y+r.J.position.y,h0.z+r.J.position.z,m.x+.06,m.y,m.z-.12);reinSet(r.reins.children[1],h1.x,h1.y+r.J.position.y,h1.z+r.J.position.z,m.x-.06,m.y,m.z-.12);}
     const go=r.go??(r.go=({逃げ:390,先行:460,差し:570,追込:660}[r.style]??480)+rnd()*70),drive=started&&tau<1.004?Math.max(0,Math.min(1,(go-(D-r.d))/180)):0;r.drv=drive;r.J.position.y=-.1+Math.sin(TS*14.2+r.ph)*.018*sp*(1+drive*1.5);r.J.position.z=Math.sin(TS*14.2+r.ph+1.2)*.02*sp*(1+drive*2);r.J.rotation.x=-Math.sin(TS*14.2+r.ph)*.03*drive;
     if(r.look>0){r.look-=dt0;const k=Math.sin(Math.max(0,Math.min(1,(1.4-r.look)/1.4))*Math.PI);r.J.rotation.y=k*.55;}else if(r.J.rotation.y)r.J.rotation.y=0;   // the rider glances back over his shoulder
-    if(r.won){const k=Math.min(1,Math.max(0,(tau-1.004)*14));r.J.rotation.x=-.16*k+Math.sin(TS*14.2+r.ph)*.03;r.J.position.y+=.05*k;const a=r.arms[1];[a.up,a.lo,a.el,a.hd,a.cu].forEach(m=>m.visible=k<.25);r.fist.visible=k>=.25;
+    if(r.won){const k=Math.min(1,Math.max(0,(SIMT-TT*1.004)/1.1));r.J.rotation.x=-.16*k+Math.sin(TS*14.2+r.ph)*.03;r.J.position.y+=.05*k;const a=r.arms[1];[a.up,a.lo,a.el,a.hd,a.cu].forEach(m=>m.visible=k<.25);r.fist.visible=k>=.25;
       const pump=Math.max(0,Math.sin(TS*7.1));r.fist.rotation.x=(.5-pump*.6)*(1-k)+(-.15-pump*.55)*k;r.fist.rotation.z=-.15+pump*.15;r.fist.scale.setScalar(.6+.4*k);}
     r.cloths.forEach(cl=>{const pa=cl.geo.attributes.position,b=cl.base;for(let k=0;k<pa.count;k++){const w=cl.hang[k];if(!w)continue;const x=b[k*3],z=b[k*3+2],sw=w*w*(.045*sp*Math.sin(TS*9+r.ph+z*5)+.012*Math.sin(TS*3.1+z*9));pa.setX(k,x+Math.sign(x)*Math.abs(sw)*.8);pa.setZ(k,z-sw*.6);}pa.needsUpdate=true;});});
   const byD=[...RUN].sort((a,b)=>b.d-a.d),lead=byD[0],mid=byD[Math.floor(byD.length/2)];
