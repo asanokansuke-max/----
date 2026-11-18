@@ -136,33 +136,41 @@ function r3dReplay(frames){const RC=R3D&&R3D.RC||UI.race;if(!RC||!frames||!frame
     if(k>=imgs.length-1){if(++hold>14){k=0;hold=0;}}else k+=.5;setTimeout(tick,110);};tick();
   RC.goalShot={cv,full:true,W:384,H:216};}
 
-/* camera picker under the controls — a small switcher desk: an icon, the camera's name, and the horse it rides with;
-   the one on air glows gold with a blinking red tally light */
+/* camera switcher: one camera button — each tap cuts to the next camera (the broadcast, then the head-on, close, aerial
+   cameras, then the jockey cams and the chase cam); the button shows which one is on air, and the picture flashes its name */
 (function(){const st=document.createElement('style');st.textContent=`
-#r3d .cams{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none;margin-top:-2px;padding:2px 1px 3px}
-#r3d .cams::-webkit-scrollbar{display:none}
-#r3d .cams .ch{flex:none;position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:7px;align-items:center;min-height:40px;padding:5px 16px 5px 8px;border-radius:9px;
-  border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 6px rgba(0,0,0,.35);color:#d7e0da;text-align:left;cursor:pointer;transition:transform .12s,border-color .2s,background .2s}
-#r3d .cams .ch:active{transform:scale(.96)}
-#r3d .cams .ch svg{grid-row:1/3;width:20px;height:20px;opacity:.85}
-#r3d .cams .ch .t{font:700 9px/1.1 Oswald,sans-serif;letter-spacing:.14em;color:#8fa79a}
-#r3d .cams .ch .s{display:flex;align-items:center;gap:5px;font:800 11.5px/1.2 "Zen Kaku Gothic New",sans-serif;white-space:nowrap}
-#r3d .cams .ch .s i{font-style:normal;min-width:17px;padding:0 3px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
-#r3d .cams .ch.on{border-color:#e2b93b;background:linear-gradient(180deg,rgba(226,185,59,.30),rgba(226,185,59,.08));box-shadow:0 0 0 1px rgba(226,185,59,.5),0 0 14px rgba(226,185,59,.35),inset 0 1px 0 rgba(255,255,255,.15);color:#fff}
-#r3d .cams .ch.on .t{color:#f3d27a}#r3d .cams .ch.on svg{opacity:1}
-#r3d .cams .ch.on:after{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:r3dlv 1.2s infinite}
-#r3d.wide .cams .ch{min-height:34px;padding:3px 14px 3px 6px}#r3d.wide .cams .ch svg{width:16px;height:16px}#r3d.wide .cams .ch .s{font-size:10.5px}`;document.head.appendChild(st);})();
+#r3d .cams{flex:none;display:flex;gap:6px;align-items:stretch}
+#r3d .camcyc{flex:1;min-width:0;position:relative;display:grid;grid-template-columns:auto 1fr auto;align-items:center;column-gap:10px;min-height:46px;padding:5px 12px 5px 8px;border-radius:11px;
+  border:1px solid #e2b93b;background:linear-gradient(180deg,rgba(226,185,59,.26),rgba(226,185,59,.06));box-shadow:0 0 0 1px rgba(226,185,59,.35),0 0 14px rgba(226,185,59,.22),inset 0 1px 0 rgba(255,255,255,.15);color:#fff;text-align:left;cursor:pointer}
+#r3d .camcyc:active{transform:scale(.98)}
+#r3d .camcyc .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#111a14;border:1px solid rgba(255,255,255,.18);position:relative}
+#r3d .camcyc .ic svg{width:20px;height:20px}
+#r3d .camcyc .ic:after{content:"";position:absolute;right:-2px;top:-2px;width:7px;height:7px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:r3dlv 1.2s infinite}
+#r3d .camcyc .tx{min-width:0;display:grid;gap:1px}
+#r3d .camcyc .t{font:700 9.5px/1.1 Oswald,sans-serif;letter-spacing:.14em;color:#f3d27a}
+#r3d .camcyc .s{display:flex;align-items:center;gap:5px;font:800 13px/1.25 "Zen Kaku Gothic New",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#r3d .camcyc .s i{font-style:normal;min-width:17px;padding:0 3px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+#r3d .camcyc .dots{display:flex;gap:3px;align-items:center}
+#r3d .camcyc .dots b{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}#r3d .camcyc .dots b.on{background:#f3d27a;box-shadow:0 0 4px #f3d27a}
+#r3d .camback{flex:none;width:46px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#cfd8d2;font:700 10px/1.2 "Zen Kaku Gothic New",sans-serif;display:grid;place-items:center;padding:2px}
+#r3d .camback svg{width:16px;height:16px;display:block;margin:0 auto 1px}
+#r3d.wide .camcyc{min-height:38px;padding:3px 10px 3px 6px}#r3d.wide .camcyc .ic{width:28px;height:28px}#r3d.wide .camcyc .s{font-size:11.5px}#r3d.wide .camback{width:40px}
+.camtoast{position:absolute;left:3%;top:16%;z-index:3;pointer-events:none;display:flex;align-items:center;gap:8px;padding:6px 12px 6px 8px;border-radius:6px;background:rgba(8,14,10,.72);border-left:3px solid #e2b93b;color:#fff;font:800 13px "Zen Kaku Gothic New",sans-serif;animation:camtoast 2.2s ease forwards}
+.camtoast svg{width:16px;height:16px;color:#f3d27a}
+@keyframes camtoast{0%{opacity:0;transform:translateX(-10px)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}`;document.head.appendChild(st);})();
 const R3D_ICON={
   auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 21h8M12 18v3M7 3l5 3 5-3"/></svg>',
+  fixed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2z"/><path d="m16 11 5-3v10l-5-3"/><circle cx="6" cy="5" r="2"/><circle cx="12" cy="5" r="2"/></svg>',
   pov:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M3 15h18M14 15v-3h6"/><circle cx="9" cy="11" r="1.4" fill="currentColor"/></svg>',
   chase:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="13" height="10" rx="2"/><path d="M15.5 10.5 21 7.5v9l-5.5-3"/></svg>'};
 function r3dCams(RC){const box=document.getElementById('r3dcams');if(!box)return;const F=RC.field,me=F.find(f=>f.mine),fav=[...F].filter(f=>!f.mine).sort((a,b)=>(a.pop||99)-(b.pop||99))[0],riv=F.find(f=>f.rival&&!f.mine&&f!==fav);
   const wk=f=>{const w=wakuOf(f.no,F.length);return `<i style="background:${FRAMEC[w-1]};color:${FRAMET[w-1]}">${f.no}</i>`;};
-  const opts=[{v:'auto',no:0,t:'BROADCAST',s:'中継'}];
+  const opts=[{v:'auto',t:'BROADCAST',s:'中継'},{v:'fixed',name:'front',t:'HEAD-ON CAM',s:'正面カメラ'},{v:'fixed',name:'close',t:'CLOSE CAM',s:'並走カメラ'},{v:'fixed',name:'aerial',t:'AERIAL CAM',s:'空撮カメラ'}];
   if(me){opts.push({v:'pov',no:me.no,t:'JOCKEY CAM',s:wk(me)+'自分の馬'},{v:'chase',no:me.no,t:'CHASE CAM',s:wk(me)+'自分の馬'});}
   if(fav)opts.push({v:'pov',no:fav.no,t:'JOCKEY CAM',s:wk(fav)+'1番人気'});
   if(riv)opts.push({v:'pov',no:riv.no,t:'JOCKEY CAM',s:wk(riv)+'ライバル'});
-  box.innerHTML=opts.map((o,k)=>`<button class="ch ${k?'':'on'}" data-k="${k}">${R3D_ICON[o.v]}<span class="t">${o.t}</span><span class="s">${o.s}</span></button>`).join('');
-  box.onclick=e=>{const b=e.target.closest('button');if(!b||!R3D)return;const o=opts[+b.dataset.k];box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
-    b.scrollIntoView({inline:'nearest',block:'nearest',behavior:'smooth'});
-    const f=document.getElementById('r3dif');try{f.contentWindow.postMessage({type:'cam',view:o.v,no:o.no},'*');}catch(x){}};}
+  let cur=0;
+  const paint=()=>{const o=opts[cur];box.innerHTML=`<button class="camcyc" id="r3dcamb" aria-label="カメラを切り替える"><span class="ic">${R3D_ICON[o.v]}</span><span class="tx"><span class="t">${o.t}　${cur+1}/${opts.length}</span><span class="s">${o.s}</span></span><span class="dots">${opts.map((_,k)=>`<b class="${k===cur?'on':''}"></b>`).join('')}</span></button>${cur?`<button class="camback" id="r3dcam0">${R3D_ICON.auto}中継へ</button>`:''}`;};
+  const go=k=>{cur=k;paint();const o=opts[cur];const f=document.getElementById('r3dif');try{f.contentWindow.postMessage({type:'cam',view:o.v,no:o.no||0,name:o.name||''},'*');}catch(x){}
+    const vid=document.getElementById('r3dvid');if(vid){vid.querySelectorAll('.camtoast').forEach(x=>x.remove());vid.insertAdjacentHTML('beforeend',`<div class="camtoast">${R3D_ICON[o.v]}${o.s}</div>`);const t=vid.lastElementChild;setTimeout(()=>t.remove(),2300);}};
+  paint();box.onclick=e=>{if(!R3D)return;if(e.target.closest('#r3dcam0'))go(0);else if(e.target.closest('#r3dcamb'))go((cur+1)%opts.length);};}
