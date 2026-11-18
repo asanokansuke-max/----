@@ -6181,11 +6181,6 @@ let R3D=null;
 #r3d .side{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;overflow:auto}
 #r3d.wide .side{max-width:260px;padding-left:4px}#r3d.wide .hd{padding:2px 0 0;flex-wrap:wrap}#r3d.wide .hd b{font-size:15px;flex-basis:70%}#r3d.wide .calls{font-size:11px}#r3d.wide .ctl button{min-height:34px;font-size:11px}#r3d.wide .cheer{min-height:38px;font-size:15px}#r3d.wide .card{padding:7px 9px}#r3d.wide .side{gap:6px;padding-top:8px;overflow:hidden}#r3d.wide .calls{flex:1;min-height:0;overflow:hidden;justify-content:flex-end}#r3d.wide .hd small{font-size:10px}#r3d.wide .live{display:none}#r3d.wide .me .pos{font-size:22px}#r3d.wide .bar{margin-top:5px}
 #r3d .ctl{display:flex;gap:6px}
-#r3d .cams{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:none;margin-top:-2px}#r3d .cams::-webkit-scrollbar{display:none}
-#r3d .cams button{flex:none;min-height:30px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:#cfd8d2;font:700 11.5px "Zen Kaku Gothic New",sans-serif;white-space:nowrap}
-#r3d .cams button.on{background:#eef3ef;color:#0b1a10;border-color:#eef3ef}
-#r3d .cams button i{font-style:normal;display:inline-block;min-width:16px;padding:0 3px;margin-right:4px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center}
-#r3d.wide .cams button{min-height:26px;padding:0 8px;font-size:10.5px}
 #r3d.tall .side{overflow:hidden}#r3d.tall .calls{flex:1 1 auto;min-height:0;overflow:hidden;justify-content:flex-end}#r3d .calls .lb{flex:none}#r3d.tall .cheer{flex:none}
 #r3d .ctl button{flex:1;min-width:0;white-space:nowrap;padding:0 2px;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
 #r3d .ctl button.on{background:#c9a227;color:#111;border-color:#c9a227}
@@ -6287,15 +6282,35 @@ function r3dReplay(frames){const RC=R3D&&R3D.RC||UI.race;if(!RC||!frames||!frame
     if(k>=imgs.length-1){if(++hold>14){k=0;hold=0;}}else k+=.5;setTimeout(tick,110);};tick();
   RC.goalShot={cv,full:true,W:384,H:216};}
 
-/* camera picker under the controls: the broadcast (default), or a rider's-eye / chase view on your horse, the favourite and the rival */
+/* camera picker under the controls — a small switcher desk: an icon, the camera's name, and the horse it rides with;
+   the one on air glows gold with a blinking red tally light */
+(function(){const st=document.createElement('style');st.textContent=`
+#r3d .cams{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:none;margin-top:-2px;padding:2px 1px 3px}
+#r3d .cams::-webkit-scrollbar{display:none}
+#r3d .cams .ch{flex:none;position:relative;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:7px;align-items:center;min-height:40px;padding:5px 16px 5px 8px;border-radius:9px;
+  border:1px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 2px 6px rgba(0,0,0,.35);color:#d7e0da;text-align:left;cursor:pointer;transition:transform .12s,border-color .2s,background .2s}
+#r3d .cams .ch:active{transform:scale(.96)}
+#r3d .cams .ch svg{grid-row:1/3;width:20px;height:20px;opacity:.85}
+#r3d .cams .ch .t{font:700 9px/1.1 Oswald,sans-serif;letter-spacing:.14em;color:#8fa79a}
+#r3d .cams .ch .s{display:flex;align-items:center;gap:5px;font:800 11.5px/1.2 "Zen Kaku Gothic New",sans-serif;white-space:nowrap}
+#r3d .cams .ch .s i{font-style:normal;min-width:17px;padding:0 3px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+#r3d .cams .ch.on{border-color:#e2b93b;background:linear-gradient(180deg,rgba(226,185,59,.30),rgba(226,185,59,.08));box-shadow:0 0 0 1px rgba(226,185,59,.5),0 0 14px rgba(226,185,59,.35),inset 0 1px 0 rgba(255,255,255,.15);color:#fff}
+#r3d .cams .ch.on .t{color:#f3d27a}#r3d .cams .ch.on svg{opacity:1}
+#r3d .cams .ch.on:after{content:"";position:absolute;right:6px;top:6px;width:6px;height:6px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:r3dlv 1.2s infinite}
+#r3d.wide .cams .ch{min-height:34px;padding:3px 14px 3px 6px}#r3d.wide .cams .ch svg{width:16px;height:16px}#r3d.wide .cams .ch .s{font-size:10.5px}`;document.head.appendChild(st);})();
+const R3D_ICON={
+  auto:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M8 21h8M12 18v3M7 3l5 3 5-3"/></svg>',
+  pov:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M3 15h18M14 15v-3h6"/><circle cx="9" cy="11" r="1.4" fill="currentColor"/></svg>',
+  chase:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="7" width="13" height="10" rx="2"/><path d="M15.5 10.5 21 7.5v9l-5.5-3"/></svg>'};
 function r3dCams(RC){const box=document.getElementById('r3dcams');if(!box)return;const F=RC.field,me=F.find(f=>f.mine),fav=[...F].filter(f=>!f.mine).sort((a,b)=>(a.pop||99)-(b.pop||99))[0],riv=F.find(f=>f.rival&&!f.mine&&f!==fav);
   const wk=f=>{const w=wakuOf(f.no,F.length);return `<i style="background:${FRAMEC[w-1]};color:${FRAMET[w-1]}">${f.no}</i>`;};
-  const opts=[{v:'auto',no:0,h:'中継'}];
-  if(me){opts.push({v:'pov',no:me.no,h:wk(me)+'自分の馬・騎手目線'},{v:'chase',no:me.no,h:wk(me)+'自分の馬・後方'});}
-  if(fav)opts.push({v:'pov',no:fav.no,h:wk(fav)+'1番人気・騎手目線'});
-  if(riv)opts.push({v:'pov',no:riv.no,h:wk(riv)+'ライバル・騎手目線'});
-  box.innerHTML=opts.map((o,k)=>`<button data-k="${k}" class="${k?'':'on'}">${o.h}</button>`).join('');
+  const opts=[{v:'auto',no:0,t:'BROADCAST',s:'中継'}];
+  if(me){opts.push({v:'pov',no:me.no,t:'JOCKEY CAM',s:wk(me)+'自分の馬'},{v:'chase',no:me.no,t:'CHASE CAM',s:wk(me)+'自分の馬'});}
+  if(fav)opts.push({v:'pov',no:fav.no,t:'JOCKEY CAM',s:wk(fav)+'1番人気'});
+  if(riv)opts.push({v:'pov',no:riv.no,t:'JOCKEY CAM',s:wk(riv)+'ライバル'});
+  box.innerHTML=opts.map((o,k)=>`<button class="ch ${k?'':'on'}" data-k="${k}">${R3D_ICON[o.v]}<span class="t">${o.t}</span><span class="s">${o.s}</span></button>`).join('');
   box.onclick=e=>{const b=e.target.closest('button');if(!b||!R3D)return;const o=opts[+b.dataset.k];box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    b.scrollIntoView({inline:'nearest',block:'nearest',behavior:'smooth'});
     const f=document.getElementById('r3dif');try{f.contentWindow.postMessage({type:'cam',view:o.v,no:o.no},'*');}catch(x){}};}
 /* =========================================================
    surprises: more calls & mails, irregular monthly happenings, cooldowns
