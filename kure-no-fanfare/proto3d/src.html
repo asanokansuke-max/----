@@ -32,11 +32,6 @@ html,body{margin:0;height:100%;background:#0b120e;color:var(--ink);font-family:"
 #tv .dist small{font-size:.72em;margin-right:.4em;opacity:.85}
 #tv .spd{position:absolute;right:2.2vw;bottom:1.7vw;font-size:1.7vw;display:flex;gap:1.2vw;align-items:baseline}
 #tv .spd i{font-style:normal;opacity:.85;font-size:.75em}
-/* a small (portrait phone) frame: the side panel already carries the race card, so keep only the running order, map, clock and distance — bigger */
-@media (max-width:560px){#tv .race,#tv .favs,#tv .sep{display:none}#tv .bar{height:26%}#tv .bar:before{top:18%}
- #tv .chain{left:3vw;right:25vw;bottom:2.2vw;height:12vw}#tv .bb{width:3.8vw;height:3.8vw;margin:-1.9vw 0 0 -1.9vw;font-size:2.2vw;border-width:.25vw}
- #tv .bb:after{margin-top:-.7vw;border-width:.7vw}#tv .bb.r:after{right:-1.4vw}#tv .bb.l:after{left:-1.4vw}#tv .chev{font-size:3vw;bottom:6vw}
- #tv .map{width:21vw;bottom:12.5vw}#tv .dist{font-size:2.6vw;bottom:7vw}#tv .spd{font-size:2.6vw;bottom:2.4vw}#tv .tm{font-size:7vw}#tv .mark svg{height:4.4vw!important}}
 #call{position:fixed;left:12px;right:12px;top:calc(10px + env(safe-area-inset-top,0px));font-size:15px;font-weight:700;text-shadow:0 1px 3px #000;min-height:1.4em}
 @media (max-width:600px){#call{top:auto!important;bottom:23%!important;left:4%!important;right:4%!important;font-size:10px!important;text-shadow:0 1px 2px #000,0 0 4px #000}
  #emb_ff,#emb_done{padding:3px 7px!important;font-size:10px!important}}
@@ -46,7 +41,7 @@ html,body{margin:0;height:100%;background:#0b120e;color:var(--ink);font-family:"
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head><body>
 <canvas id="cv"></canvas>
-<div id="tv"><div class="tm" id="tm"></div><div class="mark" id="mark"></div><div class="bar"></div><div class="sep" style="left:16.2vw"></div><div class="sep" style="left:29.6vw"></div><div class="sep" style="right:20vw"></div><svg class="map" id="map" viewBox="0 0 200 90"></svg><div class="dist"><small id=sfnm>TURF</small><span id=dstnm></span></div><div class="spd"><span>⏱ <b id="kmh">0.0</b><i>km/h</i></span></div><div class="chain" id="chain"></div><div class="chev" id="chev"></div><div class="favs" id="favs"></div><div class="race"><b><i>11R</i><span id=rcttl></span></b><span><span id=crsnm></span>　<span id=rcnm></span></span></div></div><div id="call"></div><div id="cam" hidden></div><div id="split" hidden style="position:fixed;left:0;right:0;top:25%;height:5px;background:#000;pointer-events:none"></div>
+<div id="tv"><div class="tm" id="tm"></div><div class="mark" id="mark"></div><div class="bar"></div><div class="sep" style="left:16.2vw"></div><div class="sep" style="left:29.6vw"></div><div class="sep" style="right:20vw"></div><svg class="map" id="map" viewBox="0 0 200 90"></svg><div class="dist"><small id=sfnm>TURF</small><span id=dstnm></span></div><div class="spd"><span>🐎 0<i>%</i></span><span>⏱ <b id="kmh">0.0</b><i>km/h</i></span></div><div class="chain" id="chain"></div><div class="chev" id="chev"></div><div class="favs" id="favs"></div><div class="race"><b><i>11R</i><span id=rcttl></span></b><span><span id=crsnm></span>　<span id=rcnm></span></span></div></div><div id="call"></div><div id="cam" hidden></div><div id="split" hidden style="position:fixed;left:0;right:0;top:25%;height:5px;background:#000;pointer-events:none"></div>
 <div id="load">読み込み中…</div>
 <button id="go" hidden>レース開始</button><button id="padgo" hidden style="position:fixed;left:50%;top:calc(50% - 56px);transform:translateX(-50%);padding:10px 22px;font-size:15px;font-weight:800;border-radius:10px;border:0;background:#c9a227;color:#111">パドックを見る</button><div id="padbar" hidden style="position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);gap:8px"><button id="tomare" style="padding:10px 18px;font-weight:800;border-radius:10px;border:0;background:#fff;color:#111">止まーれ！</button><button id="tohon" style="padding:10px 18px;font-weight:800;border-radius:10px;border:0;background:#2a7f62;color:#fff">本馬場入場へ</button></div><div id="grades" style="position:fixed;left:50%;top:calc(50% + 44px);transform:translateX(-50%);display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:min(92vw,620px)"></div>
 <script>window.HORSE_B64="__HORSE__";</script>
@@ -716,21 +711,12 @@ function segAt(sg,f){let L=0;const ls=[];for(let k=1;k<sg.length;k++){const d=Ma
 let MAPO=null;const SURF_D=QS.get('surf')==='ダ';
 // a lap position s on the 3D course → a point on the map (the four pieces of the lap map onto the four pieces of the outline)
 function mapPt(s){s=((s%P)+P)%P;const b=[LS,LS+Math.PI*RAD,2*LS+Math.PI*RAD,P];let i=0,s0=0;while(i<3&&s>b[i]){s0=b[i];i++;}return segAt(MAPO[i],(s-s0)/(b[i]-s0));}
-function drawMap(){const sv=document.getElementById('map');const turf=mapOutline(0),dirt=mapOutline(9);MAPO=SURF_D?dirt:turf;
-  const P2=sg=>sg.flat().map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';
-  const st=mapPt(START),fn=mapPt(FIN);
-  sv.innerHTML=`<path d="${P2(turf)}" fill="#245a31" stroke="#16391f" stroke-width="15" stroke-linejoin="round"/>
-   <path d="${P2(turf)}" fill="none" stroke="${SURF_D?'#5f8f55':'#86bd72'}" stroke-width="8" stroke-linejoin="round"/>
-   <path d="${P2(dirt)}" fill="none" stroke="${SURF_D?'#c99a62':'#8f7351'}" stroke-width="6" stroke-linejoin="round"/>
-   <path d="${P2(MAPO)}" fill="none" stroke="#f1ecd8" stroke-width="1.6" stroke-linejoin="round"/>
-   <circle cx="${st[0].toFixed(1)}" cy="${st[1].toFixed(1)}" r="3" fill="#fff" stroke="#16391f" stroke-width="1.2"/>
-   <path d="M${fn[0].toFixed(1)} ${(fn[1]-8).toFixed(1)}L${fn[0].toFixed(1)} ${(fn[1]+8).toFixed(1)}" stroke="#ff4040" stroke-width="2.4"/>
-   <text x="${fn[0].toFixed(1)}" y="${(fn[1]+18).toFixed(1)}" font-size="10" font-weight="700" fill="#fff" text-anchor="middle" font-family="Oswald,sans-serif">GOAL</text>
-   <path id="mprog" fill="none" stroke="#ff3b30" stroke-width="3.2" stroke-linecap="round"/><circle id="mdot" r="4.2" fill="#ff3b30" stroke="#fff" stroke-width="1.6"/>`;
-  window.__mapT=(x,z)=>[0,0];mapDone=true;}
+function drawMap(){const sv=document.getElementById('map');MAPO=mapOutline(0).map(sg=>sg.map(([x,y])=>{const u=(x-14)/172,v=1-(y-12)/56;return [10+u*170*.93+v*12,8+(1-v)*60+u*8];}));
+  const d=MAPO.flat().map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join('')+'Z';
+  sv.innerHTML=`<path d="${d}" fill="#2f6b3a" stroke="#1d4426" stroke-width="16" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#7ab06a" stroke-width="10" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="#e8e2c8" stroke-width="2"/><path id="mprog" fill="none" stroke="#e33" stroke-width="3" stroke-linecap="round"/><circle id="mdot" r="4" fill="#e33" stroke="#fff" stroke-width="1.5"/>`;mapDone=true;}
 let lastLead=0,kmh=0;const fav=[];
 function hud(byD,tau,dt){if(!mapDone){document.getElementById('crsnm').textContent=CRS.jp+'  '+CRS.en;document.getElementById('dstnm').textContent=D.toLocaleString()+'m';document.getElementById('rcnm').textContent=(QS.get('surf')==='ダ'?'ダ':'芝')+D+'m';document.getElementById('sfnm').textContent=QS.get('surf')==='ダ'?'DIRT':'TURF';document.getElementById('rcttl').textContent=IN&&IN.title?IN.title:(RACE_TITLE||CRS.name);drawMap();document.getElementById('mark').innerHTML=logoSVG(28,'#ffffff');document.getElementById('mark').style.opacity='.85';}const T=window.__mapT,n=RUN.length,lead=byD[0];
-  const el=started?SIMT:0,sec=Math.floor(el),ds=Math.floor((el-sec)*10);document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}.${ds}`;
+  const el=started?SIMT:0,sec=Math.floor(el),ds=Math.floor((el-sec)*10);document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}.${String(sec%60).padStart(2,'0')}.${ds}`;
   const nowS=SIMT;if(started&&tau<1.0&&lead.pd!=null&&nowS>lastLead){const v=(lead.d-lead.pd)/(nowS-lastLead)*3.6;if(v>20&&v<90)kmh+=(v-kmh)*.15;}RUN.forEach(r=>r.pd=r.d);lastLead=nowS;document.getElementById('kmh').textContent=kmh.toFixed(1);
   // map progress: from the start to the leader
   {let d='';const L=Math.min(D,lead.d);for(let x=0;x<=L;x+=15){const q=mapPt(START+x);d+=(x?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1);}const pt=mapPt(START+L);

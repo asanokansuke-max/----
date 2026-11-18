@@ -6,7 +6,7 @@
 const R3D_CRS={東京:'tokyo',中山:'nakayama',京都:'kyoto',阪神:'hanshin',札幌:'sapporo',福島:'fukushima',中京:'chukyo',新潟:'niigata',小倉:'kokura',函館:'hakodate'};
 function r3dGrade(r){const n=r.name||'';if(r.grade==='G1'){if(/ダービー|東京優駿/.test(n))return 'derby';if(/皐月賞|菊花賞|桜花賞|オークス|優駿牝馬/.test(n))return 'classic';return 'G1';}
   if(r.grade==='G2'||r.grade==='G3')return r.grade;if(r.grade==='OP'||/特別|ステークス|カップ|賞$/.test(n))return 'special';return 'ordinary';}
-function r3dOn(){return !(S&&S.flags&&S.flags.r3d===0);}
+function r3dOn(){return true;}   // the race is always shown in 3D (the 2D view is retired)
 function r3dDoc(RC,mode){const inp=r3dInput(RC);inp.mode=mode||'race';return R3D_HTML.replace('<script type="importmap">','<script>window.RACE_IN='+JSON.stringify(inp).replace(/</g,'\\u003c')+';<\/script><script type="importmap">');}
 function r3dInput(RC){const r=RC.race,hex=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#888888';
   return {course:R3D_CRS[r.course]||'tokyo',dist:r.dist,surf:r.surf,going:r.going||'良',grade:r3dGrade(r),race:r.key==='有馬記念'?'arima':'',time:r.key==='有馬記念'?'evening':'',
@@ -64,7 +64,7 @@ function open3D(RC){
   ov.innerHTML=`<div class="hd"><span class="gb ${gcls}">${esc(r.grade||'')}</span><b>${esc(r.name)}</b><small>${esc(r.course)} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m・${esc(r.going||'良')}</small><span class="live"><i></i>LIVE</span></div>
     <div class="vid" id="r3dvid"><div class="prep"><i></i>中継準備中</div><iframe id="r3dif" allow="autoplay; fullscreen"></iframe></div>
     <div class="side">
-      <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3d2d">2D</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button><button id="r3dvc" class="${VOICE_ON?'on':''}" style="flex:.7">実況</button></div>
+      <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button><button id="r3dvc" class="${VOICE_ON?'on':''}" style="flex:.7">実況</button></div>
       ${me?`<div class="card"><div class="me">${typeof silk==='function'?silk(me.silks,34):''}<span class="nm">${esc(me.name)}</span><span class="pos" id="r3dpos">—<small>番手</small></span><span class="sub">${me.no}番・${esc(me.jname||'')}</span></div>
         <div class="bar"><i id="r3dbar"></i></div><div class="rem"><span id="r3dph">発走前</span><span id="r3drem">${r.dist}m</span></div></div>`:''}
       <div class="card calls" id="r3dcalls"><div class="lb">実況</div><p>まもなく発走です</p></div>
@@ -82,7 +82,6 @@ function open3D(RC){
   document.getElementById('r3dvc').onclick=e=>{VOICE_ON=!VOICE_ON;try{localStorage.setItem('kure-voice',VOICE_ON?'1':'0');}catch(x){}e.target.classList.toggle('on',VOICE_ON);if(!VOICE_ON)spStop();else{if(!SND.on){SND.on=true;try{localStorage.setItem('kure-snd','1');}catch(x){}document.getElementById('r3dsnd').classList.add('on');try{sndInit();sndStart();}catch(x){}}r3dVoiceUnlock();speak('実況をお伝えします');}};
   document.getElementById('r3dsnd').onclick=e=>{SND.on=!SND.on;try{localStorage.setItem('kure-snd',SND.on?'1':'0');}catch(x){}e.target.classList.toggle('on',SND.on);if(!SND.on)sndStop();else{sndInit();sndStart();}};
   document.getElementById('r3dsk').onclick=()=>post({type:'skip'});
-  document.getElementById('r3d2d').onclick=()=>{S.flags.r3d=0;save();close3D();showRaceView(RC.long);};
   const ch=document.getElementById('r3dcheer');if(ch)ch.onclick=()=>{const v=document.getElementById('r3dvid'),d=document.createElement('div');d.className='shout';d.textContent=pick(['行けー！！','差せー！！','そのまま！！','粘れー！！']);v.appendChild(d);setTimeout(()=>d.remove(),950);try{sndCrowd(.6);}catch(e){}try{se&&se('select');if(navigator.vibrate)navigator.vibrate(30);}catch(e){}};
   try{sndStop&&sndStop();}catch(e){}
   try{sndInit();}catch(e){}if(VOICE_ON)r3dVoiceUnlock();R3D.hoofT=setInterval(()=>{if(R3D&&R3D.snd&&SND.nodes)sndHoofs(R3D.snd.run,R3D.snd.cad,R3D.snd.vol);},90);}
