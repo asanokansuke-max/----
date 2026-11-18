@@ -4976,6 +4976,20 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
 }
 showBoard=(o=>function(){const r=o.apply(this,arguments);const RC=UI.race,pr=$('#sheet .board-pair');if(RC&&pr&&!$('#pfcv')){pr.insertAdjacentHTML('beforebegin','<div style="border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #2b2f33"><canvas id="pfcv" style="display:block;width:100%" aria-label="決勝写真"></canvas></div>');
   const cv=$('#pfcv');const loop=()=>{if(!document.getElementById('pfcv'))return;drawPhotoFinish(cv,RC);setTimeout(()=>requestAnimationFrame(loop),80);};loop();}return r;})(showBoard);
+/* the result board must fit on one screen: if the sheet would scroll, shrink the pictures (they keep their proportions);
+   on a landscape phone the finish photo and the board sit side by side */
+(function(){const st=document.createElement('style');st.textContent=`.bboard canvas,.bview canvas{height:auto!important}.bview::after{white-space:nowrap}
+.bland{display:grid;grid-template-columns:2.4fr 1fr;gap:12px;align-items:center;margin:0 auto 8px}.bland .board-pair{margin:0;grid-template-columns:1fr}.bland .bview{display:none}`;document.head.appendChild(st);})();
+function boardFit(){const sh=$('#sheet'),pr=$('#sheet .board-pair');if(!sh||!pr||$('#modal').hidden)return;
+  const pfw=$('#pfcv')?$('#pfcv').parentNode:null,land=innerWidth>innerHeight*1.3;
+  if(land&&pfw&&!pr.closest('.bland')){const w=document.createElement('div');w.className='bland';pfw.parentNode.insertBefore(w,pfw);w.appendChild(pfw);w.appendChild(pr);}
+  else if(!land&&pr.closest('.bland')){const w=pr.closest('.bland');w.parentNode.insertBefore(pfw,w);w.parentNode.insertBefore(pr,w);w.remove();}
+  const box=pr.closest('.bland'),items=box?[box]:[pr,pfw];items.forEach(e=>{if(e){e.style.width='';e.style.marginLeft=e.style.marginRight='';}});
+  let over=sh.scrollHeight-sh.clientHeight;if(over<=2)return;
+  const shrink=(e,minK)=>{if(!e||over<=2)return;const h=e.offsetHeight;if(!h)return;const k=Math.max(minK,(h-over-6)/h);e.style.width=(k*100).toFixed(1)+'%';e.style.marginLeft=e.style.marginRight='auto';over-=h*(1-k);};
+  if(box)shrink(box,.4);else{shrink(pr,.42);shrink(pfw,.42);}}
+showBoard=(o=>function(){const r=o.apply(this,arguments);[30,200,600,1200].forEach(t=>setTimeout(boardFit,t));return r;})(showBoard);
+addEventListener('resize',()=>{if(document.getElementById('board'))boardFit();});
 /* =========================================================
    4コーナーのカメラ: the field comes round the final turn toward the lens,
    then swings side-on into the straight (perspective camera on the stand side)
@@ -6076,6 +6090,7 @@ let R3D=null;
 #r3d .side{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;overflow:auto}
 #r3d.wide .side{max-width:260px;padding-left:4px}#r3d.wide .hd{padding:2px 0 0;flex-wrap:wrap}#r3d.wide .hd b{font-size:15px;flex-basis:70%}#r3d.wide .calls{font-size:11px}#r3d.wide .ctl button{min-height:34px;font-size:11px}#r3d.wide .cheer{min-height:38px;font-size:15px}#r3d.wide .card{padding:7px 9px}#r3d.wide .side{gap:6px;padding-top:8px;overflow:hidden}#r3d.wide .calls{flex:1;min-height:0;overflow:hidden;justify-content:flex-end}#r3d.wide .hd small{font-size:10px}#r3d.wide .live{display:none}#r3d.wide .me .pos{font-size:22px}#r3d.wide .bar{margin-top:5px}
 #r3d .ctl{display:flex;gap:6px}
+#r3d.tall .side{overflow:hidden}#r3d.tall .calls{flex:1 1 auto;min-height:0;overflow:hidden}#r3d.tall .cheer{flex:none}
 #r3d .ctl button{flex:1;min-width:0;white-space:nowrap;padding:0 2px;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
 #r3d .ctl button.on{background:#c9a227;color:#111;border-color:#c9a227}
 #r3d .ctl button.pri{background:#1f7a48;border-color:#1f7a48}
@@ -6160,6 +6175,13 @@ showWarmup=(o=>function(){const r=o.apply(this,arguments);embed3DIn('wup','warmu
 showPaddock=(o=>function(){const r=o.apply(this,arguments);embed3DIn('pdk','paddock',.62);return r;})(showPaddock);
 showParade=(o=>function(){const r=o.apply(this,arguments);embed3DIn('prd','parade',.56);return r;})(showParade);
 ACT.tomare=(o=>function(){const f=document.querySelector('iframe#pdk');if(f&&f.contentWindow)f.contentWindow.postMessage({type:'tomare'},'*');return o.apply(this,arguments);})(ACT.tomare);
+/* while the 3D broadcast is on screen the rest of the game holds still: no BGM (only the course sounds),
+   no phone calls or notification banners queued up behind it */
+const r3dLive=()=>{const o=document.getElementById('r3d');return !!o&&!o.classList.contains('out');};
+bgmApply=(o=>function(){if(r3dLive())AUD.over='none';return o.apply(this,arguments);})(bgmApply);
+notifIdle=(o=>function(){return !r3dLive()&&o.apply(this,arguments);})(notifIdle);
+maybeCall=(o=>function(){if(r3dLive())return;return o.apply(this,arguments);})(maybeCall);
+open3D=(o=>function(){const r=o.apply(this,arguments);try{AUD.over='none';bgmApply();}catch(e){}return r;})(open3D);
 /* =========================================================
    surprises: more calls & mails, irregular monthly happenings, cooldowns
    ========================================================= */

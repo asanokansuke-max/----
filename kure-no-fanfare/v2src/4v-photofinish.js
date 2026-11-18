@@ -35,3 +35,17 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
 }
 showBoard=(o=>function(){const r=o.apply(this,arguments);const RC=UI.race,pr=$('#sheet .board-pair');if(RC&&pr&&!$('#pfcv')){pr.insertAdjacentHTML('beforebegin','<div style="border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #2b2f33"><canvas id="pfcv" style="display:block;width:100%" aria-label="決勝写真"></canvas></div>');
   const cv=$('#pfcv');const loop=()=>{if(!document.getElementById('pfcv'))return;drawPhotoFinish(cv,RC);setTimeout(()=>requestAnimationFrame(loop),80);};loop();}return r;})(showBoard);
+/* the result board must fit on one screen: if the sheet would scroll, shrink the pictures (they keep their proportions);
+   on a landscape phone the finish photo and the board sit side by side */
+(function(){const st=document.createElement('style');st.textContent=`.bboard canvas,.bview canvas{height:auto!important}.bview::after{white-space:nowrap}
+.bland{display:grid;grid-template-columns:2.4fr 1fr;gap:12px;align-items:center;margin:0 auto 8px}.bland .board-pair{margin:0;grid-template-columns:1fr}.bland .bview{display:none}`;document.head.appendChild(st);})();
+function boardFit(){const sh=$('#sheet'),pr=$('#sheet .board-pair');if(!sh||!pr||$('#modal').hidden)return;
+  const pfw=$('#pfcv')?$('#pfcv').parentNode:null,land=innerWidth>innerHeight*1.3;
+  if(land&&pfw&&!pr.closest('.bland')){const w=document.createElement('div');w.className='bland';pfw.parentNode.insertBefore(w,pfw);w.appendChild(pfw);w.appendChild(pr);}
+  else if(!land&&pr.closest('.bland')){const w=pr.closest('.bland');w.parentNode.insertBefore(pfw,w);w.parentNode.insertBefore(pr,w);w.remove();}
+  const box=pr.closest('.bland'),items=box?[box]:[pr,pfw];items.forEach(e=>{if(e){e.style.width='';e.style.marginLeft=e.style.marginRight='';}});
+  let over=sh.scrollHeight-sh.clientHeight;if(over<=2)return;
+  const shrink=(e,minK)=>{if(!e||over<=2)return;const h=e.offsetHeight;if(!h)return;const k=Math.max(minK,(h-over-6)/h);e.style.width=(k*100).toFixed(1)+'%';e.style.marginLeft=e.style.marginRight='auto';over-=h*(1-k);};
+  if(box)shrink(box,.4);else{shrink(pr,.42);shrink(pfw,.42);}}
+showBoard=(o=>function(){const r=o.apply(this,arguments);[30,200,600,1200].forEach(t=>setTimeout(boardFit,t));return r;})(showBoard);
+addEventListener('resize',()=>{if(document.getElementById('board'))boardFit();});
