@@ -581,7 +581,18 @@ const GLARE=(()=>{const d=document.createElement('div');d.style.cssText='positio
 function sunGlare(){if(RAIN){GLARE.style.opacity=0;return;}const v=sun.position.clone().sub(sun.target.position).normalize().multiplyScalar(900).add(cam.position).project(cam);
   const on=v.z<1&&Math.abs(v.x)<1.6&&Math.abs(v.y)<1.6,x=(v.x+1)/2*100,y=(1-v.y)/2*100,k=on?Math.max(0,1-Math.hypot(v.x,v.y)/2.2):0;
   GLARE.style.opacity=(k*(EVE?.9:.55)).toFixed(2);GLARE.style.background=`radial-gradient(circle at ${x}% ${y}%,rgba(255,236,200,.95) 0,rgba(255,214,150,.45) 6%,rgba(255,200,140,.12) 22%,rgba(255,200,140,0) 45%)`;}
-let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sort((a,b)=>b.d-a.d);if(location.hash==='#head'){const r=RUN[+(QS0.get('hh')||0)],p=r.g.position,yw=r.g.rotation.y,hx=Math.sin(yw),hz=Math.cos(yw);cam.position.set(p.x+hx*3.2+hz*1.6,2.1,p.z+hz*3.2-hx*1.6);cam.lookAt(p.x+hx*1.35,1.75,p.z+hz*1.35);cam.fov=26;cam.updateProjectionMatrix();sun.position.set(p.x+30,60,p.z-30);sun.target.position.copy(p);return;}if(location.hash==='#close'){const r=[...RUN].sort((a,b)=>laneOf(b,0)-laneOf(a,0))[0];const p=r.g.position,yw=r.g.rotation.y,hx=Math.sin(yw),hz=Math.cos(yw),nx=-hz,nz=hx,sd=((p.x*nx+p.z*nz)>0?1:-1)*(location.search.includes('L')?-1:1);cam.position.set(p.x+nx*sd*3.6+hx*.6,1.6,p.z+nz*sd*3.6+hz*.6);cam.lookAt(p.x+hx*.1,1.05,p.z+hz*.1);cam.fov=30;cam.updateProjectionMatrix();sun.position.set(p.x+30,60,p.z-30);sun.target.position.copy(p);return;}const name=(new URLSearchParams(location.search).get('cam'))||camFor(lead.d,mid.d,tau);window.__cam=name;const m=pathAt(START+mid.d,3),l=pathAt(START+lead.d,3),tl=pathAt(START+tail.d,3);
+/* viewer-chosen cameras on top of the broadcast: a rider's-eye view from any horse's saddle, or a chase camera behind it */
+const CAMSEL={view:'auto',no:0};const _pv=new THREE.Vector3(),_pt=new THREE.Vector3();
+function camReset(){RUN.forEach(r=>{r.J.visible=true;});cam.near=1;cam.updateProjectionMatrix();camName='';}
+function povCam(r,v,dt){r.g.updateMatrixWorld(true);
+  if(v==='pov'){r.J.visible=false;r.J.localToWorld(_pv.set(0,2.06,.34));r.g.localToWorld(_pt.set(0,1.2,13));cam.position.copy(_pv);
+    if(!curCam||curCam.pov!==r.no)curCam={t:_pt.clone(),pov:r.no};curCam.t.lerp(_pt,Math.min(1,dt*10+.05));cam.lookAt(curCam.t);cam.fov=70;cam.near=.04;}
+  else{RUN.forEach(x=>{x.J.visible=true;});r.g.localToWorld(_pv.set(-.6,3.3,-7.8));r.g.localToWorld(_pt.set(0,1.3,5));
+    if(!curCam||curCam.pov!==-r.no){curCam={t:_pt.clone(),pov:-r.no};cam.position.copy(_pv);}cam.position.lerp(_pv,Math.min(1,dt*5+.05));curCam.t.lerp(_pt,Math.min(1,dt*8+.05));cam.lookAt(curCam.t);cam.fov=46;cam.near=.3;}
+  cam.updateProjectionMatrix();SPL.on=false;camName='';const p=r.g.position;sun.position.set(p.x+.62*400,.5*400,p.z-.6*400);sun.target.position.copy(p);}
+let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sort((a,b)=>b.d-a.d);
+  if(CAMSEL.view!=='auto'&&MODE==='race'&&tau<1&&(started||INGATE||LOAD)){const r=RUN.find(x=>x.no===CAMSEL.no);if(r){povCam(r,CAMSEL.view,Math.max(dt,DTS));window.__cam=CAMSEL.view;return;}}
+  if(CAMSEL.view!=='auto'&&tau>=1&&!CAMSEL.done){CAMSEL.done=1;camReset();}if(location.hash==='#head'){const r=RUN[+(QS0.get('hh')||0)],p=r.g.position,yw=r.g.rotation.y,hx=Math.sin(yw),hz=Math.cos(yw);cam.position.set(p.x+hx*3.2+hz*1.6,2.1,p.z+hz*3.2-hx*1.6);cam.lookAt(p.x+hx*1.35,1.75,p.z+hz*1.35);cam.fov=26;cam.updateProjectionMatrix();sun.position.set(p.x+30,60,p.z-30);sun.target.position.copy(p);return;}if(location.hash==='#close'){const r=[...RUN].sort((a,b)=>laneOf(b,0)-laneOf(a,0))[0];const p=r.g.position,yw=r.g.rotation.y,hx=Math.sin(yw),hz=Math.cos(yw),nx=-hz,nz=hx,sd=((p.x*nx+p.z*nz)>0?1:-1)*(location.search.includes('L')?-1:1);cam.position.set(p.x+nx*sd*3.6+hx*.6,1.6,p.z+nz*sd*3.6+hz*.6);cam.lookAt(p.x+hx*.1,1.05,p.z+hz*.1);cam.fov=30;cam.updateProjectionMatrix();sun.position.set(p.x+30,60,p.z-30);sun.target.position.copy(p);return;}const name=(new URLSearchParams(location.search).get('cam'))||camFor(lead.d,mid.d,tau);window.__cam=name;const m=pathAt(START+mid.d,3),l=pathAt(START+lead.d,3),tl=pathAt(START+tail.d,3);
   const ah=pathAt(START+lead.d+4,4),tb0=0,tb=pathAt(START+tail.d-3,4),fx=(ah.x+tb.x)/2,fz=(ah.z+tb.z)/2,spread=Math.max(11,Math.hypot(ah.x-tb.x,ah.z-tb.z)*.92+2);
   const frame=(px,py,pz,w)=>{const d=Math.hypot(px-fx,pz-fz,py);return 2*Math.atan(w/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.0;};
   let fov=14;
@@ -935,7 +946,7 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
 /* ---------- loop ---------- */
 const clock=new THREE.Clock();let last=0,calls=[];
 const say=s=>{document.getElementById('call').textContent=s;if(IN){try{parent.postMessage({type:'race3d-call',text:s},'*');}catch(e){}}};
-addEventListener('message',e=>{const d=e.data||{};if(d.type==='tomare'&&PAD.on){PAD.stage='mount';PAD.t=0;}if(d.type==='ff'){FFWD=d.on?3:1;}
+addEventListener('message',e=>{const d=e.data||{};if(d.type==='cam'){CAMSEL.view=d.view||'auto';CAMSEL.no=d.no||0;CAMSEL.done=0;camReset();return;}if(d.type==='tomare'&&PAD.on){PAD.stage='mount';PAD.t=0;}if(d.type==='ff'){FFWD=d.on?3:1;}
   if(d.type==='skip'){if(started){SIMT=Math.max(SIMT,TT*1.17);}else if(window.__seek)window.__seek(.995);}});
 const RPF=(()=>{const c=document.createElement('canvas');c.width=384;c.height=216;return {c,x:c.getContext('2d'),list:[],t:0};})();
 let INGATE=false,STATEF=0,FFWD=1,SIMT=0,SLOW=1,TS=0,LOAD=null;

@@ -35,6 +35,11 @@ let R3D=null;
 #r3d .side{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;gap:8px;padding:10px 14px 12px;overflow:auto}
 #r3d.wide .side{max-width:260px;padding-left:4px}#r3d.wide .hd{padding:2px 0 0;flex-wrap:wrap}#r3d.wide .hd b{font-size:15px;flex-basis:70%}#r3d.wide .calls{font-size:11px}#r3d.wide .ctl button{min-height:34px;font-size:11px}#r3d.wide .cheer{min-height:38px;font-size:15px}#r3d.wide .card{padding:7px 9px}#r3d.wide .side{gap:6px;padding-top:8px;overflow:hidden}#r3d.wide .calls{flex:1;min-height:0;overflow:hidden;justify-content:flex-end}#r3d.wide .hd small{font-size:10px}#r3d.wide .live{display:none}#r3d.wide .me .pos{font-size:22px}#r3d.wide .bar{margin-top:5px}
 #r3d .ctl{display:flex;gap:6px}
+#r3d .cams{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;flex:none;margin-top:-2px}#r3d .cams::-webkit-scrollbar{display:none}
+#r3d .cams button{flex:none;min-height:30px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:#cfd8d2;font:700 11.5px "Zen Kaku Gothic New",sans-serif;white-space:nowrap}
+#r3d .cams button.on{background:#eef3ef;color:#0b1a10;border-color:#eef3ef}
+#r3d .cams button i{font-style:normal;display:inline-block;min-width:16px;padding:0 3px;margin-right:4px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center}
+#r3d.wide .cams button{min-height:26px;padding:0 8px;font-size:10.5px}
 #r3d.tall .side{overflow:hidden}#r3d.tall .calls{flex:1 1 auto;min-height:0;overflow:hidden;justify-content:flex-end}#r3d .calls .lb{flex:none}#r3d.tall .cheer{flex:none}
 #r3d .ctl button{flex:1;min-width:0;white-space:nowrap;padding:0 2px;min-height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#eef3ef;font:700 13px "Zen Kaku Gothic New",sans-serif}
 #r3d .ctl button.on{background:#c9a227;color:#111;border-color:#c9a227}
@@ -65,6 +70,7 @@ function open3D(RC){
     <div class="vid" id="r3dvid"><div class="prep"><i></i>中継準備中</div><iframe id="r3dif" allow="autoplay; fullscreen"></iframe></div>
     <div class="side">
       <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button><button id="r3dvc" class="${VOICE_ON?'on':''}" style="flex:.7">実況</button></div>
+      <div class="cams" id="r3dcams"></div>
       ${me?`<div class="card"><div class="me">${typeof silk==='function'?silk(me.silks,34):''}<span class="nm">${esc(me.name)}</span><span class="pos" id="r3dpos">—<small>番手</small></span><span class="sub">${me.no}番・${esc(me.jname||'')}</span></div>
         <div class="bar"><i id="r3dbar"></i></div><div class="rem"><span id="r3dph">発走前</span><span id="r3drem">${r.dist}m</span></div></div>`:''}
       <div class="card calls" id="r3dcalls"><div class="lb">実況</div><p>まもなく発走です</p></div>
@@ -84,6 +90,7 @@ function open3D(RC){
   document.getElementById('r3dsk').onclick=()=>post({type:'skip'});
   const ch=document.getElementById('r3dcheer');if(ch)ch.onclick=()=>{const v=document.getElementById('r3dvid'),d=document.createElement('div');d.className='shout';d.textContent=pick(['行けー！！','差せー！！','そのまま！！','粘れー！！']);v.appendChild(d);setTimeout(()=>d.remove(),950);try{sndCrowd(.6);}catch(e){}try{se&&se('select');if(navigator.vibrate)navigator.vibrate(30);}catch(e){}};
   try{sndStop&&sndStop();}catch(e){}
+  r3dCams(RC);
   try{sndInit();}catch(e){}if(VOICE_ON)r3dVoiceUnlock();R3D.hoofT=setInterval(()=>{if(R3D&&R3D.snd&&SND.nodes)sndHoofs(R3D.snd.run,R3D.snd.cad,R3D.snd.vol);},90);}
 function r3dSound(d){if(!SND.on)return;const R=R3D;if(!SND.ac)sndInit();if(!SND.nodes)sndStart();
   if(d.phase==='race'&&!R.gated){R.gated=1;try{sGate();}catch(e){}}
@@ -133,3 +140,14 @@ function r3dReplay(frames){const RC=R3D&&R3D.RC||UI.race;if(!RC||!frames||!frame
   const t0=Date.now(),tick=()=>{if(RC.boardDone||Date.now()-t0>300000)return;const im=imgs[Math.floor(k)];if(im&&im.complete&&im.naturalWidth)x.drawImage(im,0,0,384,216);
     if(k>=imgs.length-1){if(++hold>14){k=0;hold=0;}}else k+=.5;setTimeout(tick,110);};tick();
   RC.goalShot={cv,full:true,W:384,H:216};}
+
+/* camera picker under the controls: the broadcast (default), or a rider's-eye / chase view on your horse, the favourite and the rival */
+function r3dCams(RC){const box=document.getElementById('r3dcams');if(!box)return;const F=RC.field,me=F.find(f=>f.mine),fav=[...F].filter(f=>!f.mine).sort((a,b)=>(a.pop||99)-(b.pop||99))[0],riv=F.find(f=>f.rival&&!f.mine&&f!==fav);
+  const wk=f=>{const w=wakuOf(f.no,F.length);return `<i style="background:${FRAMEC[w-1]};color:${FRAMET[w-1]}">${f.no}</i>`;};
+  const opts=[{v:'auto',no:0,h:'中継'}];
+  if(me){opts.push({v:'pov',no:me.no,h:wk(me)+'自分の馬・騎手目線'},{v:'chase',no:me.no,h:wk(me)+'自分の馬・後方'});}
+  if(fav)opts.push({v:'pov',no:fav.no,h:wk(fav)+'1番人気・騎手目線'});
+  if(riv)opts.push({v:'pov',no:riv.no,h:wk(riv)+'ライバル・騎手目線'});
+  box.innerHTML=opts.map((o,k)=>`<button data-k="${k}" class="${k?'':'on'}">${o.h}</button>`).join('');
+  box.onclick=e=>{const b=e.target.closest('button');if(!b||!R3D)return;const o=opts[+b.dataset.k];box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));
+    const f=document.getElementById('r3dif');try{f.contentWindow.postMessage({type:'cam',view:o.v,no:o.no},'*');}catch(x){}};}
