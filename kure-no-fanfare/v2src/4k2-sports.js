@@ -69,3 +69,8 @@ frontHTML=(o=>function(){
     const bet=A?`<b>馬連</b>${A}-${others.join('.')}<br><b>3連単</b>${A}→${o2.join('.')}→${others.join('.')}`:'';
     sb[1].outerHTML=`<div class="sbox yoso"><h5>本紙予想<span>高木 ◎的中率${(20+Math.floor(hh(r.name+'yo')*16))}%</span></h5><ul>${li}</ul><div class="bet">${bet}</div></div>`;}
   return tpl.innerHTML;})(frontHTML);
+/* the photo caption bars and the article column stop short of the headline block, and the headline sits on top */
+(function(){const st=document.createElement('style');st.textContent=`
+.fp .mainhl{z-index:4}
+.fp .cap1{width:244px}.fp .cap2{width:244px}
+.fp .body{width:120px}`;document.head.appendChild(st);})();
