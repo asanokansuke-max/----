@@ -88,3 +88,8 @@ EV.fanVote.r=d=>({p:'mikuni',from:'有馬記念 ファン投票',title:`${Y(S.t)
 const MEET={1:['中山','京都','中京','小倉'],2:['東京','京都','小倉','中京'],3:['中山','阪神','中京','福島'],4:['中山','阪神','福島','東京'],5:['東京','京都','新潟','東京'],6:['東京','阪神','函館','京都'],
   7:['福島','小倉','函館','中京'],8:['札幌','新潟','小倉','札幌'],9:['中山','阪神','札幌','中京'],10:['東京','京都','新潟','東京'],11:['東京','京都','福島','阪神'],12:['中山','阪神','中京','中山']};
 courseSet=function(m){return MEET[m]||['東京','京都','阪神','中山'];};
+
+/* a photo is called when two of the first places are separated by a nose or a head */
+function photoCall(RC){RC.photo=false;RC.photoK=null;for(let i=0;i<3&&RC.order[i+1];i++){const m=RC.order[i+1].margin;if(m==='ハナ'||m==='アタマ'){RC.photo=true;RC.photoK=i;break;}}}
+runSim=(o=>function(RC){const r=o.apply(this,arguments);try{photoCall(RC);}catch(e){}return r;})(runSim);
+showBoard=(o=>function(){try{const RC=UI.race;if(RC&&RC.order&&!RC.boardShown){RC.boardShown=1;photoCall(RC);}}catch(e){}return o.apply(this,arguments);})(showBoard);

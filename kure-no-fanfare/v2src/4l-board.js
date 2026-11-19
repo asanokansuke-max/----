@@ -77,9 +77,12 @@ function fitLed(c,txt,x,y,w,h,col){const dpr=window.devicePixelRatio||1,pw=Math.
   c.save();c.shadowColor=col;c.shadowBlur=h*.18;c.drawImage(o,x,y,w,h);c.restore();}
 function boardAnim(){
   const RC=UI.race,cv=$('#board'),vv=$('#bview');if(!cv)return;const c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;
-  const ord=RC.order,r=RC.race,t0=performance.now(),wait=RC.photo?3600:1300,per=420;
+  const ord=RC.order,r=RC.race,t0=performance.now(),wait=1300,per=420;
+  /* 写真判定: the places that were clear light up first; the two in the photo wait until the print is read */
+  const pk=RC.photo?(RC.photoK||0):-1,photoEnd=pk>=0?wait+5*per+4800:0,pend=i=>pk>=0&&(i===pk||i===pk+1);
+  const onAt=i=>pend(i)?photoEnd+(i-pk)*per:wait+i*per;
   if(RC.inq==null){RC.inq=R()<.08;RC.inqK=Math.floor(R()*3);RC.inqDemote=RC.inq&&R()<.3;}
-  const inqEnd=wait+5*per+4200,conf=RC.inq?inqEnd+900:wait+5*per+800;let lit=false;
+  const allOn=Math.max(wait+5*per,photoEnd+2*per),inqEnd=allOn+4200,conf=RC.inq?inqEnd+900:allOn+800;let lit=false;
   // ---- the board: a tall panel laid out like the real one (units of 1/100 of its width)
   const SQ=.82;BSQ=SQ;const CW=cv.clientWidth,BW=CW/SQ,BH=Math.round(BW*1.66),u=BW/100;cv.width=CW*dpr;cv.height=BH*dpr;cv.style.height=BH+'px';c.scale(dpr*SQ,dpr);   // drawn on a wider grid, then squeezed: a slimmer board like the real one
   // ---- the turf vision next to it: same height, replay of the finish
@@ -107,19 +110,19 @@ function boardAnim(){
       c.fillStyle=BLUE;c.beginPath();c.ellipse(u*11.5,y+u*6.5,u*6.4/SQ*SQ+u*6.4*(1/SQ-1),u*6.4,0,0,7);c.fill();c.strokeStyle='rgba(255,255,255,.25)';c.lineWidth=u*.5;c.stroke();
       c.save();c.translate(u*11.5,0);c.scale(1/SQ,1);roman(c,i+1,0,y+u*6.5,u*7.6,'#fff');c.restore();
       const sd=slotDims(u*11.5);c.fillStyle=CELL;c.fillRect(u*21,y,sd.W,u*13.5);
-      const on=a>wait+i*per,blink=on&&a<wait+i*per+300&&Math.floor(a/80)%2;
+      const on=a>onAt(i),blink=on&&a<onAt(i)+300&&Math.floor(a/80)%2;
       numSlot(c,on&&!blink?f.no:null,u*21,y+u*1,u*11.5,f.mine?'#ffe14d':OR);
       if(i<4&&ord[i+1]){const my=y+u*9.5;
         c.strokeStyle='#3b3b3b';c.lineWidth=u*1.6;c.lineJoin='miter';c.beginPath();const chx=u*21+sd.W+u*4;c.moveTo(chx,my);c.lineTo(chx+u*7,my+u*4);c.lineTo(chx,my+u*8);c.stroke();
         const mw=u*17,mh=u*9.5;c.fillStyle=CELL;c.fillRect(chx+u*10,my-u*.8,mw,mh);
-        if(a>wait+(i+1)*per){const mg=marginSeg(String(ord[i+1].margin).replace('･','')).replace(' ','');fitLed(c,mg,chx+u*10,my-u*.8,mw,mh,OR);}}}
+        if(a>Math.max(onAt(i),onAt(i+1))){const mg=marginSeg(String(ord[i+1].margin).replace('･','')).replace(' ','');fitLed(c,mg,chx+u*10,my-u*.8,mw,mh,OR);}}}
     // bottom: 芝 / ダート going, spare lamp, タイム 4F 3F
     jp('芝',u*17,u*118,u*8.4,WH,'center',500);
     c.fillStyle=CELL;c.fillRect(u*4,u*120,u*26,u*15);if(r.surf!=='ダ')fitLed(c,gShort,u*4,u*120,u*26,u*15,OR);
     jp('ダート',u*17,u*145,u*7.6,WH,'center',500);
     c.fillStyle=CELL;c.fillRect(u*4,u*147,u*26,u*15);fitLed(c,r.surf==='ダ'?gShort:(going==='良'?'良':going==='不良'?'重':going),u*4,u*147,u*26,u*15,OR);
-    const ph=RC.photo&&a<wait&&Math.floor(a/450)%2===0;c.fillStyle=ph?'#d9a400':CELL;c.fillRect(u*57,u*110,u*25,u*9);if(ph)jp('写真',u*69.5,u*117.5,u*7,'#000','center',900);
-    if(RC.inq){const on=a>wait+5*per&&a<inqEnd&&Math.floor(a/500)%2===0;if(a>wait+5*per&&a<inqEnd){c.fillStyle=on?'#1f5fd1':CELL;c.fillRect(u*57,u*110,u*25,u*9);if(on)jp('審議',u*69.5,u*117.5,u*7,'#fff','center',900);const cp=$('#boardcap');if(cp&&!RC.inqMsg){RC.inqMsg=1;cp.textContent='審議ランプが点灯。直線で斜行があったようだ…';}}
+    const ph=pk>=0&&a<photoEnd&&Math.floor(a/450)%2===0;if(pk>=0&&a>=photoEnd&&!RC.photoMsg){RC.photoMsg=1;const cp=$('#boardcap');if(cp)cp.textContent=`写真判定の結果、${ord[pk].no}番 ${ord[pk].name}が${ord[pk+1].margin}差で${pk+1}着。`;}c.fillStyle=ph?'#d9a400':CELL;c.fillRect(u*57,u*110,u*25,u*9);if(ph)jp('写真',u*69.5,u*117.5,u*7,'#000','center',900);
+    if(RC.inq){const on=a>allOn&&a<inqEnd&&Math.floor(a/500)%2===0;if(a>allOn&&a<inqEnd){c.fillStyle=on?'#1f5fd1':CELL;c.fillRect(u*57,u*110,u*25,u*9);if(on)jp('審議',u*69.5,u*117.5,u*7,'#fff','center',900);const cp=$('#boardcap');if(cp&&!RC.inqMsg){RC.inqMsg=1;cp.textContent='審議ランプが点灯。直線で斜行があったようだ…';}}
       if(a>=inqEnd&&!RC.inqDone){RC.inqDone=1;const k=RC.inqK;if(ord[k+1]&&ord[k+1].gapL-ord[k].gapL>1.5)RC.inqDemote=false;if(RC.inqDemote&&ord[k+1]){const A=ord[k],B=ord[k+1],m1=A.margin,m2=B.margin;ord[k]=B;ord[k+1]=A;B.pos=k+1;A.pos=k+2;B.margin=m1;A.margin=m2;A.ev='降着';const g=B.gapL;B.gapL=A.gapL;A.gapL=g;}
         const cp=$('#boardcap');if(cp)cp.textContent=RC.inqDemote?`審議の結果、${ord[k+1].no}番 ${ord[k+1].name}は${k+2}着に降着。`:'審議の結果、着順通り確定。';}}
     jp('タイム',u*42,u*131,u*6.2,WH,'center',500);jp('4F',u*46,u*146,u*6.2,WH,'center',500);jp('3F',u*46,u*160,u*6.2,WH,'center',500);

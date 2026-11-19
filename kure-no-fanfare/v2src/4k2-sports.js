@@ -53,7 +53,6 @@ frontHTML=(o=>function(){
   if(ad1){ad1.className='ad1 dl';ad1.innerHTML=`<div class="y"><span>${dt.y}年</span><span>令和${dt.reiwa}年</span></div><div class="d">${dt.m}.${dt.d}<i>日</i></div><div class="g"><span>第${dt.no.toLocaleString()}号</span><span>160円</span></div>`;}
   const l1=q('.logo .l1');if(l1)l1.innerHTML='ターフスポーツ';
   // headlines: duplicate each as a gradient fill on top of its outlined self
-  tpl.querySelectorAll('.mainhl .h-blue,.mainhl .h-red').forEach(e=>{const c=e.cloneNode(true);c.classList.add('gfill');c.removeAttribute('id');e.after(c);});
   const mh=q('.mainhl');
   if(mh){mh.insertAdjacentHTML('afterbegin','<div class="burst"></div>');
     const hi=d.marks.findIndex(x=>x[0]==='◎'),h1=F[hi],seed=r.name+S.t+'star';
@@ -90,3 +89,14 @@ function fpCenterBadge(){const nb=document.querySelector('#fpwrap .nobadge');if(
   (document.fonts&&document.fonts.load?document.fonts.load(font).then(go,go):go());}
 {const pa=ACT.paper;ACT.paper=d=>{const r=pa(d);fpCenterBadge();return r;};}
 (function(){const st=document.createElement('style');st.textContent=`.fp .col .lines b{white-space:nowrap;letter-spacing:-.06em}.fp .strip:has(.col:nth-child(18)) .col .lines b{font-size:8.5px}`;document.head.appendChild(st);})();
+
+/* headline: one solid layer only (a second gradient layer drifted out of register on iPhone); the ad sized to its box */
+(function(){const st=document.createElement('style');const ring=(r,col)=>{const a=[];for(let i=0;i<16;i++){const t=i/16*Math.PI*2;a.push(`${(Math.cos(t)*r).toFixed(1)}px ${(Math.sin(t)*r).toFixed(1)}px 0 ${col}`);}return a.join(',');};
+st.textContent=`.fp .mainhl .h-blue{color:#1b2fa3!important;-webkit-text-stroke:0!important;text-shadow:${ring(4,'#fff')},${ring(6.5,'#0b1650')},6px 7px 0 rgba(0,0,0,.3)!important}
+.fp .mainhl .h-red{color:#e3261b!important;-webkit-text-stroke:0!important;text-shadow:${ring(2.5,'#fff')},${ring(4.2,'#5a0703')},4px 5px 0 rgba(0,0,0,.35)!important}
+.fp .mainhl .h-white{color:#fff!important;-webkit-text-stroke:0!important;text-shadow:${ring(4,'#1b2fa3')},${ring(6.5,'#0b1650')},6px 7px 0 rgba(0,0,0,.3)!important}
+.fp .side .ad2{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr auto;padding:4px 6px;gap:0 4px}
+.fp .side .ad2 .n{grid-column:1/3;justify-self:start;white-space:nowrap}
+.fp .side .ad2 .f{grid-column:1/3;align-self:center;font-size:15px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:clip;letter-spacing:-.02em}
+.fp .side .ad2 .gl{position:static;grid-column:1;grid-row:3;align-self:end;gap:3px}.fp .side .ad2 .gl i{width:10px;height:16px}
+.fp .side .ad2 .p{position:static;grid-column:2;grid-row:3;justify-self:end;align-self:end;font-size:21px;line-height:1}`;document.head.appendChild(st);})();
