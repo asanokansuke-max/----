@@ -52,3 +52,17 @@ document.documentElement.classList.toggle('shell',!!S);
 function sheetFit(){const sh=$('#sheet');if(!sh||!sh.querySelector('.talklog'))return;sh.classList.add('fit');const lg=sh.querySelector('.talklog');if(lg)lg.scrollTop=lg.scrollHeight;}
 drawTalk=(o=>function(){const r=o.apply(this,arguments);sheetFit();return r;})(drawTalk);
 drawTouch=(o=>function(){const r=o.apply(this,arguments);sheetFit();return r;})(drawTouch);
+/* letters and conversations always fit one screen: the header and the choices stay put; the letter tightens its type a little
+   when it is only just too long, and scrolls inside itself (with a soft fade) only when it is really long */
+(function(){const st=document.createElement('style');st.textContent=`
+.sheet.lfit{display:flex;flex-direction:column;overflow:hidden}
+.sheet.lfit>*{flex:none;min-height:0}
+.sheet.lfit>.letter{flex:0 1 auto;overflow-y:auto;overscroll-behavior:contain}
+.sheet.lfit>.letter.long{-webkit-mask-image:linear-gradient(180deg,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(180deg,#000 calc(100% - 28px),transparent)}`;document.head.appendChild(st);})();
+function letterFit(){const sh=$('#sheet');if(!sh)return;const lt=sh.querySelector(':scope>.letter');if(!lt||sh.querySelector('canvas,iframe')||sh.classList.contains('fit'))return;
+  sh.classList.add('lfit');lt.style.fontSize='';lt.style.lineHeight='';lt.classList.remove('long');
+  let fs=parseFloat(getComputedStyle(lt).fontSize),lh=parseFloat(getComputedStyle(lt).lineHeight)/fs||1.9;
+  for(let i=0;i<8&&lt.scrollHeight>lt.clientHeight+1;i++){fs=Math.max(12.5,fs-.5);lh=Math.max(1.55,lh-.06);lt.style.fontSize=fs+'px';lt.style.lineHeight=lh;}
+  if(lt.scrollHeight>lt.clientHeight+1)lt.classList.add('long');}
+openModal=(o=>function(){const r=o.apply(this,arguments);try{requestAnimationFrame(letterFit);letterFit();}catch(e){}return r;})(openModal);
+addEventListener('resize',()=>{try{letterFit();}catch(e){}});
