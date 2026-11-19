@@ -16,7 +16,7 @@
 /* headline: an outline layer underneath and a gradient fill layer on top */
 .fp .vtxt.gfill{text-shadow:none!important;-webkit-text-stroke:0!important;color:transparent!important;-webkit-background-clip:text;background-clip:text;pointer-events:none}
 .fp .h-blue.gfill{background-image:linear-gradient(90deg,#7d96ff 0%,#2a44c9 38%,#14259a 70%,#0a1560 100%)}
-.fp .h-white.gfill{background-image:linear-gradient(90deg,#ffffff 0%,#ffffff 45%,#dfe6fb 75%,#b9c6ee 100%)}
+.fp .mainhl .h-white{color:#fff!important;-webkit-text-stroke:6px #14259a!important;paint-order:stroke fill;text-shadow:6px 7px 0 #0b1650!important}
 .fp .h-red.gfill{background-image:linear-gradient(90deg,#ffd23a 0%,#ff7a1a 22%,#e3261b 55%,#9d0d07 100%)}
 .fp .h-red{text-shadow:0 0 0 #fff,${(()=>{const a=[];for(let i=0;i<16;i++){const t=i/16*Math.PI*2;a.push(`${(Math.cos(t)*2.6).toFixed(1)}px ${(Math.sin(t)*2.6).toFixed(1)}px 0 #fff`);}for(let i=0;i<16;i++){const t=i/16*Math.PI*2;a.push(`${(Math.cos(t)*4.6).toFixed(1)}px ${(Math.sin(t)*4.6).toFixed(1)}px 0 #3a0503`);}return a.join(',');})()},5px 6px 0 rgba(0,0,0,.4)!important}
 /* screen-tone burst behind the name */
@@ -53,7 +53,7 @@ frontHTML=(o=>function(){
   if(ad1){ad1.className='ad1 dl';ad1.innerHTML=`<div class="y"><span>${dt.y}年</span><span>令和${dt.reiwa}年</span></div><div class="d">${dt.m}.${dt.d}<i>日</i></div><div class="g"><span>第${dt.no.toLocaleString()}号</span><span>160円</span></div>`;}
   const l1=q('.logo .l1');if(l1)l1.innerHTML='ターフスポーツ';
   // headlines: duplicate each as a gradient fill on top of its outlined self
-  tpl.querySelectorAll('.mainhl .h-blue,.mainhl .h-white,.mainhl .h-red').forEach(e=>{const c=e.cloneNode(true);c.classList.add('gfill');c.removeAttribute('id');e.after(c);});
+  tpl.querySelectorAll('.mainhl .h-blue,.mainhl .h-red').forEach(e=>{const c=e.cloneNode(true);c.classList.add('gfill');c.removeAttribute('id');e.after(c);});
   const mh=q('.mainhl');
   if(mh){mh.insertAdjacentHTML('afterbegin','<div class="burst"></div>');
     const hi=d.marks.findIndex(x=>x[0]==='◎'),h1=F[hi],seed=r.name+S.t+'star';

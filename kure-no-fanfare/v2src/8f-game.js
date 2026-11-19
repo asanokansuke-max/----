@@ -15,12 +15,12 @@
 #r3d .dec .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}#r3d .dec .bar i{display:block;height:100%;background:#e2b93b;width:100%;transition:width .2s linear}
 #r3d.wide .dec{padding:6px 8px;gap:5px}#r3d.wide .dec .bt button{min-height:34px;font-size:11px}#r3d.wide .dec .bt button small{display:none}#r3d.wide .dec .q{font-size:10.5px;line-height:1.4}
 #r3d.wide .side:has(.dec) .card:not(.calls){display:none}#r3d .side:has(.dec) .calls{display:none}
-.rv{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--panel)}
-.rv h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}.rv h3 small{font-weight:500;color:var(--muted);font-size:11px}
-.rv .it{display:grid;grid-template-columns:22px 1fr;gap:6px;font-size:13px;line-height:1.5;align-items:start}
-.rv .it b{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;font:800 12px Oswald,sans-serif;color:#fff}
-.rv .it b.p{background:#1f7a48}.rv .it b.m{background:#b5121b}.rv .it b.n{background:#7d7a70}
-.rv .nx{margin-top:2px;padding:7px 9px;border-radius:8px;background:color-mix(in srgb,var(--accent,#c9a227) 14%,transparent);font-size:13px;line-height:1.5}
+.rvw{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--panel)}
+.rvw h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}.rvw h3 small{font-weight:500;color:var(--muted);font-size:11px}
+.rvw .it{display:grid;grid-template-columns:22px 1fr;gap:6px;font-size:13px;line-height:1.5;align-items:start}
+.rvw .it b{display:grid;place-items:center;width:20px;height:20px;border-radius:5px;font:800 12px Oswald,sans-serif;color:#fff}
+.rvw .it b.p{background:#1f7a48}.rvw .it b.m{background:#b5121b}.rvw .it b.n{background:#7d7a70}
+.rvw .nx{margin-top:2px;padding:7px 9px;border-radius:8px;background:color-mix(in srgb,var(--accent,#c9a227) 14%,transparent);font-size:13px;line-height:1.5}
 .goalcard{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:7px;background:var(--panel);margin-bottom:12px}
 .goalcard h3{margin:0;font-size:14px;display:flex;align-items:center;gap:8px}.goalcard h3 small{margin-left:auto;font-weight:500;color:var(--muted);font-size:11px}
 .goalcard .g{display:grid;grid-template-columns:1fr auto;gap:2px 10px;font-size:13px;align-items:center}
@@ -90,8 +90,8 @@ function reviewOf(RC,f){const W=f.why||{},r=RC.race,it=[],cc=typeof courseChar==
       :/裏目/.test(t)?'3コーナーの指示は、ペースと脚質を見て。スローなら早め、ハイなら外。':'';}
   return {it,nx};}
 showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{const me=RC&&RC.order.filter(f=>f.mine);const ban=$('#sheet .result-banner');
-  if(me&&me.length&&ban&&!$('#sheet .rv')){const f=me[0],{it,nx}=reviewOf(RC,f);
-    ban.insertAdjacentHTML('afterend',`<div class="rv"><h3>レースの振り返り<small>${esc(f.name)}・${f.pos}着</small></h3>${it.slice(0,6).map(([c,t])=>`<div class="it"><b class="${c}">${c==='p'?'＋':c==='m'?'−':'・'}</b><span>${esc(t)}</span></div>`).join('')}${nx?`<div class="nx"><b>次へ：</b>${esc(nx)}</div>`:''}</div>`);}}catch(e){}
+  if(me&&me.length&&ban&&!$('#sheet .rvw')){const f=me[0],{it,nx}=reviewOf(RC,f);
+    ban.insertAdjacentHTML('afterend',`<div class="rvw"><h3>レースの振り返り<small>${esc(f.name)}・${f.pos}着</small></h3>${it.slice(0,6).map(([c,t])=>`<div class="it"><b class="${c}">${c==='p'?'＋':c==='m'?'−':'・'}</b><span>${esc(t)}</span></div>`).join('')}${nx?`<div class="nx"><b>次へ：</b>${esc(nx)}</div>`:''}</div>`);}}catch(e){}
   return r;})(showResult);
 
 /* ---------------- 3. a goal for each year ---------------- */

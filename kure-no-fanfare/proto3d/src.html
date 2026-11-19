@@ -264,8 +264,9 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
  const sign=new THREE.Mesh(new THREE.PlaneGeometry(60,3.2),new THREE.MeshBasicMaterial({map:canvasTex(1024,64,(g,w,h)=>{g.fillStyle='#1c2a22';g.fillRect(0,0,w,h);g.fillStyle='#e8e6dc';g.font='bold 40px "Helvetica Neue",Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(CRS.EN.split('').join(' ')+'   R A C E C O U R S E',w/2,h/2+2);})}));
  sign.position.set(STX,31,STZ-64.9);scene.add(sign);}
 // apron: paving between the stand and the track, people standing at the rail, umbrellas when it rains
-{const pave=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,34),new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,w,h)=>{g.fillStyle='#9a9b97';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=(y/16%2)*16;x<w;x+=32){g.fillStyle=`rgba(255,255,255,${.04+rnd()*.05})`;g.fillRect(x,y,30,14);}},[40,6]),roughness:.95}));
+{const pave=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,34),new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,w,h)=>{g.fillStyle='#77756e';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=(y/16%2)*16;x<w;x+=32){g.fillStyle=`rgba(255,255,255,${.04+rnd()*.05})`;g.fillRect(x,y,30,14);}},[40,6]),roughness:.95}));
  pave.rotation.x=-Math.PI/2;pave.position.set(STX,.03,STZ-17);pave.receiveShadow=true;scene.add(pave);
+ {const lawn=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,15),new THREE.MeshStandardMaterial({map:grassTex,roughness:1}));lawn.rotation.x=-Math.PI/2;lawn.position.set(STX,.05,-RAD-38.5);lawn.receiveShadow=true;scene.add(lawn);}
  // flower beds and a hedge just outside the outer rail (as at the real courses)
  const bed=new THREE.Mesh(new THREE.BoxGeometry(SLEN,.5,2.2),new THREE.MeshStandardMaterial({color:'#3f6a33',roughness:1}));bed.position.set(STX,.25,-RAD-33.5);scene.add(bed);
  const fl=new THREE.InstancedMesh(new THREE.SphereGeometry(.22,5,4),new THREE.MeshStandardMaterial({roughness:.8}),1800),fm=new THREE.Matrix4(),fc=new THREE.Color();
@@ -1135,7 +1136,7 @@ function carveChute(){const B=pathAt(CHUTE.b,11.5),L=CHUTE.b-CHUTE.a+12,ux=B.hx,
     const c=new THREE.Box3().setFromObject(o),cx=(c.min.x+c.max.x)/2,cz=(c.min.z+c.max.z)/2,small=(c.max.x-c.min.x)<30&&(c.max.z-c.min.z)<30;
     if(small){if(inside(cx,cz))o.visible=false;return;}
     // a long block (a hedge section, a wall) that the corridor runs through is removed whole
-    if(pa.count<400){let hit=false;for(let t=0;t<=L&&!hit;t+=3)for(const lt of [-10,0,10,20]){const x=A.x+ux*t-uz*lt,z=A.z+uz*t+ux*lt;if(x>c.min.x&&x<c.max.x&&z>c.min.z&&z<c.max.z&&c.min.y<4){hit=true;break;}}if(hit){o.visible=false;return;}}
+    if(pa.count<400&&(c.max.y-c.min.y)>1&&Math.max(c.max.x-c.min.x,c.max.z-c.min.z)<220){let hit=false;for(let t=0;t<=L&&!hit;t+=3)for(const lt of [-10,0,10,20]){const x=A.x+ux*t-uz*lt,z=A.z+uz*t+ux*lt;if(x>c.min.x&&x<c.max.x&&z>c.min.z&&z<c.max.z&&c.min.y<4){hit=true;break;}}if(hit){o.visible=false;return;}}
     // ribbons (rails, hedges, the tree belt): drop the triangles that touch the corridor, so a clean gap opens without stretched walls
     const ins=new Uint8Array(pa.count);let any=false;for(let k=0;k<pa.count;k++){_v.fromBufferAttribute(pa,k).applyMatrix4(o.matrixWorld);if(inside(_v.x,_v.z)){ins[k]=1;any=true;}}
     if(!any)return;let ix=o.geometry.index;if(!ix){o.geometry=o.geometry.index?o.geometry:(()=>{const g=o.geometry;const a=new Uint32Array(pa.count);for(let k=0;k<pa.count;k++)a[k]=k;g.setIndex(new THREE.BufferAttribute(a,1));return g;})();ix=o.geometry.index;}
