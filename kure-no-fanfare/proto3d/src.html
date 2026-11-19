@@ -566,7 +566,7 @@ function morphedVertex(r,k,out){const geo=r.mesh.geometry,pa=geo.attributes.posi
   return out.set(x*r.S,y*r.S,z*r.S);}
 
 /* ---------- race model (same idea as the 2D game): formation early, decided late ---------- */
-const D=+(QS.get('dist')||CRS.dist),START=FIN-D,TT=D/16.4;   // seconds
+const D=+(QS.get('dist')||CRS.dist),START=FIN-D,TT=IN&&+IN.time>D/20&&+IN.time<D/14?+IN.time:D/16.4;   // seconds
 /* ポケット: when the start would fall on a bend, the real course has a chute — a straight spur that runs on from the next
    straight — so the gate stands on that spur and the field joins the course where the straight begins */
 {const sn=((START%P)+P)%P,c1=[LS,LS+Math.PI*RAD],c2=[2*LS+Math.PI*RAD,P];const inC=c=>sn>=c[0]&&sn<c[1];const c=inC(c1)?c1:inC(c2)?c2:null;
@@ -1002,7 +1002,7 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
   if(d>270)once('look',()=>{L.look=1.4;return `${jk(L)}、後ろを振り返って隊列を確認します`;});
   if(d>300)once('pos',()=>{const fr=byD.slice(0,4);if(gap(fr[0],fr[1])<1.2*LEN)CM.settle=fr[1];return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
   if(d>420)once('me1',()=>`${nm(me)}、鞍上${jk(me)}は${pm}番手、${pm<=4?'好位につけました':pm>=RUN.length-3?'後方からの競馬':'中団で脚をためます'}`);
-  if(d>1000)once('1000',()=>{const t=SIMT*1000/d,f=t<58.5?'速い流れ！':t>61.5?'ゆったりとした流れです':'平均的なペース';return `1000メートルの通過は${Math.floor(t/60)?Math.floor(t/60)+'分':''}${(t%60).toFixed(1).replace('.','秒')}。${f}`;});
+  if(d>1000)once('1000',()=>{const pc=(IN&&IN.pace)||'ミドル',ds=QS.get('surf')==='ダ'?1.4:0,t=TT*1000/D+{スロー:1.9,ミドル:.2,ハイ:-1.8}[pc]+ds*.3+(rnd()-.5)*.6,f=pc==='ハイ'?'速い流れ！':pc==='スロー'?'ゆったりとした流れです':'平均的なペース';return `1000メートルの通過は${Math.floor(t/60)?Math.floor(t/60)+'分':''}${(t%60).toFixed(1).replace('.','秒')}。${f}`;});
   if(d>D*.5&&D>=1600&&RUN.length>=9)once('half',()=>{const m=byD.slice(3,7).map(nm);return `中団は${m.slice(0,2).join('、')}。その後ろに${m.slice(2).join('、')}。最後方は${nm(last)}`;});
   if(d>D*.62&&D>=1800)once('me3',()=>`${nm(me)}は${pm}番手。${pm<=3?'手応え十分、絶好の位置です':pm<=8?'ここからどこで動くか':'まだ後方、仕掛けどころを待ちます'}`);
   if(d>D*.45&&D>=1400)once('press',()=>gap(L,S2)<1.3*LEN&&S2!==CM.settle?`${S2.no}番の${jk(S2)}がじわっと外から並びかけ、${nm(L)}にプレッシャーをかける`:`${jk(L)}、${nm(L)}をマイペースに持ち込みました。${S2===CM.settle?'2番手の':'後続の'}${jk(S2)}はじっと折り合いに専念`);

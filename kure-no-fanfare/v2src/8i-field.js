@@ -55,3 +55,15 @@ showPaddock=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race,
     <span class="nm">${esc(f.name)}<small>${f.pop}番人気</small></span><span class="kh ${g}"><b>${g}</b>気配</span>
     <span class="cm"><span class="bw">${bw.w}kg <span class="${bw.d>0?'up':bw.d<0?'dn':''}">(${bw.d>=0?'+':''}${bw.d})</span></span>${esc(note(f))}</span></div>`;}).join('');
   cast.outerHTML=`<div class="padrep" id="padrep"><div class="hd">パドック解説<small>気配 A＝絶好 〜 D＝物足りない</small></div>${rows}${extra?`<div class="ft">${esc(extra.t)}</div>`:''}</div><div id="padcast" hidden></div>`;}catch(e){}return r;})(showPaddock);
+
+/* paddock comments that fit each horse, not the same line for half the field */
+padNote=(o=>function(f){const c=f.cond,bw=bodyWeight(f),h=f.h,sx=h?h.sex:(hash(f.name)<.3?'牝':'牡'),u=f.style||'',k=hash(f.name+S.t);const P=a=>a[Math.floor(k*a.length)];const L=[];
+  L.push(c>=5?P(['毛ヅヤがピカピカ。文句なしの仕上がり','トモの張りが素晴らしい。気配は最高','パドックで一番目立つ好馬体'])
+   :c>=4?P(['馬体が締まって見えます','踏み込みがしっかりしている','落ち着いて周回、いい雰囲気','首を使って力強く歩いています'])
+   :c<=2?P(['少し覇気がないように見えます','やや太め残りか','気合いが乗り切っていない','歩様に硬さが見えます'])
+   :P(['平行線の仕上がり','落ち着いて周回しています','いつも通りの雰囲気','可もなく不可もなし']));
+  if(f.temper==='気難しい')L.push(P(['少しチャカつき気味','首を上げてイレ込み加減','引き手を引っ張って気合い十分']));
+  else if(u==='逃げ'&&c>=4)L.push('前向きさが出ている');else if((u==='追込'||u==='差し')&&c>=4)L.push('ゆったり歩けていて終いに期待');
+  if(sx==='牝'&&c>=4&&k<.5)L.push('牝馬らしいしなやかさ');
+  if(Math.abs(bw.d)>=8)L.push(bw.d>0?(c>=4?'馬体重増は成長分か':'馬体重は大幅増'):(c>=4?'馬体を絞ってきた':'馬体重は大幅減'));
+  return L.join('。');})(padNote);
