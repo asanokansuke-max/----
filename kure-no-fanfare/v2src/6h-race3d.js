@@ -22,8 +22,8 @@ let R3D=null;
 #r3d .hd .gb.G2{background:#7d1220}#r3d .hd .gb.G3{background:#11502c}#r3d .hd .gb.OP{background:#333}
 #r3d .hd b{font-family:"Shippori Mincho B1",serif;font-size:18px;letter-spacing:.04em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #r3d .hd small{font-size:11px;opacity:.75;white-space:nowrap}
-#r3d .live{display:inline-flex;align-items:center;gap:4px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.1em;color:#ff5a5a}
-#r3d .live i{width:7px;height:7px;border-radius:50%;background:#ff3b30;animation:r3dlv 1.2s infinite}@keyframes r3dlv{50%{opacity:.25}}
+#r3d .live{display:inline-flex;align-items:center;padding:3px 6px 2px 7px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.18em;color:#fff;background:linear-gradient(180deg,#e3262d,#a50d13);border-radius:2px;box-shadow:inset 0 -1px 0 rgba(0,0,0,.3),0 0 0 1px rgba(255,255,255,.08)}
+@keyframes r3dlv{50%{opacity:.25}}
 #r3d .vid{position:relative;flex:none;margin:0 auto;border-radius:10px;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.12),0 10px 30px rgba(0,0,0,.6);background:#000}
 #r3d .vid iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#070d09;opacity:0;transition:opacity .5s}
 #r3d .vid iframe.on,iframe.r3demb.on{opacity:1}iframe.r3demb{opacity:0;transition:opacity .5s}
@@ -61,7 +61,7 @@ function open3D(RC){
   if(!RC.r3dSpurt){RC.r3dSpurt=1;RC.field.filter(f=>f.mine).forEach(f=>f.perf+=.3);if(typeof reorder==='function')reorder(RC);}
   const r=RC.race,me=RC.field.find(f=>f.mine),gcls=r.grade==='G1'||r.grade==='G2'||r.grade==='G3'?r.grade:'OP';
   const ov=document.createElement('div');ov.id='r3d';
-  ov.innerHTML=`<div class="hd"><span class="gb ${gcls}">${esc(r.grade||'')}</span><b>${esc(r.name)}</b><small>${esc(r.course)} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m・${esc(r.going||'良')}</small><span class="live"><i></i>LIVE</span></div>
+  ov.innerHTML=`<div class="hd"><span class="gb ${gcls}">${esc(r.grade||'')}</span><b>${esc(r.name)}</b><small>${esc(r.course)} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m・${esc(r.going||'良')}</small><span class="live">LIVE</span></div>
     <div class="vid" id="r3dvid"><div class="prep"><i></i>中継準備中</div><iframe id="r3dif" allow="autoplay; fullscreen"></iframe></div>
     <div class="side">
       <div class="ctl"><button id="r3dff">早送り</button><button id="r3dsk">スキップ</button><button id="r3dsnd" class="${SND.on?'on':''}" style="flex:.55">音</button><button id="r3dvc" class="${VOICE_ON?'on':''}" style="flex:.7">実況</button></div>
@@ -145,13 +145,11 @@ function r3dReplay(frames){const RC=R3D&&R3D.RC||UI.race;if(!RC||!frames||!frame
 #r3d .camcyc:active{transform:scale(.98)}
 #r3d .camcyc .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:#111a14;border:1px solid rgba(255,255,255,.18);position:relative}
 #r3d .camcyc .ic svg{width:20px;height:20px}
-#r3d .camcyc .ic:after{content:"";position:absolute;right:-2px;top:-2px;width:7px;height:7px;border-radius:50%;background:#ff3b30;box-shadow:0 0 6px #ff3b30;animation:r3dlv 1.2s infinite}
 #r3d .camcyc .tx{min-width:0;display:grid;gap:1px}
 #r3d .camcyc .t{font:700 9.5px/1.1 Oswald,sans-serif;letter-spacing:.14em;color:#f3d27a}
 #r3d .camcyc .s{display:flex;align-items:center;gap:5px;font:800 13px/1.25 "Zen Kaku Gothic New",sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #r3d .camcyc .s i{font-style:normal;min-width:17px;padding:0 3px;border-radius:3px;font:700 10px/16px Oswald,sans-serif;text-align:center;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
-#r3d .camcyc .dots{display:flex;gap:3px;align-items:center}
-#r3d .camcyc .dots b{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.25)}#r3d .camcyc .dots b.on{background:#f3d27a;box-shadow:0 0 4px #f3d27a}
+#r3d .camcyc .oa{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:#fff;background:linear-gradient(180deg,#e3262d,#a50d13);padding:3px 5px 2px 6px;border-radius:2px}
 #r3d .camback{flex:none;width:46px;border-radius:11px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#cfd8d2;font:700 10px/1.2 "Zen Kaku Gothic New",sans-serif;display:grid;place-items:center;padding:2px}
 #r3d .camback svg{width:16px;height:16px;display:block;margin:0 auto 1px}
 #r3d.wide .camcyc{min-height:38px;padding:3px 10px 3px 6px}#r3d.wide .camcyc .ic{width:28px;height:28px}#r3d.wide .camcyc .s{font-size:11.5px}#r3d.wide .camback{width:40px}
@@ -170,7 +168,7 @@ function r3dCams(RC){const box=document.getElementById('r3dcams');if(!box)return
   if(fav)opts.push({v:'pov',no:fav.no,t:'JOCKEY CAM',s:wk(fav)+'1番人気'});
   if(riv)opts.push({v:'pov',no:riv.no,t:'JOCKEY CAM',s:wk(riv)+'ライバル'});
   let cur=0;
-  const paint=()=>{const o=opts[cur];box.innerHTML=`<button class="camcyc" id="r3dcamb" aria-label="カメラを切り替える"><span class="ic">${R3D_ICON[o.v]}</span><span class="tx"><span class="t">${o.t}　${cur+1}/${opts.length}</span><span class="s">${o.s}</span></span><span class="dots">${opts.map((_,k)=>`<b class="${k===cur?'on':''}"></b>`).join('')}</span></button>${cur?`<button class="camback" id="r3dcam0">${R3D_ICON.auto}中継へ</button>`:''}`;};
+  const paint=()=>{const o=opts[cur];box.innerHTML=`<button class="camcyc" id="r3dcamb" aria-label="カメラを切り替える"><span class="ic">${R3D_ICON[o.v]}</span><span class="tx"><span class="t">${o.t}　${cur+1}/${opts.length}</span><span class="s">${o.s}</span></span><span class="oa">ON AIR</span></button>${cur?`<button class="camback" id="r3dcam0">${R3D_ICON.auto}中継へ</button>`:''}`;};
   const go=k=>{cur=k;paint();const o=opts[cur];const f=document.getElementById('r3dif');try{f.contentWindow.postMessage({type:'cam',view:o.v,no:o.no||0,name:o.name||''},'*');}catch(x){}
     const vid=document.getElementById('r3dvid');if(vid){vid.querySelectorAll('.camtoast').forEach(x=>x.remove());vid.insertAdjacentHTML('beforeend',`<div class="camtoast">${R3D_ICON[o.v]}${o.s}</div>`);const t=vid.lastElementChild;setTimeout(()=>t.remove(),2300);}};
   paint();box.onclick=e=>{if(!R3D)return;if(e.target.closest('#r3dcam0'))go(0);else if(e.target.closest('#r3dcamb'))go((cur+1)%opts.length);};}

@@ -621,7 +621,7 @@ function povCam(r,v,dt,tau){r.g.updateMatrixWorld(true);const sp=r.spd||0,ph=TS*
     if(!started)r.g.localToWorld(_pt.set(0,.62,11));
     cam.position.copy(_pv);if(!curCam||curCam.pov!==r.no)curCam={t:_pt.clone(),pov:r.no};curCam.t.lerp(_pt,Math.min(1,dt*7+.04));cam.up.set(0,1,0);cam.lookAt(curCam.t);
     cam.rotateZ(Math.sin(ph*.5)*.022*sp);cam.fov=74+sp*4;cam.near=.03;
-    document.body.classList.add('povmode');JCAM.el.hidden=false;JCAM.lab.innerHTML=`<i style="width:.9vw;height:.9vw;border-radius:50%;background:#ff3b30;display:inline-block"></i>JOCKEY CAM<span style="font-weight:600;background:rgba(0,0,0,.45);padding:.3vw .7vw;border-radius:.3vw;letter-spacing:.02em">${r.no} ${NAMES[r.i]}／${r.jn||''}</span>`;}
+    document.body.classList.add('povmode');JCAM.el.hidden=false;JCAM.lab.innerHTML=`<span style="border-left:.35vw solid #e3262d;padding:.25vw .7vw;background:rgba(0,0,0,.55);letter-spacing:.14em">JOCKEY CAM</span><span style="font-weight:600;background:rgba(0,0,0,.45);padding:.3vw .7vw;border-radius:.3vw;letter-spacing:.02em">${r.no} ${NAMES[r.i]}／${r.jn||''}</span>`;}
   else{camReset0(r);r.g.localToWorld(_pv.set(-.7,3.2,-7.6));const q=pathAt(START+r.d+8,laneOf(r,Math.min(Math.max(tau,0),1)));_pt.set(q.x,1.3,q.z);
     if(!curCam||curCam.pov!==-r.no){curCam={t:_pt.clone(),pov:-r.no};cam.position.copy(_pv);}cam.position.lerp(_pv,Math.min(1,dt*4+.04));curCam.t.lerp(_pt,Math.min(1,dt*6+.04));cam.up.set(0,1,0);cam.lookAt(curCam.t);cam.fov=46;cam.near=.3;
     document.body.classList.remove('povmode');JCAM.el.hidden=false;JCAM.lab.innerHTML=`<span style="font-weight:600;background:rgba(0,0,0,.45);padding:.3vw .7vw;border-radius:.3vw">追走カメラ　${r.no} ${NAMES[r.i]}</span>`;JCAM.el.firstChild.style.display='none';}
