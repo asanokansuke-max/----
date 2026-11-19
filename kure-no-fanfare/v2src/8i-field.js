@@ -83,3 +83,8 @@ EV.fanVote.r=d=>({p:'mikuni',from:'有馬記念 ファン投票',title:`${Y(S.t)
   body:'【最終結果　上位10頭】\n'+d.list.map((x,i)=>`${i+1}位　${x.n}${x.me?'　◀ あなたの馬':''}　${x.f.toLocaleString()}票`).join('\n')
     +((d.mine||[]).filter(m=>m.rank>10).length?'\n\n【あなたの馬】\n'+d.mine.filter(m=>m.rank>10).map(m=>`${m.rank}位　${m.n}　${m.f.toLocaleString()}票`).join('\n'):'')
     +`\n\n${d.ok.length?`${d.ok.join('、')}は有馬記念に出走できます。暮れの中山へ。`:'今年は、あなたの馬は届きませんでした。ファン4万人、獲得賞金2億円、G1勝ちのどれかが必要です。'}`,ch:['よし']});
+
+/* 開催: which tracks race in which month, as the real calendar runs (summer in the north, winter at Chukyo and Kokura) */
+const MEET={1:['中山','京都','中京','小倉'],2:['東京','京都','小倉','中京'],3:['中山','阪神','中京','福島'],4:['中山','阪神','福島','東京'],5:['東京','京都','新潟','東京'],6:['東京','阪神','函館','京都'],
+  7:['福島','小倉','函館','中京'],8:['札幌','新潟','小倉','札幌'],9:['中山','阪神','札幌','中京'],10:['東京','京都','新潟','東京'],11:['東京','京都','福島','阪神'],12:['中山','阪神','中京','中山']};
+courseSet=function(m){return MEET[m]||['東京','京都','阪神','中山'];};

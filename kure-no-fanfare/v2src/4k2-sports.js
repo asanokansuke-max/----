@@ -89,3 +89,4 @@ function fpCenterBadge(){const nb=document.querySelector('#fpwrap .nobadge');if(
     const sp=nb.firstChild,lh=parseFloat(cs.fontSize);sp.style.lineHeight=(fA+fD)/lh;};
   (document.fonts&&document.fonts.load?document.fonts.load(font).then(go,go):go());}
 {const pa=ACT.paper;ACT.paper=d=>{const r=pa(d);fpCenterBadge();return r;};}
+(function(){const st=document.createElement('style');st.textContent=`.fp .col .lines b{white-space:nowrap;letter-spacing:-.06em}.fp .strip:has(.col:nth-child(18)) .col .lines b{font-size:8.5px}`;document.head.appendChild(st);})();
