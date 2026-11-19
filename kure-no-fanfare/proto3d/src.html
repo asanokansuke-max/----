@@ -730,16 +730,18 @@ const GATE={doors:[]};
 const GATEMESH=new THREE.MeshStandardMaterial({color:'#b9bec2',roughness:.4,metalness:.6,transparent:true,alphaTest:.35,side:THREE.DoubleSide,
   map:canvasTex(128,128,(q,w,h)=>{q.clearRect(0,0,w,h);q.strokeStyle='#fff';q.lineWidth=3;for(let x=-h;x<w+h;x+=12){q.beginPath();q.moveTo(x,0);q.lineTo(x+h,h);q.stroke();q.beginPath();q.moveTo(x+h,0);q.lineTo(x,h);q.stroke();}})});
 GATEMESH.map.repeat.set(3,4);
-function buildGate(){const n=RUN.length;
+function buildGate(){const nR=RUN.length;
   const green=new THREE.MeshStandardMaterial({color:'#1f8a4c',roughness:.45,metalness:.35}),grey=new THREE.MeshStandardMaterial({color:'#a9aeb2',roughness:.45,metalness:.55}),silver=new THREE.MeshStandardMaterial({color:'#dfe3e6',roughness:.3,metalness:.8}),
         yel=new THREE.MeshStandardMaterial({color:'#f2d22e',roughness:.5}),tyre=new THREE.MeshStandardMaterial({color:'#151515',roughness:.8}),mesh=new THREE.MeshStandardMaterial({color:'#e8ecee',roughness:.6,transparent:true,opacity:.55});
   const c0=pathAt(START,0),yaw=Math.atan2(c0.hx,c0.hz),root=new THREE.Group();scene.add(root);
   // the gate sits square across the track; build it in its own frame: x across (inside→outside), z along the running direction
-  const mid=pathAt(START,(RUN[0].gl+RUN[n-1].gl)/2);root.position.set(mid.x,0,mid.z);root.rotation.y=yaw;
+  const mid=pathAt(START,(RUN[0].gl+RUN[nR-1].gl)/2);root.position.set(mid.x,0,mid.z);root.rotation.y=yaw;
   const across=l=>{const p=pathAt(START,l),dx=p.x-mid.x,dz=p.z-mid.z;return dx*Math.cos(yaw)-dz*Math.sin(yaw);};
   const B=(w,h,d,mat,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);m.position.set(x,y,z);m.castShadow=true;root.add(m);return m;};
   const SW=.95,FZ=1.25,BZ=-1.25;   // stall width, front/back door lines
-  const xs=RUN.map(r=>across(r.gl)),x0=Math.min(...xs)-SW/2,x1=Math.max(...xs)+SW/2,W=x1-x0,cx=(x0+x1)/2;
+  /* the starting gate is a fixed machine: 18 stalls (16 at the small tracks) whatever the field; runners take stalls 1..n from the inside */
+  const NG=Math.max(nR,['sapporo','hakodate','fukushima','kokura'].includes(CKEY)?16:18),n=NG;
+  const xs=RUN.map(r=>across(r.gl)),x0=Math.min(...xs)-SW/2,x1=x0+NG*SW,W=x1-x0,cx=(x0+x1)/2;
   const stallOf=[];RUN.forEach((r,i)=>{stallOf[Math.round((across(r.gl)-x0-W/n/2)/(W/n))]=i;});   // stall k holds runner stallOf[k]
   const V3=(x,y,z)=>new THREE.Vector3(x,y,z),bar=(p,q,r,m)=>{const o=limbBetween(p,q,r,r,m);root.add(o);return o;};
   const padMat=new THREE.MeshStandardMaterial({color:'#9aa0a5',roughness:.7,metalness:.2}),grille=new THREE.MeshStandardMaterial({color:'#c9ced2',roughness:.4,metalness:.6,transparent:true,alphaTest:.4,side:THREE.DoubleSide,
@@ -760,7 +762,7 @@ function buildGate(){const n=RUN.length;
       const rim=new THREE.Mesh(new THREE.BoxGeometry(w/2-.03,.06,.07),silver);rim.position.set(-sd*(w/4),1.62,0);piv.add(rim);
       GATE.doors.push({piv,sd:-sd});});
     // back doors: open while the horse walks in, then shut behind it
-    {const piv=new THREE.Group();piv.position.set(xa+.02,0,BZ-.05);root.add(piv);const bd=new THREE.Mesh(new THREE.PlaneGeometry(w-.06,1.3),GATEMESH);bd.position.set(w/2-.02,.95,0);bd.castShadow=true;piv.add(bd);GATE.back=GATE.back||[];GATE.back.push({piv,k:stallOf[k]});piv.rotation.y=-1.5;}}
+    {const piv=new THREE.Group();piv.position.set(xa+.02,0,BZ-.05);root.add(piv);const bd=new THREE.Mesh(new THREE.PlaneGeometry(w-.06,1.3),GATEMESH);bd.position.set(w/2-.02,.95,0);bd.castShadow=true;piv.add(bd);GATE.back=GATE.back||[];GATE.back.push({piv,k:stallOf[k]});piv.rotation.y=stallOf[k]==null?0:-1.5;}}
   // green steel superstructure: on every partition a truss rises from the stall tops to a ridge (front higher), tied across by
   // long chords front and back, with V-bracing in the front face – the tent-like frame seen from the end of the gate
   const TOPF=2.55,TOPB=2.55,RF=3.35,RB=3.0;
@@ -770,8 +772,8 @@ function buildGate(){const n=RUN.length;
   for(let k=0;k<n;k++){const xa=x0+k*(W/n),xb=xa+W/n,xm=(xa+xb)/2;bar(V3(xa,TOPF,FZ+.05),V3(xm,RF,FZ-.15),.03,green);bar(V3(xb,TOPF,FZ+.05),V3(xm,RF,FZ-.15),.03,green);}
 
   // yellow number boxes over each stall (numbers face the front), with small lamps between
-  RUN.forEach((r0,k)=>{const r=RUN[stallOf[k]];const xa=x0+k*(W/n)+W/n/2;const box=new THREE.Mesh(new THREE.BoxGeometry(.46,.42,.05),[yel,yel,yel,yel,new THREE.MeshStandardMaterial({map:numTex(r.no,'#f2d22e','#111111')}),yel]);box.position.set(xa,2.95,FZ+.02);box.rotation.x=-.32;root.add(box);
-    if(k%4===3){const lamp=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.1),new THREE.MeshStandardMaterial({color:'#c0262d',emissive:'#5a0b0e'}));lamp.position.set(xa+W/n/2,2.82,FZ+.28);root.add(lamp);}});
+  for(let k=0;k<NG;k++){const xa=x0+k*(W/n)+W/n/2;const box=new THREE.Mesh(new THREE.BoxGeometry(.46,.42,.05),[yel,yel,yel,yel,new THREE.MeshStandardMaterial({map:numTex(k+1,'#f2d22e','#111111')}),yel]);box.position.set(xa,2.95,FZ+.02);box.rotation.x=-.32;root.add(box);
+    if(k%4===3){const lamp=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.1),new THREE.MeshStandardMaterial({color:'#c0262d',emissive:'#5a0b0e'}));lamp.position.set(xa+W/n/2,2.82,FZ+.28);root.add(lamp);}}
   // top banner: mesh panels and the green name board
   const bw=W*.68;const ban=new THREE.Mesh(new THREE.BoxGeometry(bw,.62,.08),[green,green,green,green,new THREE.MeshStandardMaterial({map:canvasTex(1024,64,(g,w,h)=>{g.fillStyle='#1f8a4c';g.fillRect(0,0,w,h);g.strokeStyle='rgba(255,255,255,.25)';for(let x=0;x<w;x+=8){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();}g.fillStyle='#fff';g.font='bold 44px "Helvetica Neue",Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(''+CRS.EN+'  RACECOURSE',w/2,h/2+2);})}),green]);
   ban.position.set(cx+W*.15,3.75,FZ-.1);root.add(ban);
@@ -790,7 +792,7 @@ function buildGate(){const n=RUN.length;
   bar(V3(x1+.3,RF+.1,0),V3(x1+6,RF+2.5,-8),.012,new THREE.MeshStandardMaterial({color:'#222'}));
 
   GATE.root=root;GATE.moved=0;}
-function shutBackDoors(){if(!GATE.back)return;GATE.back.forEach(d=>{const r=RUN[d.k];const want=r&&r.inGate?0:-1.5;d.piv.rotation.y+=(want-d.piv.rotation.y)*.15;});}
+function shutBackDoors(){if(!GATE.back)return;GATE.back.forEach(d=>{const r=d.k==null?null:RUN[d.k];const want=d.k==null?0:r&&r.inGate?0:-1.5;d.piv.rotation.y+=(want-d.piv.rotation.y)*.15;});}
 function openGate(t){GATE.doors.forEach(d=>{d.piv.rotation.y=d.sd*Math.min(1.7,t*7);});
   // once the field is away, the tractor pulls the gate off the track
   if(t>8&&GATE.root)GATE.root.visible=false;}

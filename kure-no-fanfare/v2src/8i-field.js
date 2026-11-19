@@ -67,3 +67,19 @@ padNote=(o=>function(f){const c=f.cond,bw=bodyWeight(f),h=f.h,sx=h?h.sex:(hash(f
   if(sx==='牝'&&c>=4&&k<.5)L.push('牝馬らしいしなやかさ');
   if(Math.abs(bw.d)>=8)L.push(bw.d>0?(c>=4?'馬体重増は成長分か':'馬体重は大幅増'):(c>=4?'馬体を絞ってきた':'馬体重は大幅減'));
   return L.join('。');})(padNote);
+
+/* ファン投票: the vote is among all of Japan's racehorses, not just the handful the story knows; the board shows the top 10
+   and where your horse actually stands */
+fanVoteEvent=function(){const y=Y(S.t);
+  const known=[...S.rivals.filter(r=>r.status==='現役'&&ageOf(r)>=3).map(r=>({n:r.name,f:r.fans,me:false})),...racing().filter(h=>ageOf(h)>=3&&h.status!=='引退').map(h=>({n:h.name,f:h.fans,me:true}))];
+  const top=Math.max(420000,...known.map(x=>x.f*1.05)),others=[];
+  for(let i=0;i<260;i++){const v=Math.round(top*.92*Math.pow(i+1,-.95)*(.85+hash(y+'fv'+i)*.3)/10)*10;others.push({n:i<14?makeName():'',f:v,me:false});}
+  const all=[...known,...others].sort((a,b)=>b.f-a.f);all.forEach((x,i)=>x.rank=i+1);
+  const list=all.slice(0,10).map(x=>({n:x.n||makeName(),f:x.f,me:x.me}));
+  const mine0=all.filter(x=>x.me).map(x=>({n:x.n,f:x.f,rank:x.rank}));
+  const ok=racing().filter(h=>ageOf(h)>=3&&(h.fans>=40000||h.earn>=20000||h.g1>0));
+  pushEv('fanVote',{list,mine:mine0,ok:ok.map(h=>h.name)});};
+EV.fanVote.r=d=>({p:'mikuni',from:'有馬記念 ファン投票',title:`${Y(S.t)}年 有馬記念 ファン投票`,
+  body:'【最終結果　上位10頭】\n'+d.list.map((x,i)=>`${i+1}位　${x.n}${x.me?'　◀ あなたの馬':''}　${x.f.toLocaleString()}票`).join('\n')
+    +((d.mine||[]).filter(m=>m.rank>10).length?'\n\n【あなたの馬】\n'+d.mine.filter(m=>m.rank>10).map(m=>`${m.rank}位　${m.n}　${m.f.toLocaleString()}票`).join('\n'):'')
+    +`\n\n${d.ok.length?`${d.ok.join('、')}は有馬記念に出走できます。暮れの中山へ。`:'今年は、あなたの馬は届きませんでした。ファン4万人、獲得賞金2億円、G1勝ちのどれかが必要です。'}`,ch:['よし']});
