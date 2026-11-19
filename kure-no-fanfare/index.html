@@ -7619,4 +7619,13 @@ function letterFit(){const sh=$('#sheet');if(!sh)return;const lt=sh.querySelecto
   if(lt.scrollHeight>lt.clientHeight+1)lt.classList.add('long');}
 openModal=(o=>function(){const r=o.apply(this,arguments);try{requestAnimationFrame(letterFit);letterFit();}catch(e){}return r;})(openModal);
 addEventListener('resize',()=>{try{letterFit();}catch(e){}});
+/* the page never moves sideways (iOS lets you nudge it when anything is a hair too wide), and a long press doesn't
+   start selecting text or pop the callout — it's a game, not a document */
+(function(){const st=document.createElement('style');st.textContent=`
+html,body{overflow-x:hidden;overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
+#app,main,.sheet,#modal,#r3d,#r3d .side,.paper,.paper .scroll{overflow-x:hidden;overflow-x:clip;max-width:100vw}
+body,button,.sheet,#app,#r3d,#opening,.paper{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+img,canvas,svg{-webkit-user-drag:none;user-drag:none}`;document.head.appendChild(st);})();
+document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault();});
 </script>
