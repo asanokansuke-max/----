@@ -119,7 +119,7 @@ function embed3DIn(id,mode,ratio){const cv=document.getElementById(id);if(!cv||!
 boxAnim=(o=>function(){if(embed3DIn('obox','box',.62))return;return o.apply(this,arguments);})(boxAnim);
 showWarmup=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);embed3DIn('wup','warmup',.56);return r;})(showWarmup);
 showPaddock=(o=>function(){const r=o.apply(this,arguments);embed3DIn('pdk','paddock',.62);return r;})(showPaddock);
-showParade=(o=>function(){const r=o.apply(this,arguments);embed3DIn('prd','parade',.56);return r;})(showParade);
+showParade=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);embed3DIn('prd','parade',.56);return r;})(showParade);
 ACT.tomare=(o=>function(){const f=document.querySelector('iframe#pdk');if(f&&f.contentWindow)f.contentWindow.postMessage({type:'tomare'},'*');return o.apply(this,arguments);})(ACT.tomare);
 /* while the 3D broadcast is on screen the rest of the game holds still: no BGM (only the course sounds),
    no phone calls or notification banners queued up behind it */
