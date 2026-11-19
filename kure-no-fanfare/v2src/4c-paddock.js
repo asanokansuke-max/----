@@ -85,9 +85,9 @@ function showWarmup(){
     const tmp=h.temper==='気難しい'?v(h.bond>=50||jid==='washio'?'hotCalm':'hotWarn'):'';
     const sty=h.known.style?v('styleGo',{s:h.style}):v('styleAsk');
     return `<div class="panel" style="display:grid;gap:8px"><div class="row">${jid&&jid!=='stable'?avatar(jid,32):''}<b>${esc(JNAME(jid))}</b><span class="muted">${esc(h.name)}</span></div>
-     <div class="comment">${esc(feel)} ${esc(tmp)} ${esc(sty)}</div>
+     <div class="comment">「${esc([feel,tmp,sty].filter(Boolean).map(x=>x.replace(/^「|」$/g,'').replace(/([^。！？])$/,'$1。')).join(''))}」</div>
      <div class="ctl-l">作戦</div><div class="seggroup tacg" role="radiogroup" aria-label="作戦">${['おまかせ',...STY].map(s=>`<label class="seg ${s==='おまかせ'?'on':''}"><input type="radio" name="tac-${h.id}" value="${s}" ${s==='おまかせ'?'checked':''}>${s==='おまかせ'?'任せる':s}</label>`).join('')}</div></div>`;}).join('');
-  openModal(`<div class="from-line">返し馬</div>${raceHead(RC.race)}<div class="bc"><canvas id="wup" aria-label="返し馬"></canvas></div>${html}<div class="muted" style="font-size:12px">直線に入ると「追い出せ！」のバーが出ます。</div><div class="row"><button class="btn pri" data-act="go">ゲートへ</button></div>`,{wide:true,lock:true});
+  openModal(`<div class="from-line">返し馬</div>${raceHead(RC.race)}<div class="bc"><canvas id="wup" aria-label="返し馬"></canvas></div>${html}<div class="muted" style="font-size:12px">レース中、3コーナーで騎手に指示を出せます。</div><div class="row"><button class="btn pri" data-act="go">ゲートへ</button></div>`,{wide:true,lock:true});
   document.querySelectorAll('.tacg').forEach(g=>g.addEventListener('change',()=>g.querySelectorAll('label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked))));
   const cv=$('#wup');if(!cv||!my[0])return;const c=cv.getContext('2d');const W=cv.clientWidth,H=fitH(cv,Math.round(clamp(W*.56,190,330)),150),dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';c.scale(dpr,dpr);
   const f=my[0],SK=sky(M(S.t)),t0=performance.now(),dirt=RC.race.surf==='ダ';

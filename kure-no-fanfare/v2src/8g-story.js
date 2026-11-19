@@ -107,8 +107,8 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
       if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');}
       el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;const mx=Math.max(...s.t.split('\n').map(l=>l.length)),fw=el.clientWidth*.84;tx.style.fontSize=Math.min(Math.max(15,Math.min(30,Math.min(innerWidth,innerHeight)*.046)),fw/(mx*1.14))+'px';tx.classList.add('on');}
       q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
-    if(k===2){try{ensureAC();se&&se('fanfare');}catch(e){}}};
-  el.onclick=e=>{if(e.target.closest('.skip')){end();return;}next();};next();}
+    if(k===2){try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
+  el.onclick=e=>{try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();}catch(x){}if(e.target.closest('.skip')){end();return;}next();};next();}
 /* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
 ACT.newGame=(o=>function(){const args=arguments;try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'浅野';
   try{showOpening(null,nm);}catch(e){}

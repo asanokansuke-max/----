@@ -10,7 +10,7 @@ function r3dOn(){return true;}   // the race is always shown in 3D (the 2D view 
 function r3dDoc(RC,mode){const inp=r3dInput(RC);inp.mode=mode||'race';return R3D_HTML.replace('<script type="importmap">','<script>window.RACE_IN='+JSON.stringify(inp).replace(/</g,'\\u003c')+';<\/script><script type="importmap">');}
 function r3dInput(RC){const r=RC.race,hex=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#888888';
   return {course:R3D_CRS[r.course]||'tokyo',dist:r.dist,surf:r.surf,going:r.going||'良',grade:r3dGrade(r),race:r.key==='有馬記念'?'arima':'',time:r.key==='有馬記念'?'evening':'',
-    title:r.name,mon:typeof M==='function'&&S?M(S.t):0,leadNo:RC.leadNo,time:RC.time,pace:RC.pace,shape:RC.shape,
+    title:r.name,mon:typeof M==='function'&&S?M(S.t):0,leadNo:RC.leadNo,time:RC.time,pace:RC.pace,warmed:!!RC.warmSeen,fanLen:(()=>{try{const f=r.grade==='G1'?FAN.g1:r.g?FAN.g2:null;return f?f.len*60/f.bpm:8;}catch(e){return 8;}})(),shape:RC.shape,
     field:[...RC.field].sort((a,b)=>a.no-b.no).map(f=>({no:f.no,name:f.name,a:hex(f.silks&&f.silks.a),b:hex(f.silks&&f.silks.b),p:f.silks&&f.silks.p,coat:f.coat||(f.h&&f.h.coat)||'鹿毛',used:f.used||f.style,j:f.jname||'',bl:f.h?!!f.h.blaze:null,mg:f.margin||'',gapL:f.gapL||0,odds:f.odds,mine:!!f.mine}))};}
 let R3D=null;
 (function(){const st=document.createElement('style');st.textContent=`
@@ -102,7 +102,7 @@ function r3dState(d){if(!R3D)return;if(d.rem!=null)R3D.rem=d.rem;try{r3dSound(d)
 function r3dVoiceUnlock(){try{const ss=window.speechSynthesis;if(!ss||r3dVoiceUnlock.done)return;r3dVoiceUnlock.done=1;const u=new SpeechSynthesisUtterance(' ');u.volume=0;u.lang='ja-JP';ss.speak(u);}catch(e){}}
 function r3dCall(t){if(!R3D||!t)return;try{speak(t,(R3D.rem!=null&&R3D.rem<600)||/ゴール/.test(t));}catch(e){}const c=document.getElementById('r3dcalls');if(!c)return;const p=document.createElement('p');p.textContent=t;c.appendChild(p);const ps=c.querySelectorAll('p');if(ps.length>3)ps[0].remove();}
 function close3D(){if(!R3D)return;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D.ov.remove();R3D=null;}
-addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-ready'){document.querySelectorAll('#r3dif,iframe.r3demb').forEach(f=>{if(f.contentWindow===e.source){f.classList.add('on');const pr=f.parentNode.querySelector('.prep');if(pr)setTimeout(()=>pr.remove(),500);}});return;}if(!R3D)return;if(d.type==='race3d-done'){const o=R3D.ov;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D=null;showBoard();requestAnimationFrame(()=>o.classList.add('out'));setTimeout(()=>o.remove(),500);}else if(d.type==='race3d-state')r3dState(d);else if(d.type==='race3d-call')r3dCall(d.text);else if(d.type==='race3d-replay')r3dReplay(d.frames);});
+addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-ready'){document.querySelectorAll('#r3dif,iframe.r3demb').forEach(f=>{if(f.contentWindow===e.source){f.classList.add('on');const pr=f.parentNode.querySelector('.prep');if(pr)setTimeout(()=>pr.remove(),500);}});return;}if(!R3D)return;if(d.type==='race3d-done'){const o=R3D.ov;clearInterval(R3D.hoofT);try{sndStop();}catch(e){}removeEventListener('resize',R3D.fit);R3D=null;showBoard();requestAnimationFrame(()=>o.classList.add('out'));setTimeout(()=>o.remove(),500);}else if(d.type==='race3d-state')r3dState(d);else if(d.type==='race3d-call')r3dCall(d.text);else if(d.type==='race3d-replay')r3dReplay(d.frames);else if(d.type==='race3d-fanfare'){try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();SND.on=SND.on||AUD.se;fanfare(R3D.RC.race);}catch(e){}}});
 showRaceView=(o=>function(long){const RC=UI.race;if(RC)RC.long=long;
   if(RC&&r3dOn()&&typeof R3D_HTML==='string'){if(typeof ensureRival==='function')ensureRival(RC);closeModal();open3D(RC);return;}
   const r=o.apply(this,arguments);
@@ -117,7 +117,7 @@ function embed3DIn(id,mode,ratio){const cv=document.getElementById(id);if(!cv||!
   const wrap=document.createElement('div');wrap.className='bcwrap3d';wrap.innerHTML='<div class="prep"><i></i>中継準備中</div>';const f=document.createElement('iframe');f.className='r3demb';f.id=id;f.setAttribute('aria-label',mode==='box'?'馬主席からの眺め':'返し馬');f.style.cssText=`display:block;width:100%;height:${H}px;border:0;border-radius:6px;background:#000`;
   cv.replaceWith(wrap);wrap.appendChild(f);f.srcdoc=r3dDoc(UI.race,mode);return true;}
 boxAnim=(o=>function(){if(embed3DIn('obox','box',.62))return;return o.apply(this,arguments);})(boxAnim);
-showWarmup=(o=>function(){const r=o.apply(this,arguments);embed3DIn('wup','warmup',.56);return r;})(showWarmup);
+showWarmup=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);embed3DIn('wup','warmup',.56);return r;})(showWarmup);
 showPaddock=(o=>function(){const r=o.apply(this,arguments);embed3DIn('pdk','paddock',.62);return r;})(showPaddock);
 showParade=(o=>function(){const r=o.apply(this,arguments);embed3DIn('prd','parade',.56);return r;})(showParade);
 ACT.tomare=(o=>function(){const f=document.querySelector('iframe#pdk');if(f&&f.contentWindow)f.contentWindow.postMessage({type:'tomare'},'*');return o.apply(this,arguments);})(ACT.tomare);
