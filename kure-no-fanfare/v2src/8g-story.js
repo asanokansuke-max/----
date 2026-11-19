@@ -1,0 +1,123 @@
+/* =========================================================
+   はじまり: a proper opening, the first horse has to be earned,
+   two more trainers, and 三國 shows a newcomer the ropes
+   ========================================================= */
+
+/* ---------------- two more trainers ---------------- */
+Object.assign(PEOPLE0,{
+  shibahara:{n:'柴原 誠',role:'調教師（美浦・ダートと短距離の名門）',trust:20,col:'#3a6b8c',ini:'柴'},
+  kitami:{n:'北見 玲子',role:'調教師（栗東・リーディング上位）',trust:10,col:'#6b3a5a',ini:'北'}});
+Object.assign(TRAINERS0,{
+  shibahara:{sk:86,care:80,eye:'spd',policy:'many',fee:12,loc:'美浦',jk:'arai'},
+  kitami:{sk:93,care:84,eye:'sta',policy:'spaced',fee:28,loc:'栗東',jk:'sanada'}});
+Object.assign(VOICE,{
+ shibahara:{greet:['「おう、柴原だ」','「ダートの話なら、いくらでも付き合うぞ」','「今日は何の用だ」'],
+   evRoom:['まだ幼い。ここから化けるぞ','伸びしろはある','完成は近い','今が一番いい'],evTop:'{stat}が武器だな',evHot:'気が強い。砂をかぶると怒るタイプかもしれん',evGood:'状態はいい',evBad:'少し元気がない',
+   pad:['「仕上げた。ダッシュは利くぞ」','「いつも通りだ」','「正直、デキはひと息だ」'],
+   look:'「{h}か。{sf}の{d}m前後だな。{grow}。{stat}は{sym}だ」',grow:{晩成:'晩成だな。じっくりいく',早熟:'早熟だ。早いうちに稼ごう',普通:'素直に育つタイプだ'},
+   target:'「{h}の次は{list}を狙う」',targetNone:'「短いところとダートなら、うちに任せろ」',targetCls:'「まずはクラスを上げるぞ」',
+   consult:'「{h}、今月の{r}に使いたい。仕上がりは{c}だ。\n\n騎手はどうする？」',
+   injMinor:'「{h}に{k}が出た。二、三か月で戻る」',injFrac:'「{h}、骨折だ。すまん。長くかかる」',injEnd:'「…{h}は競走能力喪失だ。命に別状はない」',
+   leg:'「{h}の脚元に少し熱がある。使うかどうか、あんたが決めてくれ」',legYes:'「わかった」',legNo:'「…毎日見る」',
+   retAge:'「{h}も{a}歳だ。先のことを考える時期だな」',retForced:'「{h}は、もう走れる歳じゃない」',retUnraced:'「すまん。{h}が出られる未勝利戦は、もうない」',
+   news:['「{h}、砂の坂路で一番時計を出したぞ」','「{h}は{like}に目がない」','「{h}の追い切りは{w}。いい手応えだった」'],
+   giftLike:'「お、気が利くな」',giftMeh:'「ありがとうよ」',giftBad:'「甘いのは苦手でな…」'},
+ kitami:{greet:['「北見です。手短にお願いします」','「お待ちしていました」','「今日はどんなお話でしょう」'],
+   evRoom:['まだ完成には遠いですね','伸びしろは十分あります','完成が近いです','いまが充実期です'],evTop:'{stat}が一級品です',evHot:'気性に課題があります。乗り役を選びます',evGood:'状態は良好です',evBad:'少し疲れが見えます',
+   pad:['「ここに照準を合わせて仕上げました」','「いつも通りです」','「デキは八分。無理はさせません」'],
+   look:'「{h}ですね。{sf}の{d}mが本領でしょう。{grow}。{stat}は{sym}です」',grow:{晩成:'晩成型です。古馬になってからが本番',早熟:'早熟型。3歳春までが勝負です',普通:'順調に育つタイプです'},
+   target:'「{h}は{list}を目標にします」',targetNone:'「預かる以上は、大きいところを狙います」',targetCls:'「まずは条件戦を確実に」',
+   consult:'「{h}を今月の{r}に。仕上がりは{c}です。\n\n騎手のご希望は？」',
+   injMinor:'「{h}に{k}。二、三か月の休養で戻せます」',injFrac:'「{h}は骨折です。申し訳ありません」',injEnd:'「{h}は競走能力喪失と診断されました」',
+   leg:'「{h}の脚元に熱感があります。判断をお任せします」',legYes:'「承知しました」',legNo:'「では、慎重に様子を見ます」',
+   retAge:'「{h}も{a}歳です。次の道を考えましょう」',retForced:'「{h}は、競走馬としての時間を終える歳です」',retUnraced:'「{h}が出走できる未勝利戦はもうありません」',
+   news:['「{h}、併せ馬で3馬身先着。順調です」','「{h}は{like}が好物のようです」','「{h}の追い切りは{w}。上々です」'],
+   giftLike:'「…ありがとうございます。うれしいです」',giftMeh:'「お気遣いありがとうございます」',giftBad:'「お気持ちだけ、いただきます」'}});
+function ensureNew(){if(!S)return;['shibahara','kitami'].forEach(id=>{if(!S.people[id])S.people[id]={...PEOPLE0[id],met:false,t1:null};if(!S.trainers[id])S.trainers[id]=JSON.parse(JSON.stringify(TRAINERS0[id]));});if(!S.flags.tipSeen)S.flags.tipSeen={};}
+trainersAvail=(o=>function(){ensureNew();const L=o.apply(this,arguments);if(S.people.shibahara.met)L.push('shibahara');if(S.people.kitami.met&&S.fame>=20)L.push('kitami');return L;})(trainersAvail);
+render=(o=>function(){ensureNew();return o.apply(this,arguments);})(render);
+
+/* ---------------- the first horse has to be earned ---------------- */
+EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`遠いところをよく来なさった。中原です。\n\nうちは繁殖牝馬が四頭の、小さな牧場でね。大きいところのセリには、なかなか出せん。\n\n…こいつだ。芦毛の2歳。母はうちで生まれて、うちで死んだ。気が強くて、セリでは誰も手を挙げなかった。\n\nそれが先週、九条さんのところの人が来てな。「1500万で引き取る」と。\n\n正直に言う。金はほしい。だが、わしはこいつを、ただの数字として扱う人には渡したくない。\n\n…あんたは、なんで馬主になりたい？`,
+  ch:['「九条の倍、3000万出す」','「この馬の母の話を、聞かせてほしい」','「しばらく、ここで働かせてほしい」']}),
+  f:(d,i)=>{S.flags.fh=i;S.flags.fh2T=S.t+1;
+    if(i===0){trust('nakahara',-6);return '中原は、しばらく黙っていた。\n\n「…金の話なら、九条さんと同じだ」\n\n帰りの車で、三國がぽつりと言った。「来月、もう一度行きましょう。手ぶらで」';}
+    if(i===1){trust('nakahara',8);return '中原は縁側に腰を下ろし、ゆっくり話しはじめた。\n\n雪の朝に生まれた母馬のこと。一度も勝てなかったが、誰よりも人を信じる馬だったこと。最後の出産のあと、静かに眠るように逝ったこと。\n\n日が傾いたころ、中原は言った。「…来月、もう一度来なさい。こいつの顔を見に」';}
+    trust('nakahara',10);return '翌朝から、泥だらけになって寝わらを運んだ。中原は何も言わなかった。\n\n五日目の夕方、芦毛の2歳が、柵ごしにあなたの肩へ鼻を押しつけてきた。\n\n「…そいつが人に寄っていくのは、初めて見た」中原は背を向けたまま言った。「来月、話をしよう」';}};
+EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags.fhPrice=price;
+  return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`来たか。\n\n…九条さんには断りを入れた。あんたが先月の帰りぎわ、馬房の前で一度だけ振り返ったのを見とった。\n\n値段は1600万。それ以上はいらん。`:k===1?`来たか。\n\n九条さんには、断りを入れた。\n\nあの話を最後まで黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`来たか。\n\n九条さんには断った。こいつが選んだんだ、わしは何も言えん。\n\n600万でいい。…大事にしてやってくれ。`)+`\n\nどこの厩舎に預けるかは、あんたが決めてくれ。\n戸川さん（美浦のベテラン。無理をさせず大きいところを狙う）か、早瀬さん（栗東の若手。数を使って経験を積ませる）か。`,
+  ch:[`戸川厩舎に預ける（${price}万円）`,`早瀬厩舎に預ける（${price}万円）`]};},
+  f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
+    h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
+    S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
+    return `「${h.name}。いい名前だ」中原は目を細めた。\n\n${h.name}は${who(h.trainer)}厩舎に入った。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};
+EV.meetShibahara={r:()=>({p:'shibahara',from:'柴原 誠',title:'ごあいさつ',body:`柴原だ。美浦で厩舎をやってる。\n\nうちはダートと短いところが専門でな。芝の長いところで夢を見る馬主さんは多いが、砂の千二で勝つ馬も、同じ一勝だ。\n\nスピードのある馬が手に入ったら、声をかけてくれ。`,ch:['ぜひ、そのときは','覚えておきます']}),f:(d,i)=>{S.people.shibahara.met=true;trust('shibahara',i===0?8:3);return '柴原は無骨に頭を下げた。これからは新しく入る馬を柴原厩舎にも預けられる。';}};
+EV.meetKitami={r:()=>({p:'kitami',from:'北見 玲子',title:'栗東の名門',body:`北見です。栗東で厩舎を預かっています。\n\n率直に申し上げます。うちは預託の枠が限られていて、実績のある馬主さんからお受けしています。\n\n${ownerName()}さんの馬は、拝見しています。もう少し結果が出れば──馬主の格が20を超えたら、ぜひお話をさせてください。`,ch:['必ず、その日を','肝に銘じます']}),f:(d,i)=>{S.people.kitami.met=true;trust('kitami',i===0?6:3);return S.fame>=20?'北見はわずかにほほえんだ。「…もう、その資格はお持ちですね」北見厩舎に馬を預けられるようになった。':'「お待ちしています」北見は静かに一礼した。（馬主の格20で、北見厩舎に預けられる）';}};
+storyTriggers=(o=>function(first){const r=o.apply(this,arguments);if(S.part!==1)return r;const t=S.t-S.startT;
+  if(S.flags.fh2T===S.t&&!S.horses.some(h=>h.first)){S.inbox.unshift({id:S.nid++,type:'firstHorse2',data:{}});}
+  if(t===1){const i=S.inbox.findIndex(e=>e.type==='meetTrainer2');if(i>=0){const e=S.inbox.splice(i,1)[0];S.flags.mt2=1;S.inbox.push(e);}}
+  if(t===3&&!S.people.shibahara.met)pushEv('meetShibahara');
+  if(t===7&&!S.people.kitami.met)pushEv('meetKitami');
+  return r;})(storyTriggers);
+if(typeof STORY_EV!=='undefined')STORY_EV.push('firstHorse2');
+
+/* ---------------- the opening ---------------- */
+(function(){const st=document.createElement('style');st.textContent=`
+#opening{position:fixed;inset:0;z-index:200;background:#05070b;color:#efe9da;overflow:hidden;font-family:"Shippori Mincho B1",serif;cursor:pointer}
+#opening .sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 110%,#3a2a1e 0%,#1a1520 38%,#05070b 75%);transition:filter 2s}
+#opening .sun{position:absolute;left:50%;bottom:22%;width:56vmin;height:56vmin;margin-left:-28vmin;border-radius:50%;background:radial-gradient(circle,rgba(255,170,90,.55),rgba(255,120,60,.12) 45%,rgba(0,0,0,0) 70%);opacity:0;transition:opacity 3s}
+#opening .stand{position:absolute;left:-5%;right:-5%;bottom:20%;height:16vmin;background:linear-gradient(180deg,#0d0f14,#07080b);clip-path:polygon(0 60%,8% 30%,30% 22%,55% 18%,80% 22%,100% 40%,100% 100%,0 100%);opacity:0;transition:opacity 2.5s}
+#opening .stand i{position:absolute;width:3px;height:3px;border-radius:50%;background:#ffd99a;box-shadow:0 0 6px #ffb45a;opacity:.0;animation:optw 3s infinite}
+@keyframes optw{50%{opacity:.9}}
+#opening .turf{position:absolute;left:0;right:0;bottom:0;height:20%;background:linear-gradient(180deg,#1d3a1f,#0b170c);opacity:0;transition:opacity 2.5s}
+#opening .snow i{position:absolute;top:-4%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7;animation:opsn linear infinite}
+@keyframes opsn{to{transform:translate(-6vw,110vh)}}
+#opening .txt{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(17px,4.6vmin,30px);line-height:2;letter-spacing:.08em;text-shadow:0 2px 12px #000;white-space:pre-line;opacity:0;transition:opacity 1.4s}
+#opening .txt.on{opacity:1}
+#opening .ttl{position:absolute;left:0;right:0;top:40%;text-align:center;opacity:0;transition:opacity 2.5s}
+#opening .ttl b{display:block;white-space:nowrap;font-size:min(72px,9.2vw);letter-spacing:.1em;font-weight:800;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px rgba(255,180,80,.35))}
+#opening .ttl small{display:block;margin-top:10px;font-size:clamp(11px,2.6vmin,15px);letter-spacing:.5em;color:#cdbf9d}
+#opening .skip{position:absolute;right:14px;top:calc(12px + env(safe-area-inset-top,0px));border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#ddd;border-radius:999px;padding:6px 14px;font:600 12px "Zen Kaku Gothic New",sans-serif}
+#opening .tap{position:absolute;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));text-align:center;font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.3em;color:#9a917f;opacity:.0;transition:opacity 1s}
+#opening.out{opacity:0;transition:opacity 1.2s}`;document.head.appendChild(st);})();
+function showOpening(done){const nm=S.parent.name;
+  const SC=[
+    {t:'昭和の終わり、十二月。\n千葉・中山競馬場。',sky:1,snow:1},
+    {t:'父の大きな手を握って、\nスタンドのいちばん上から見下ろした。\n\n十万を超える人の白い息が、\n夕暮れの空にのぼっていった。',sky:1,snow:1,sun:1},
+    {t:'ファンファーレが鳴った瞬間、\nスタンドが揺れた。\n\nあんな音を、\nあとにも先にも聞いたことがない。',sky:1,sun:1,stand:1},
+    {t:'最後の直線。\n一頭の芦毛が、大外から飛んできた。\n\nゴール板を過ぎたとき、\n父は泣いていた。',sun:1,stand:1,turf:1},
+    {t:'「いつか、うちの勝負服で──」\n\n帰りの電車で、そう言った。\n父は、笑っただけだった。',sun:1,stand:1,turf:1},
+    {t:`四十年後。\n\n${nm}は、小さな町工場を\n一代で大きな会社にした。\n\n父は、もういない。`},
+    {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
+    {ttl:1,sun:1,stand:1,turf:1,snow:1}];
+  const el=document.createElement('div');el.id='opening';
+  el.innerHTML=`<div class="sky"></div><div class="sun"></div><div class="stand">${Array.from({length:60},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
+    <div class="txt"></div><div class="ttl"><b>暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><button class="skip">スキップ</button><div class="tap">TAP</div>`;
+  document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
+  const snow=on=>{q('.snow').innerHTML=on?Array.from({length:40},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
+  const end=()=>{clearTimeout(T);el.classList.add('out');setTimeout(()=>{el.remove();done&&done();},1200);};
+  const next=()=>{if(busy)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');
+    setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky').style.filter=s.sky?'brightness(1.3)':'none';
+      if(!!s.snow!==!!q('.snow').innerHTML)snow(s.snow);
+      if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;tx.classList.add('on');}
+      q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:300);
+    if(k===2){try{ensureAC();se&&se('fanfare');}catch(e){}}};
+  el.onclick=e=>{if(e.target.closest('.skip')){end();return;}next();};next();}
+ACT.newGame=(o=>function(){const r=o.apply(this,arguments);try{if(S&&!S.flags.opened){S.flags.opened=1;save();showOpening();}}catch(e){}return r;})(ACT.newGame);
+
+/* ---------------- 三國's guidance in the first months ---------------- */
+(function(){const st=document.createElement('style');st.textContent=`
+.tipcard{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;border:1px solid color-mix(in srgb,#3d5a80 45%,var(--line));border-left:4px solid #3d5a80;border-radius:12px;padding:10px 12px;margin-bottom:12px;background:color-mix(in srgb,#3d5a80 8%,var(--panel))}
+.tipcard .b{font-size:13.5px;line-height:1.65}.tipcard .b b{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.tipcard .r{grid-column:2;display:flex;justify-content:flex-end;gap:8px}.tipcard .r .btn{min-height:34px;padding:4px 14px;font-size:12.5px}`;document.head.appendChild(st);})();
+const TIPS=[
+  {k:'start',c:()=>!mine().length,t:'まずは画面上の「月初の出来事」から、中原さんの牧場の話を読んでください。一頭目は、お金だけでは譲ってもらえないかもしれません。\n読み終えたら、下の「月を進める」で次の月へ進みます。'},
+  {k:'orders',c:()=>racing().some(h=>h.status==='現役'),t:'厩舎の馬には、毎月「調教」「レース」「休養」の指示を出します。迷ったら「調教師に任せる」に。調教師が状態を見て決めてくれます。'},
+  {k:'people',c:()=>S.t-S.startT>=1&&mine().length>0,t:'月に一人だけ、誰かに会いに行けます（下の「人」）。信頼が上がると、騎手が依頼を受けてくれたり、調教師の見立てが正確になったりします。'},
+  {k:'race',c:()=>racing().some(h=>h.status==='現役'&&h.starts===0)&&M(S.t)>=5,t:'レースは中継で見られます。3コーナーで騎手に指示（外に出す・内を突く・早めに動く）が出せて、直線の残り380〜180mで「行けー！」を押すと、いちばん効きます。'},
+  {k:'after',c:()=>racing().some(h=>h.starts>0),t:'レースのあとは「振り返り」で、勝ち負けを分けたものを確かめましょう。上の「今年の目標」を達成すると、ボーナスが入ります。競馬新聞も、相手関係を読むのに役立ちます。'}];
+ACT.tipOk=d=>{ensureNew();S.flags.tipSeen[d.k]=1;save();render();};
+ACT.tipOff=()=>{ensureNew();TIPS.forEach(t=>S.flags.tipSeen[t.k]=1);save();render();};
+function tipCard(){if(!S||S.part!==1)return '';ensureNew();const t=TIPS.find(x=>!S.flags.tipSeen[x.k]&&x.c());if(!t)return '';
+  return `<div class="tipcard">${typeof avatar==='function'?avatar('mikuni',38):''}<div class="b"><b>三國より</b>${esc(t.t).replace(/\n/g,'<br>')}</div><div class="r"><button class="btn sm" data-act="tipOff">案内を消す</button><button class="btn sm pri" data-act="tipOk" data-k="${t.k}">わかった</button></div></div>`;}
+vStable=(o=>function(){return tipCard()+o.apply(this,arguments);})(vStable);

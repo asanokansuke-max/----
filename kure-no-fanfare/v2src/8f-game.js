@@ -97,6 +97,7 @@ showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{c
 /* ---------------- 3. a goal for each year ---------------- */
 function goalYear(){return Y(S.t);}
 function makeGoals(){const act=mine().filter(h=>['現役','放牧','休養'].includes(h.status)).length,y=goalYear();
+  if(!act){S.goals={y,list:[{id:'own',txt:'新しい馬を迎える（セリ・生産・購入）',need:1,have:0,rew:500},{id:'meet',txt:'牧場か調教師を訪ねる',need:1,have:0,rew:100}]};return;}
   const gw=mine().some(h=>(h.gw||[]).length>0),g1=mine().some(h=>h.g1>0),L=[];
   const w=Math.max(1,Math.round(act*1.3));L.push({id:'win',txt:`年間${w}勝`,need:w,have:0,rew:200*w});
   if(g1)L.push({id:'g1',txt:'G1をもう一度勝つ',need:1,have:0,rew:3000});else if(gw)L.push({id:'g1',txt:'G1を勝つ',need:1,have:0,rew:3000});else L.push({id:'gr',txt:'重賞を勝つ',need:1,have:0,rew:1000});
@@ -109,6 +110,8 @@ function goalTick(RC){if(!S.goals||S.goals.y!==goalYear())makeGoals();const r=RC
 applyRace=(o=>function(RC){const r=o.apply(this,arguments);try{goalTick(RC);}catch(e){}return r;})(applyRace);
 newYear=(o=>function(){try{if(S.goals&&S.goals.list){const d=S.goals.list.filter(g=>g.done).length;log(`${S.goals.y}年の目標：${S.goals.list.length}つ中${d}つ達成`);}}catch(e){}const r=o.apply(this,arguments);makeGoals();return r;})(newYear);
 function goalCard(){if(!S)return '';if(!S.goals||S.goals.y!==goalYear())makeGoals();const G=S.goals;
+  G.list.forEach(g=>{if(g.done)return;const ok=g.id==='own'?mine().some(h=>['現役','育成','1歳','当歳','放牧','休養'].includes(h.status)):g.id==='meet'?S.month&&S.month.met:false;
+    if(ok){g.have=1;g.done=1;S.money+=g.rew;log(`今年の目標「${g.txt}」を達成。ボーナス ${yen(g.rew)}`);setTimeout(()=>{try{toast(`目標達成！「${g.txt}」`);}catch(e){}},400);}});
   return `<div class="goalcard"><h3>${G.y}年の目標<small>達成でボーナス</small></h3>${G.list.map(g=>{const pc=Math.min(100,g.have/g.need*100);const hv=g.id==='prize'?yen(g.have):g.have+'/'+g.need;
     return `<div class="g ${g.done?'done':''}"><span>${esc(g.txt)}</span><span class="rw">${g.done?'達成':hv}・${yen(g.rew)}</span><div class="pb"><i style="width:${pc}%"></i></div></div>`;}).join('')}</div>`;}
 vStable=(o=>function(){return goalCard()+o.apply(this,arguments);})(vStable);

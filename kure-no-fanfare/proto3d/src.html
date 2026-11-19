@@ -100,7 +100,8 @@ const TRK=(()=>{const rc=REALC[CKEY],dirt=QS.get('surf')==='ダ',dist=+(QS.get('
   let t=dirt?rc.d:rc.t,side='';if(!dirt&&t.out){if(t.o.includes(dist)){t=t.out;side='外回り';}else side='内回り';}
   const fin=CRS.fin,ls=t.st+fin,rad=Math.max(60,(t.lap-2*ls)/(2*Math.PI));return {ls,rad,fin,side,lap:t.lap,st:t.st};})();
 const LS=TRK.ls,RAD=TRK.rad,P=2*LS+2*Math.PI*RAD;   // straight length, turn radius, lap
-function pathAt(s,lane){const q=pathAt0(s,lane);if(CRS.lh){q.x=-q.x;q.hx=-q.hx;}return q;}
+let CHUTE=null;
+function pathAt(s,lane){if(CHUTE&&CHUTE.on&&s>=CHUTE.a&&s<CHUTE.b){const q=pathAt(CHUTE.b,lane),k=CHUTE.b-s;return {x:q.x-q.hx*k,z:q.z-q.hz*k,hx:q.hx,hz:q.hz};}const q=pathAt0(s,lane);if(CRS.lh){q.x=-q.x;q.hx=-q.hx;}return q;}
 function pathAt0(s,lane){s=((s%P)+P)%P;const r=RAD+lane;
   if(s<LS)return {x:-LS/2+s,z:-r,hx:1,hz:0};s-=LS;
   if(s<Math.PI*RAD){const t=-Math.PI/2+s/RAD;return {x:LS/2+r*Math.cos(t),z:r*Math.sin(t),hx:-Math.sin(t),hz:Math.cos(t)};}s-=Math.PI*RAD;
@@ -565,6 +566,10 @@ function morphedVertex(r,k,out){const geo=r.mesh.geometry,pa=geo.attributes.posi
 
 /* ---------- race model (same idea as the 2D game): formation early, decided late ---------- */
 const D=+(QS.get('dist')||CRS.dist),START=FIN-D,TT=D/16.4;   // seconds
+/* ポケット: when the start would fall on a bend, the real course has a chute — a straight spur that runs on from the next
+   straight — so the gate stands on that spur and the field joins the course where the straight begins */
+{const sn=((START%P)+P)%P,c1=[LS,LS+Math.PI*RAD],c2=[2*LS+Math.PI*RAD,P];const inC=c=>sn>=c[0]&&sn<c[1];const c=inC(c1)?c1:inC(c2)?c2:null;
+ if(c){const gap=c[1]-sn;if(gap>0&&gap<=260)CHUTE={a:START-70,b:START+gap,on:false};}}
 const sm=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
 let RUN=[],t0=null,started=false;
 function setupRace(){if(IN)return setupFromGame();const n=14;const styles=['逃げ','先行','先行','先行','差し','差し','差し','差し','追込','追込','先行','差し','追込','先行'];
@@ -1113,7 +1118,13 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
 
 /* ---------- boot ---------- */
 const bin=Uint8Array.from(atob(window.HORSE_B64),c=>c.charCodeAt(0)).buffer;
-new GLTFLoader().parse(bin,'',g=>{horseGLTF=g;smoothHorse(g);setupRace();buildGate();document.getElementById('load').remove();const b=document.getElementById('go');b.hidden=!!IN;
+function buildChute(){if(!CHUTE)return;CHUTE.on=true;const dirt=QS.get('surf')==='ダ',pos=[],uv=[],idx=[];let n=0;
+  for(let s=CHUTE.a;s<=CHUTE.b+2;s+=3){[-1.5,24].forEach((ln,k)=>{const q=pathAt(Math.min(s,CHUTE.b-.01),ln);pos.push(q.x,.035,q.z);uv.push(k,(s-CHUTE.a)/8);});if(n){const b=(n-1)*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}n++;}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:dirt?dirtTex:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);
+  const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});[-2,24.5].forEach(ln=>{for(let s=CHUTE.a;s<CHUTE.b-6;s+=2.5){const q=pathAt(s,ln);const post=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.08),rail);post.position.set(q.x,.5,q.z);scene.add(post);}
+    const q0=pathAt(CHUTE.a,ln),q1=pathAt(CHUTE.b-6,ln),L=Math.hypot(q1.x-q0.x,q1.z-q0.z),bar=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,L),rail);bar.position.set((q0.x+q1.x)/2,1,(q0.z+q1.z)/2);bar.lookAt(q1.x,1,q1.z);scene.add(bar);});}
+new GLTFLoader().parse(bin,'',g=>{horseGLTF=g;smoothHorse(g);buildChute();setupRace();buildGate();document.getElementById('load').remove();const b=document.getElementById('go');b.hidden=!!IN;
   if(IN){const c=document.getElementById('credit');if(c)c.remove();}
   if(IN&&IN.ui==='outer'){document.getElementById('call').style.display='none';document.getElementById('tm').style.top='5%';}
   if(IN&&!(IN&&IN.ui==='outer')){const bar=document.createElement('div');bar.style.cssText='position:fixed;right:10px;top:calc(8px + env(safe-area-inset-top,0px));display:flex;gap:6px;z-index:9';
