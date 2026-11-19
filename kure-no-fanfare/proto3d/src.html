@@ -612,6 +612,11 @@ function setupFromGame(){const F=IN.field,n=F.length;
 const lateF=1-600/D;
 function posOf(r,tau){const s0=sm(lateF,1,tau),cl=r.early>12?Math.pow(s0,1.6):r.early<3?Math.pow(s0,.8):s0;
   return D*tau-(r.early*(1-cl)*sm(0,.09,tau)+r.gap*(2.4+1.7*sm(.86,1,tau))*cl)+Math.sin(tau*D/170+r.ph)*.6*sm(.06,.15,tau)*(1-s0);}
+/* no two horses in the same spot: a horse that would overlap one alongside it (within a length) eases out sideways, and
+   back in when there is room; the inside one never goes through the rail */
+function sepStep(tau,dt){const L=RUN.map(r=>({r,d:r.d,l:laneOf(r,tau)+(r.sep||0)}));L.sort((a,b)=>a.l-b.l);const push=new Map(L.map(o=>[o.r,0]));
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j],dl=b.l-a.l;if(dl>1.25)break;if(Math.abs(a.d-b.d)>2.7)continue;const need=1.25-dl;push.set(b.r,push.get(b.r)+need*.6);push.set(a.r,push.get(a.r)-need*.4);}
+  L.forEach(o=>{const r=o.r,base=laneOf(r,tau);let tg=(r.sep||0)+push.get(r);tg*=.985;if(base+tg<-.2)tg=-.2-base;tg=Math.max(-1.5,Math.min(3,tg));r.sep=(r.sep||0)+(tg-(r.sep||0))*Math.min(1,dt*3);});}
 function laneOf(r,tau){const a=sm(0,.12,tau),rem=D*(1-tau),w=sm(520,300,rem);return Math.min(9,r.gl*(1-a)+r.tl*a+r.wide*w);}
 
 /* ---------- broadcast cameras ---------- */
@@ -688,7 +693,7 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
     cpos.set(c0.x+nx/nl*40+hx*26,7,c0.z+nz/nl*40+hz*26);const lp=pathAt(START+ld.d+1,4);tgt.set(c0.x*.4+lp.x*.6,1.3,c0.z*.4+lp.z*.6);fov=frame(cpos.x,cpos.y,cpos.z,Math.max(16,spread));}
   else if(name==='startpan'){/* the start as TV shows it: a long lens from the infield, ahead of the stalls and well inside the rail,
      holding the gate at an angle; when the doors open it stays put and pans with the field as it breaks across the frame */
-    const cp=pathAt(START+40,-18);cpos.set(cp.x,3.2,cp.z);const g=pathAt(START+1.5,7.5);
+    const cp=CHUTE?pathAt(Math.min(START+95,CHUTE.b-4),3):pathAt(START+40,-18);cpos.set(cp.x,CHUTE?6.5:3.2,cp.z);const g=pathAt(START+1.5,7.5);
     const k=started?Math.min(1,SIMT/1.6):0,kk=k*k*(3-2*k);tgt.set(g.x+(fx-g.x)*kk,1.45,g.z+(fz-g.z)*kk);
     const d0=Math.hypot(cp.x-tgt.x,cp.z-tgt.z);fov=2*Math.atan((16+(Math.max(10,spread*.95)-16)*kk)/2/d0)*180/Math.PI/Math.max(.6,cam.aspect)*1.1;}
   else if(name==='gate'){const g=pathAt(START,6),f=pathAt(START+16,22);cpos.set(f.x,3.2,f.z);tgt.set(g.x,1.6,g.z);fov=frame(cpos.x,cpos.y,cpos.z,15);}
@@ -1075,7 +1080,8 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(PRE.stage)preStep(dt0);
   if(LOAD&&!started){LOAD.t+=dt0;if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
   (window.__flags||[]).forEach((f,i)=>{f.rotation.y=Math.sin(now*2.2+i)*.35;});
-  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1));const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
+  if(started&&!PAD.on)sepStep(Math.min(tau,1),dt0);
+  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
     const yaw=Math.atan2(p.hx,p.hz);r.g.rotation.y=yaw;
     const sp=INGATE?0:started?(tau<=1?1:Math.max(.42,Math.exp(-(tau-1)*5))):0;r.spd=sp;r.act.timeScale=sp*3.35;r.mixer.update(dt);   // ~2.2 strides a second, like a real gallop
     {const m=morphedVertex(r,r.muzzle,_mv);const h0=r.arms[0].hd.position,h1=r.arms[1].hd.position;
@@ -1118,11 +1124,28 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
 
 /* ---------- boot ---------- */
 const bin=Uint8Array.from(atob(window.HORSE_B64),c=>c.charCodeAt(0)).buffer;
-function buildChute(){if(!CHUTE)return;CHUTE.on=true;const dirt=QS.get('surf')==='ダ',pos=[],uv=[],idx=[];let n=0;
+/* clear the spur: rails, hedges, boards and trees that stand where the chute runs are sunk out of sight (the track surfaces stay) */
+function carveChute(){const B=pathAt(CHUTE.b,11.5),L=CHUTE.b-CHUTE.a+12,ux=B.hx,uz=B.hz,A={x:B.x-ux*L,z:B.z-uz*L},_v=new THREE.Vector3(),inv=new THREE.Matrix4();
+  const inside=(x,z)=>{const dx=x-A.x,dz=z-A.z,t=dx*ux+dz*uz;if(t<0||t>L)return false;const lat=dx*-uz+dz*ux;return t<L-45?Math.abs(lat)<26:Math.abs(lat)<12.6;};
+  const skip=new Set([turfTex,dirtTex]);const mm=new THREE.Matrix4(),pp=new THREE.Vector3(),qq=new THREE.Quaternion(),ss=new THREE.Vector3();
+  scene.traverse(o=>{if(!o.isMesh||o.userData.keep)return;const mats=[].concat(o.material);if(mats.some(m=>m&&skip.has(m.map)))return;
+    o.updateMatrixWorld(true);
+    if(o.isInstancedMesh){let ch=false;for(let i=0;i<o.count;i++){o.getMatrixAt(i,mm);pp.setFromMatrixPosition(mm).applyMatrix4(o.matrixWorld);if(inside(pp.x,pp.z)){mm.decompose(pp,qq,ss);ss.set(0,0,0);mm.compose(pp,qq,ss);o.setMatrixAt(i,mm);ch=true;}}if(ch)o.instanceMatrix.needsUpdate=true;return;}
+    const pa=o.geometry&&o.geometry.attributes.position;if(!pa||pa.count>60000)return;
+    const c=new THREE.Box3().setFromObject(o),cx=(c.min.x+c.max.x)/2,cz=(c.min.z+c.max.z)/2,small=(c.max.x-c.min.x)<30&&(c.max.z-c.min.z)<30;
+    if(small){if(inside(cx,cz))o.visible=false;return;}
+    // a long block (a hedge section, a wall) that the corridor runs through is removed whole
+    if(pa.count<400){let hit=false;for(let t=0;t<=L&&!hit;t+=3)for(const lt of [-10,0,10,20]){const x=A.x+ux*t-uz*lt,z=A.z+uz*t+ux*lt;if(x>c.min.x&&x<c.max.x&&z>c.min.z&&z<c.max.z&&c.min.y<4){hit=true;break;}}if(hit){o.visible=false;return;}}
+    // ribbons (rails, hedges, the tree belt): drop the triangles that touch the corridor, so a clean gap opens without stretched walls
+    const ins=new Uint8Array(pa.count);let any=false;for(let k=0;k<pa.count;k++){_v.fromBufferAttribute(pa,k).applyMatrix4(o.matrixWorld);if(inside(_v.x,_v.z)){ins[k]=1;any=true;}}
+    if(!any)return;let ix=o.geometry.index;if(!ix){o.geometry=o.geometry.index?o.geometry:(()=>{const g=o.geometry;const a=new Uint32Array(pa.count);for(let k=0;k<pa.count;k++)a[k]=k;g.setIndex(new THREE.BufferAttribute(a,1));return g;})();ix=o.geometry.index;}
+    const arr=ix.array;for(let t=0;t+2<arr.length;t+=3){if(ins[arr[t]]||ins[arr[t+1]]||ins[arr[t+2]]){arr[t+1]=arr[t];arr[t+2]=arr[t];}}ix.needsUpdate=true;});}
+window.__pick=(x,y)=>{const rc=new THREE.Raycaster();rc.layers.enableAll();rc.setFromCamera(new THREE.Vector2(x,y),cam);const h=rc.intersectObjects(scene.children,true).slice(0,4);return h.map(i=>{const o=i.object,b=new THREE.Box3().setFromObject(o);return [o.type,o.geometry&&o.geometry.type,o.geometry&&o.geometry.attributes.position.count,o.isInstancedMesh?o.count:0,i.distance.toFixed(1),b.max.x-b.min.x|0,b.max.z-b.min.z|0,b.max.y|0,o.visible,i.instanceId];});};
+function buildChute(){if(!CHUTE)return;CHUTE.on=true;carveChute();const dirt=QS.get('surf')==='ダ',pos=[],uv=[],idx=[];let n=0;
   for(let s=CHUTE.a;s<=CHUTE.b+2;s+=3){[-1.5,24].forEach((ln,k)=>{const q=pathAt(Math.min(s,CHUTE.b-.01),ln);pos.push(q.x,.035,q.z);uv.push(k,(s-CHUTE.a)/8);});if(n){const b=(n-1)*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}n++;}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:dirt?dirtTex:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;scene.add(m);
-  const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});[-2,24.5].forEach(ln=>{for(let s=CHUTE.a;s<CHUTE.b-6;s+=2.5){const q=pathAt(s,ln);const post=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.08),rail);post.position.set(q.x,.5,q.z);scene.add(post);}
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:dirt?dirtTex:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;m.userData.keep=1;scene.add(m);
+  const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});[-2,24.5].forEach(ln=>{for(let s=CHUTE.a;s<CHUTE.b-6;s+=2.5){const q=pathAt(s,ln);const post=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.08),rail);post.position.set(q.x,.5,q.z);post.userData.keep=1;scene.add(post);}
     const q0=pathAt(CHUTE.a,ln),q1=pathAt(CHUTE.b-6,ln),L=Math.hypot(q1.x-q0.x,q1.z-q0.z),bar=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,L),rail);bar.position.set((q0.x+q1.x)/2,1,(q0.z+q1.z)/2);bar.lookAt(q1.x,1,q1.z);scene.add(bar);});}
 new GLTFLoader().parse(bin,'',g=>{horseGLTF=g;smoothHorse(g);buildChute();setupRace();buildGate();document.getElementById('load').remove();const b=document.getElementById('go');b.hidden=!!IN;
   if(IN){const c=document.getElementById('credit');if(c)c.remove();}
