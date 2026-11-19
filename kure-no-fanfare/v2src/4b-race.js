@@ -442,7 +442,7 @@ document.addEventListener('keydown',e=>{if((e.code==='Space'||e.key==='Enter')&&
 ACT.voice=(d,b)=>{VOICE_ON=!VOICE_ON;try{localStorage.setItem('kure-voice',VOICE_ON?'1':'0');}catch(e){}if(!VOICE_ON)spStop();if(b){b.classList.toggle('on',VOICE_ON);b.setAttribute('aria-pressed',VOICE_ON);}};
 
 /* ---------- 払戻金 ---------- */
-function wakuOf(no,n){if(n<=8)return no;const ex=n-8;let c=0;for(let w=1;w<=8;w++){c+=w>8-ex?2:1;if(no<=c)return w;}return 8;}
+function wakuOf(no,n){if(n>16){const c=[2,2,2,2,2,2,2,2];for(let k=0;k<n-16;k++)c[7-k]++;let t=0;for(let w=1;w<=8;w++){t+=c[w-1];if(no<=t)return w;}return 8;}if(n<=8)return no;const ex=n-8;let c=0;for(let w=1;w<=8;w++){c+=w>8-ex?2:1;if(no<=c)return w;}return 8;}
 function payouts(RC){
   const fld=RC.field,n=fld.length,ord=RC.order;
   const tot=fld.reduce((a,f)=>a+.8/f.odds,0);const pri=f=>1/(Math.pow(f.pop,1.15)+1.6);const ptot=fld.reduce((a,f)=>a+pri(f),0);
