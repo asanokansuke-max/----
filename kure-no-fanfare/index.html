@@ -7274,24 +7274,25 @@ if(typeof STORY_EV!=='undefined')STORY_EV.push('firstHorse2');
 
 /* ---------------- the opening ---------------- */
 (function(){const st=document.createElement('style');st.textContent=`
-#opening{position:fixed;inset:0;z-index:200;background:#05070b;color:#efe9da;overflow:hidden;font-family:"Shippori Mincho B1",serif;cursor:pointer}
-#opening .sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 110%,#3a2a1e 0%,#1a1520 38%,#05070b 75%);transition:filter 2s}
-#opening .sun{position:absolute;left:50%;bottom:22%;width:56vmin;height:56vmin;margin-left:-28vmin;border-radius:50%;background:radial-gradient(circle,rgba(255,170,90,.55),rgba(255,120,60,.12) 45%,rgba(0,0,0,0) 70%);opacity:0;transition:opacity 3s}
+#opening{position:fixed;inset:0;z-index:200;contain:strict;transform:translateZ(0);background:#05070b;color:#efe9da;overflow:hidden;font-family:"Shippori Mincho B1",serif;cursor:pointer}
+#opening .sky{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 110%,#3a2a1e 0%,#1a1520 38%,#05070b 75%)}
+#opening .sky2{position:absolute;inset:0;background:radial-gradient(120% 70% at 50% 110%,#5a4030 0%,#2a2030 38%,#0a0d14 75%);opacity:0;transition:opacity 2s;will-change:opacity}
+#opening .sun{position:absolute;left:50%;bottom:22%;width:56vmin;height:56vmin;margin-left:-28vmin;border-radius:50%;background:radial-gradient(circle,rgba(255,170,90,.55),rgba(255,120,60,.12) 45%,rgba(0,0,0,0) 70%);opacity:0;transition:opacity 3s;will-change:opacity}
 #opening .stand{position:absolute;left:-5%;right:-5%;bottom:20%;height:16vmin;background:linear-gradient(180deg,#0d0f14,#07080b);clip-path:polygon(0 60%,8% 30%,30% 22%,55% 18%,80% 22%,100% 40%,100% 100%,0 100%);opacity:0;transition:opacity 2.5s}
-#opening .stand i{position:absolute;width:3px;height:3px;border-radius:50%;background:#ffd99a;box-shadow:0 0 6px #ffb45a;opacity:.0;animation:optw 3s infinite}
+#opening .stand{will-change:opacity}#opening .stand i{position:absolute;width:4px;height:4px;border-radius:50%;background:radial-gradient(circle,#fff3cf,#ffb45a 45%,rgba(255,180,90,0) 70%);opacity:0;animation:optw 3s infinite;will-change:opacity}
 @keyframes optw{50%{opacity:.9}}
-#opening .turf{position:absolute;left:0;right:0;bottom:0;height:20%;background:linear-gradient(180deg,#1d3a1f,#0b170c);opacity:0;transition:opacity 2.5s}
-#opening .snow i{position:absolute;top:-4%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7;animation:opsn linear infinite}
-@keyframes opsn{to{transform:translate(-6vw,110vh)}}
-#opening .txt{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(17px,4.6vmin,30px);line-height:2;letter-spacing:.08em;text-shadow:0 2px 12px #000;white-space:pre-line;opacity:0;transition:opacity 1.4s}
+#opening .turf{position:absolute;left:0;right:0;bottom:0;height:20%;background:linear-gradient(180deg,#1d3a1f,#0b170c);opacity:0;transition:opacity 2.5s;will-change:opacity}
+#opening .snow i{position:absolute;top:-4%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7;animation:opsn linear infinite;will-change:transform}
+@keyframes opsn{from{transform:translate3d(0,0,0)}to{transform:translate3d(-6vw,110vh,0)}}
+#opening .txt{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(17px,4.6vmin,30px);line-height:2;letter-spacing:.08em;text-shadow:0 2px 12px #000;white-space:pre-line;opacity:0;transition:opacity 1.4s;will-change:opacity}
 #opening .txt.on{opacity:1}
-#opening .ttl{position:absolute;left:0;right:0;top:40%;text-align:center;opacity:0;transition:opacity 2.5s}
-#opening .ttl b{display:block;white-space:nowrap;font-size:min(72px,9.2vw);letter-spacing:.1em;font-weight:800;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px rgba(255,180,80,.35))}
+#opening .ttl{position:absolute;left:0;right:0;top:40%;text-align:center;opacity:0;transition:opacity 2.5s;will-change:opacity}
+#opening .ttl b{display:block;white-space:nowrap;font-size:min(64px,8.4vw);letter-spacing:.06em;font-weight:800;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent;}
 #opening .ttl small{display:block;margin-top:10px;font-size:clamp(11px,2.6vmin,15px);letter-spacing:.5em;color:#cdbf9d}
 #opening .skip{position:absolute;right:14px;top:calc(12px + env(safe-area-inset-top,0px));border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.3);color:#ddd;border-radius:999px;padding:6px 14px;font:600 12px "Zen Kaku Gothic New",sans-serif}
 #opening .tap{position:absolute;left:0;right:0;bottom:calc(20px + env(safe-area-inset-bottom,0px));text-align:center;font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.3em;color:#9a917f;opacity:.0;transition:opacity 1s}
 #opening.out{opacity:0;transition:opacity 1.2s}`;document.head.appendChild(st);})();
-function showOpening(done){const nm=S.parent.name;
+function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
   const SC=[
     {t:'昭和の終わり、十二月。\n千葉・中山競馬場。',sky:1,snow:1},
     {t:'父の大きな手を握って、\nスタンドのいちばん上から見下ろした。\n\n十万を超える人の白い息が、\n夕暮れの空にのぼっていった。',sky:1,snow:1,sun:1},
@@ -7302,19 +7303,23 @@ function showOpening(done){const nm=S.parent.name;
     {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
-  el.innerHTML=`<div class="sky"></div><div class="sun"></div><div class="stand">${Array.from({length:60},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
-    <div class="txt"></div><div class="ttl"><b>暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><button class="skip">スキップ</button><div class="tap">TAP</div>`;
+  el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${Array.from({length:36},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
+    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><button class="skip">スキップ</button><div class="tap">TAP</div>`;
   document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
-  const snow=on=>{q('.snow').innerHTML=on?Array.from({length:40},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
+  const snow=on=>{q('.snow').innerHTML=on?Array.from({length:22},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
+  snow(true);q('.snow').style.cssText='opacity:0;transition:opacity 1.5s';
   const end=()=>{clearTimeout(T);el.classList.add('out');setTimeout(()=>{el.remove();done&&done();},1200);};
   const next=()=>{if(busy)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');
-    setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky').style.filter=s.sky?'brightness(1.3)':'none';
-      if(!!s.snow!==!!q('.snow').innerHTML)snow(s.snow);
+    setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky2').style.opacity=s.sky?1:0;
+      q('.snow').style.opacity=s.snow?1:0;
       if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;tx.classList.add('on');}
-      q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:300);
+      q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
     if(k===2){try{ensureAC();se&&se('fanfare');}catch(e){}}};
   el.onclick=e=>{if(e.target.closest('.skip')){end();return;}next();};next();}
-ACT.newGame=(o=>function(){const r=o.apply(this,arguments);try{if(S&&!S.flags.opened){S.flags.opened=1;save();showOpening();}}catch(e){}return r;})(ACT.newGame);
+/* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
+ACT.newGame=(o=>function(){const args=arguments;try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'浅野';
+  try{showOpening(null,nm);}catch(e){}
+  setTimeout(()=>{o.apply(this,args);try{if(S){S.flags.opened=1;save();}}catch(e){}},80);})(ACT.newGame);
 
 /* ---------------- 三國's guidance in the first months ---------------- */
 (function(){const st=document.createElement('style');st.textContent=`
