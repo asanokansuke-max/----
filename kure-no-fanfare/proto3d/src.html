@@ -1010,7 +1010,7 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
 /* ---------- loop ---------- */
 const clock=new THREE.Clock();let last=0,calls=[];
 const say=s=>{document.getElementById('call').textContent=s;if(IN){try{parent.postMessage({type:'race3d-call',text:s},'*');}catch(e){}}};
-addEventListener('message',e=>{const d=e.data||{};if(d.type==='cam'){CAMSEL.view=d.view||'auto';CAMSEL.no=d.no||0;CAMSEL.name=d.name||'';CAMSEL.done=0;camReset();return;}if(d.type==='tomare'&&PAD.on){PAD.stage='mount';PAD.t=0;}if(d.type==='ff'){FFWD=d.on?3:1;}
+addEventListener('message',e=>{const d=e.data||{};if(d.type==='regap'){RUN.forEach(r=>{const g=d.gaps&&d.gaps[r.no];if(g!=null)r.gapT=g;if(d.wide&&d.wide[r.no]!=null)r.wideT=d.wide[r.no];if(d.go&&d.go[r.no]!=null)r.go=d.go[r.no];});return;}if(d.type==='cam'){CAMSEL.view=d.view||'auto';CAMSEL.no=d.no||0;CAMSEL.name=d.name||'';CAMSEL.done=0;camReset();return;}if(d.type==='tomare'&&PAD.on){PAD.stage='mount';PAD.t=0;}if(d.type==='ff'){FFWD=d.on?3:1;}
   if(d.type==='skip'){if(started){SIMT=Math.max(SIMT,TT*1.17);}else if(window.__seek)window.__seek(.995);}});
 /* 白い息: in the cold months each horse blows a puff from the nostrils every stride */
 const MON0=+(QS.get('mon')||0),COLD=[12,1,2].includes(MON0)||QS.get('time')==='evening';
@@ -1070,7 +1070,7 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(PRE.stage)preStep(dt0);
   if(LOAD&&!started){LOAD.t+=dt0;if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
   (window.__flags||[]).forEach((f,i)=>{f.rotation.y=Math.sin(now*2.2+i)*.35;});
-  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1));const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
+  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1));const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
     const yaw=Math.atan2(p.hx,p.hz);r.g.rotation.y=yaw;
     const sp=INGATE?0:started?(tau<=1?1:Math.max(.42,Math.exp(-(tau-1)*5))):0;r.spd=sp;r.act.timeScale=sp*3.35;r.mixer.update(dt);   // ~2.2 strides a second, like a real gallop
     {const m=morphedVertex(r,r.muzzle,_mv);const h0=r.arms[0].hd.position,h1=r.arms[1].hd.position;

@@ -230,24 +230,28 @@ function runSim(RC){
     const d=Math.abs(STY.indexOf(f.used)-STY.indexOf(f.style));
     let adj=(!f.tac||f.tac==='おまかせ')?.8:(d===0?.8:d===1?-.6:-2.5);
     if(f.tac&&f.tac!=='おまかせ'&&d>0)adj+=(f.wis-60)*.03;
+    const W=f.why={tac:adj-.8,jk:0,pace:0,shape:0,course:0,hill:0,temper:0,luck:0};let a0=adj;
     const jk=f.jid&&f.jid!=='stable'?JK(f.jid):null;
     if(jk){if(jk.likes&&jk.likes.includes(f.used))adj+=1;if(jk.dirt&&RC.race.surf==='ダ')adj+=1.5;if(jk.local&&['札幌','函館','新潟','小倉','福島'].includes(RC.race.course))adj+=1.5;if(jk.heavy&&RC.race.going!=='良')adj+=1;}
-    adj+=PB[RC.pace=pace][f.used];
+    W.jk=adj-a0;a0=adj;
+    adj+=PB[RC.pace=pace][f.used];W.pace=PB[pace][f.used];a0=adj;
     adj+={逃げ:2.3,先行:.3,差し:-.3,追込:-1}[f.used];   // being near the front is worth something in itself
     if(f===leader){if(shape==='単騎')adj+=pace==='スロー'?1.9:.9;if(shape==='押し出し')adj+=1.2;if(shape==='大逃げ')adj+=R()<.33?3.2:-3.6;}
     if(shape==='競り合い'&&f.used==='逃げ')adj-=1;
+    W.shape=adj-a0-{逃げ:2.3,先行:.3,差し:-.3,追込:-1}[f.used];a0=adj;
     // the course decides: a long straight lets closers run, a short one favours the front; a hill at the line tests power and guts
     {const cc=courseChar(RC.race),sL=clamp((cc.st-360)/110,-1,2.4);adj+={逃げ:-.55,先行:-.2,差し:.3,追込:.55}[f.used]*sL;
      if(cc.hs){const pg=f.h?((f.h.st.pow||70)+(f.h.st.guts||70))/2:62+R()*16;adj+=(pg-72)*.035*cc.hs;}
-     if(cc.kyoto&&RC.race.dist>=1800)adj+={逃げ:-.2,先行:0,差し:.25,追込:.2}[f.used];}
+     W.hill=cc.hs?((f.h?((f.h.st.pow||70)+(f.h.st.guts||70))/2:72)-72)*.035*cc.hs:0;
+     if(cc.kyoto&&RC.race.dist>=1800)adj+={逃げ:-.2,先行:0,差し:.25,追込:.2}[f.used];W.course=adj-a0-W.hill;a0=adj;}
     let sd=3.4-f.wis*.012;
     if(f.temper==='気難しい'){sd+=1.2;const calm=(f.mine&&f.h.bond>=50)||f.jid==='washio'||(f.jid&&f.jid!=='stable'&&f.mine&&P(f.jid).trust>=60);adj+=calm?1.4:-1.2;}
-    if(f.temper==='素直')adj+=.3;
+    if(f.temper==='素直')adj+=.3;W.temper=adj-a0;
     f.perf=f.exp+adj+randn()*Math.max(2.1,sd*1.15);
     // racing luck: a longshot runs the race of its life, a favourite gets blocked / doesn't fire
     f.ev=null;const pop=f.pop||8;
-    if(R()<.05+Math.max(0,pop-5)*.008){f.perf+=2.5+R()*3;f.ev='激走';}
-    else if(R()<.06+(pop<=3?.04:0)){f.perf-=2+R()*3;f.ev=R()<.5?'不利':'伸びず';}
+    if(R()<.05+Math.max(0,pop-5)*.008){const x=2.5+R()*3;f.perf+=x;f.ev='激走';W.luck=x;}
+    else if(R()<.06+(pop<=3?.04:0)){const x=2+R()*3;f.perf-=x;f.ev=R()<.5?'不利':'伸びず';W.luck=-x;}
   });
   const ord=[...fr].sort((a,b)=>b.perf-a.perf);
   ord.forEach((f,i)=>{f.pos=i+1;f.gapL=i?(ord[0].perf-f.perf)*.3:0;f.margin=i?marginStr((ord[i-1].perf-f.perf)*.3):'';});
