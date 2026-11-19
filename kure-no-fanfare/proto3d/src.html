@@ -1145,8 +1145,12 @@ function buildChute(){if(!CHUTE)return;CHUTE.on=true;carveChute();const dirt=QS.
   for(let s=CHUTE.a;s<=CHUTE.b+2;s+=3){[-1.5,24].forEach((ln,k)=>{const q=pathAt(Math.min(s,CHUTE.b-.01),ln);pos.push(q.x,.035,q.z);uv.push(k,(s-CHUTE.a)/8);});if(n){const b=(n-1)*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}n++;}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
   const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:dirt?dirtTex:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;m.userData.keep=1;scene.add(m);
-  const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});[-2,24.5].forEach(ln=>{for(let s=CHUTE.a;s<CHUTE.b-6;s+=2.5){const q=pathAt(s,ln);const post=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.08),rail);post.position.set(q.x,.5,q.z);post.userData.keep=1;scene.add(post);}
-    const q0=pathAt(CHUTE.a,ln),q1=pathAt(CHUTE.b-6,ln),L=Math.hypot(q1.x-q0.x,q1.z-q0.z),bar=new THREE.Mesh(new THREE.BoxGeometry(.12,.12,L),rail);bar.position.set((q0.x+q1.x)/2,1,(q0.z+q1.z)/2);bar.lookAt(q1.x,1,q1.z);scene.add(bar);});}
+  /* side rails only where the spur is clear of the course: a post that would stand on the track (inside the outer rail of the bend) is left out */
+  const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});const sm=((CHUTE.b%P)+P)%P,cx0=(sm<LS+Math.PI*RAD+1&&sm>LS)?LS/2:-LS/2,cX=CRS.lh?-cx0:cx0;
+  const onTrack=q=>Math.hypot(q.x-cX,q.z)<RAD+27.5;
+  [-2,24.5].forEach(ln=>{let prev=null;for(let s=CHUTE.a;s<CHUTE.b;s+=2.5){const q=pathAt(s,ln);if(onTrack(q)){prev=null;continue;}
+    const post=new THREE.Mesh(new THREE.BoxGeometry(.08,1,.08),rail);post.position.set(q.x,.5,q.z);post.userData.keep=1;scene.add(post);
+    if(prev){const L=Math.hypot(q.x-prev.x,q.z-prev.z),bar=new THREE.Mesh(new THREE.BoxGeometry(.1,.1,L),rail);bar.position.set((q.x+prev.x)/2,1,(q.z+prev.z)/2);bar.lookAt(q.x,1,q.z);bar.userData.keep=1;scene.add(bar);}prev=q;}});}
 new GLTFLoader().parse(bin,'',g=>{horseGLTF=g;smoothHorse(g);buildChute();setupRace();buildGate();document.getElementById('load').remove();const b=document.getElementById('go');b.hidden=!!IN;
   if(IN){const c=document.getElementById('credit');if(c)c.remove();}
   if(IN&&IN.ui==='outer'){document.getElementById('call').style.display='none';document.getElementById('tm').style.top='5%';}
