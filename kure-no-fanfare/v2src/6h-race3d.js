@@ -119,7 +119,7 @@ function embed3DIn(id,mode,ratio){const cv=document.getElementById(id);if(!cv||!
 boxAnim=(o=>function(){if(embed3DIn('obox','box',.62))return;return o.apply(this,arguments);})(boxAnim);
 showWarmup=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);embed3DIn('wup','warmup',.56);return r;})(showWarmup);
 showPaddock=(o=>function(){const r=o.apply(this,arguments);embed3DIn('pdk','paddock',.62);return r;})(showPaddock);
-showParade=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);embed3DIn('prd','parade',.56);return r;})(showParade);
+showParade=(o=>function(){if(UI.race)UI.race.warmSeen=1;const r=o.apply(this,arguments);if(embed3DIn('prd','parade',.56)!==false&&UI.race){UI.race.prd3d=1;const n=UI.race.field.length;setTimeout(()=>{const b=$('#prdgo');if(b&&b.disabled)b.disabled=false;},(10+n*3.6)*1000);const c=$('#prdcast');if(c)c.innerHTML='<span class="pc-l">場内アナウンス</span>まもなく、出走馬の本馬場入場です';}return r;})(showParade);
 ACT.tomare=(o=>function(){const f=document.querySelector('iframe#pdk');if(f&&f.contentWindow)f.contentWindow.postMessage({type:'tomare'},'*');return o.apply(this,arguments);})(ACT.tomare);
 /* while the 3D broadcast is on screen the rest of the game holds still: no BGM (only the course sounds),
    no phone calls or notification banners queued up behind it */

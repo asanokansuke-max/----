@@ -26,10 +26,10 @@ function showParade(){
     items.sort((a,b)=>a.y-b.y).forEach(it=>{const s=H/330*(1+(it.y-H*.6)/H*.8);drawHorse(c,it.x,it.y,s,it.el/1000*Math.PI*2*(it.trot?1.6:.8)+it.f.no,it.f.coat||(it.f.h?it.f.h.coat:'鹿毛'),it.f.silks,it.f.no,it.f.mine,{walk:!it.trot});
       if(it.f.mine){c.font='bold 11px sans-serif';const tw=c.measureText(it.f.name).width+10;c.fillStyle='rgba(0,0,0,.72)';c.fillRect(it.x-tw/2,it.y-70*s,tw,16);c.fillStyle='#ffd166';c.textAlign='center';c.fillText(it.f.name,it.x,it.y-70*s+12);}});
     // the announcer introduces each horse as it comes out
-    const idx=Math.floor((t-lead)/gap);if(idx>shown&&idx>=0&&idx<F.length){shown=idx;const f=F[idx];
+    const idx=RC.prd3d?-1:Math.floor((t-lead)/gap);if(idx>shown&&idx>=0&&idx<F.length){shown=idx;const f=F[idx];
       if(cast)cast.innerHTML=`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;
       if(f.mine){try{se('up');}catch(e){}}}
-    if(t>lead+F.length*gap+600){const b=$('#prdgo');if(b&&b.disabled){b.disabled=false;if(cast)cast.innerHTML='<span class="pc-l">場内アナウンス</span>以上、出走馬の本馬場入場でした';}}
+    if(!RC.prd3d&&t>lead+F.length*gap+600){const b=$('#prdgo');if(b&&b.disabled){b.disabled=false;if(cast)cast.innerHTML='<span class="pc-l">場内アナウンス</span>以上、出走馬の本馬場入場でした';}}
     // lower third
     c.fillStyle='rgba(8,16,12,.7)';c.fillRect(0,H-26,W,26);c.fillStyle='#ffd166';c.font='bold 12px sans-serif';c.textAlign='left';c.fillText(`本馬場入場　${r.name}`,10,H-9);
     requestAnimationFrame(loop);};
@@ -37,3 +37,8 @@ function showParade(){
 }
 ACT.paradeSkip=()=>{UI.race.prSkip=true;const b=$('#prdgo');if(b)b.disabled=false;};
 ACT.warmup=(o=>function(){const RC=UI.race;if(RC&&RC.race.grade==='G1'&&!RC.paraded){showParade();return;}try{sndCrowd(.02);}catch(e){}return o.apply(this,arguments);})(ACT.warmup);
+
+/* with the 3D view, the announcer follows the horses on screen */
+addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-parade')return;const RC=UI.race;if(!RC)return;const f=RC.field.find(x=>x.no===d.no),cast=$('#prdcast');
+  if(f&&cast)cast.innerHTML=`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;if(f&&f.mine){try{se('up');}catch(x){}}
+  if(d.last)setTimeout(()=>{const b=$('#prdgo');if(b&&b.disabled){b.disabled=false;if(cast)cast.innerHTML='<span class="pc-l">場内アナウンス</span>以上、出走馬の本馬場入場でした';}},3000);});
