@@ -56,3 +56,13 @@ ACT.stgSw=(d,b)=>{const k=d.k;let on;
   else if(k==='tips'){const all=TIPS.every(t=>S.flags.tipSeen[t.k]);if(all)S.flags.tipSeen={};else TIPS.forEach(t=>S.flags.tipSeen[t.k]=1);save();on=all;}
   if(b){b.classList.toggle('on',!!on);b.setAttribute('aria-pressed',!!on);}};
 ACT.stgTest=()=>{try{ensureAC();const was=VOICE_ON,snd=SND.on;VOICE_ON=true;SND.on=true;speak('最後の直線！ 内から、アケボノハツユキが伸びてくる！');VOICE_ON=was;SND.on=snd;}catch(e){toast('この端末では読み上げできません');}};
+
+/* 本馬場入場の行進曲 (an original march): brass melody over strings, walking bass and a light drum */
+INST.brass=function(ac,d,t,m,len,v){const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.setValueAtTime(700,t);lp.frequency.linearRampToValueAtTime(2600,t+.06);lp.frequency.setTargetAtTime(1400,t+.08,.2);
+  const g=ac.createGain();env(g,t,.03,.2*v,.25,.13*v,t+len);lp.connect(g);g.connect(d);
+  [[0,'sawtooth',.5],[7,'sawtooth',.35],[-1200,'square',.12]].forEach(([dt,ty,a])=>{const o=ac.createOscillator();o.type=ty;o.frequency.value=fq(m);o.detune.value=dt===-1200?-1200:dt;const og=ac.createGain();og.gain.value=a;o.connect(og);og.connect(lp);o.start(t);o.stop(t+len+.4);});};
+THEMES.parade={bpm:112,ch:[C(46,58,62,65),C(45,57,60,65),C(43,58,62,67),C(39,58,63,67),C(46,58,62,65),C(48,55,60,63),C(41,57,63,65),C(46,58,62,65)],
+  mel:[[70,1],[74,.5],[77,.5],[82,2],[81,1.5],[79,.5],[77,1],[72,1],[74,1],[79,1],[77,1.5],[74,.5],[75,2],[null,1],[70,1],
+       [74,1],[77,.5],[82,.5],[86,2],[84,1],[82,.5],[79,.5],[75,1],[79,1],[77,1.5],[75,.5],[72,1],[76,1],[77,3],[null,1]],
+  parts:{str:1,bass:'pulse',drums:1,timp:1,melI:'brass'}};
+showParade=(o=>function(){const r=o.apply(this,arguments);try{ensureAC();AUD.over='parade';bgmApply();}catch(e){}return r;})(showParade);
