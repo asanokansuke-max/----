@@ -83,25 +83,29 @@ if(typeof STORY_EV!=='undefined')STORY_EV.push('firstHorse2');
 #opening.out{opacity:0;transition:opacity 1.2s}`;document.head.appendChild(st);})();
 function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
   const SC=[
-    {t:'昭和の終わり、十二月。\n千葉・中山競馬場。',sky:1,snow:1},
+    {t:'昭和の終わり、十二月。\n千葉・中山競馬場。',sky:1,snow:1,ch:'一九八八年　冬'},
     {t:'父の大きな手を握って、\nスタンドのいちばん上から見下ろした。\n\n十万を超える人の白い息が、\n夕暮れの空にのぼっていった。',sky:1,snow:1,sun:1},
     {t:'ファンファーレが鳴った瞬間、\nスタンドが揺れた。\n\nあんな音を、\nあとにも先にも聞いたことがない。',sky:1,sun:1,stand:1},
-    {t:'最後の直線。\n一頭の芦毛が、大外から飛んできた。\n\nゴール板を過ぎたとき、\n父は泣いていた。',sun:1,stand:1,turf:1},
+    {run:1,t:'最後の直線。\n一頭の芦毛が、\n大外から飛んできた。\n\nゴール板を過ぎたとき、\n父は泣いていた。',sun:1,stand:1,turf:1},
     {t:'「いつか、うちの勝負服で──」\n\n帰りの電車で、そう言った。\n父は、笑っただけだった。',sun:1,stand:1,turf:1},
-    {t:`四十年後。\n\n${nm}は、小さな町工場を\n一代で大きな会社にした。\n\n父は、もういない。`},
+    {ch:'そして、四十年後',t:`四十年後。\n\n${nm}は、小さな町工場を\n一代で大きな会社にした。\n\n父は、もういない。`},
     {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
   el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${Array.from({length:36},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
-    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><button class="skip">スキップ</button><div class="tap">TAP</div>`;
+    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><svg viewBox="0 0 120 70"><path fill="#d9d4c8" d="M14 38c6-6 16-8 30-7l22 1 12-12c4-4 10-6 14-4l9 6-2 4-7-2-8 13c0 6-3 10-9 12l9 6 10-1v4l-13 2-12-8H44l-9 8-15 5-1-4 13-6 3-8c-6-1-10-4-11-8-5 0-10 3-14 8l-3-3c4-6 8-9 12-10z"/><path fill="#1d2a6b" d="M48 22l14 2 4 9-12 3-8-6z"/></svg></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
   document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
   const snow=on=>{q('.snow').innerHTML=on?Array.from({length:22},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
   snow(true);q('.snow').style.cssText='opacity:0;transition:opacity 1.5s';
   const end=()=>{clearTimeout(T);el.classList.add('out');setTimeout(()=>{el.remove();done&&done();},1200);};
-  const next=()=>{if(busy)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');
+  q('.dots').innerHTML=SC.map(()=>'<i></i>').join('');
+  const next=()=>{if(busy)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');q('.chap').classList.remove('on');
+    q('.dots').querySelectorAll('i').forEach((d,j)=>d.classList.toggle('on',j<=k));
     setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky2').style.opacity=s.sky?1:0;
       q('.snow').style.opacity=s.snow?1:0;
-      if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;tx.classList.add('on');}
+      if(s.ch){q('.chap').textContent=s.ch;q('.chap').classList.add('on');}
+      if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');}
+      el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;tx.classList.add('on');}
       q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
     if(k===2){try{ensureAC();se&&se('fanfare');}catch(e){}}};
   el.onclick=e=>{if(e.target.closest('.skip')){end();return;}next();};next();}
@@ -126,3 +130,25 @@ ACT.tipOff=()=>{ensureNew();TIPS.forEach(t=>S.flags.tipSeen[t.k]=1);save();rende
 function tipCard(){if(!S||S.part!==1)return '';ensureNew();const t=TIPS.find(x=>!S.flags.tipSeen[x.k]&&x.c());if(!t)return '';
   return `<div class="tipcard">${typeof avatar==='function'?avatar('mikuni',38):''}<div class="b"><b>三國より</b>${esc(t.t).replace(/\n/g,'<br>')}</div><div class="r"><button class="btn sm" data-act="tipOff">案内を消す</button><button class="btn sm pri" data-act="tipOk" data-k="${t.k}">わかった</button></div></div>`;}
 vStable=(o=>function(){return tipCard()+o.apply(this,arguments);})(vStable);
+
+(function(){const st=document.createElement('style');st.textContent=`
+#opening .lb{position:absolute;left:0;right:0;height:7vh;background:#000;z-index:3;transition:transform 1.2s}
+#opening .lb.t{top:0}#opening .lb.b{bottom:0}
+#opening.ttlmode .lb.t{transform:translateY(-100%)}#opening.ttlmode .lb.b{transform:translateY(100%)}
+#opening .sky,#opening .sky2{animation:opkb 40s ease-out forwards}@keyframes opkb{from{transform:scale(1.12)}to{transform:scale(1)}}
+#opening .txt{font-weight:600;letter-spacing:.12em}
+#opening .chap{position:absolute;left:0;right:0;top:calc(7vh + 64px);text-align:center;z-index:4;font:600 clamp(11px,2.8vmin,14px) "Zen Kaku Gothic New",sans-serif;letter-spacing:.6em;color:#c9a75e;opacity:0;transition:opacity 1.2s}
+#opening .chap.on{opacity:.9}
+#opening .chap:before,#opening .chap:after{content:"";display:inline-block;width:28px;height:1px;background:#c9a75e;vertical-align:middle;margin:0 12px;opacity:.6}
+#opening .dots{position:absolute;left:0;right:0;bottom:calc(7vh + 16px);display:flex;justify-content:center;gap:7px;z-index:4}
+#opening .dots i{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18);transition:background .6s}#opening .dots i.on{background:#c9a75e}
+#opening .tap{bottom:calc(7vh + 34px);z-index:4;letter-spacing:.35em;animation:optap 2.4s ease-in-out infinite}@keyframes optap{50%{opacity:.25}}
+#opening.ttlmode .dots,#opening.ttlmode .chap{opacity:0}
+#opening .skip{z-index:5;top:calc(7vh + 12px);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22);letter-spacing:.15em}
+#opening .runner{position:absolute;bottom:17%;left:0;width:30vmin;transform:translate3d(-40vmin,0,0);z-index:1;opacity:.9;will-change:transform}
+#opening .runner svg{width:100%;display:block;filter:none}
+#opening .runner.go{animation:oprun 3.2s cubic-bezier(.3,.1,.4,1) forwards}
+@keyframes oprun{0%{transform:translate3d(-40vmin,0,0)}100%{transform:translate3d(115vw,-1vh,0)}}
+#opening .ttl small:after{content:"親子二代の馬主物語";display:block;margin-top:14px;letter-spacing:.4em;font-size:.95em;color:#e8dcc0;opacity:.8}
+#opening .ttl b{animation:opttl 2.6s ease-out both}@keyframes opttl{from{letter-spacing:.3em;opacity:0}to{opacity:1}}
+#opening .ttl:before{content:"";position:absolute;left:20%;right:20%;top:calc(100% + 6px);height:1px;background:linear-gradient(90deg,transparent,#c9a75e,transparent)}`;document.head.appendChild(st);})();
