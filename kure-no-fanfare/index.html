@@ -7284,7 +7284,7 @@ if(typeof STORY_EV!=='undefined')STORY_EV.push('firstHorse2');
 #opening .turf{position:absolute;left:0;right:0;bottom:0;height:20%;background:linear-gradient(180deg,#1d3a1f,#0b170c);opacity:0;transition:opacity 2.5s;will-change:opacity}
 #opening .snow i{position:absolute;top:-4%;width:3px;height:3px;border-radius:50%;background:#fff;opacity:.7;animation:opsn linear infinite;will-change:transform}
 @keyframes opsn{from{transform:translate3d(0,0,0)}to{transform:translate3d(-6vw,110vh,0)}}
-#opening .txt{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(17px,4.6vmin,30px);line-height:2;letter-spacing:.08em;text-shadow:0 2px 12px #000;white-space:pre-line;opacity:0;transition:opacity 1.4s;will-change:opacity}
+#opening .txt{position:absolute;left:8%;right:8%;top:50%;transform:translateY(-50%);text-align:center;font-size:clamp(17px,4.6vmin,30px);line-height:2;letter-spacing:.08em;text-shadow:0 2px 12px #000;white-space:pre;opacity:0;transition:opacity 1.4s;will-change:opacity}
 #opening .txt.on{opacity:1}
 #opening .ttl{position:absolute;left:0;right:0;top:40%;text-align:center;opacity:0;transition:opacity 2.5s;will-change:opacity}
 #opening .ttl b{display:block;white-space:nowrap;font-size:min(64px,8.4vw);letter-spacing:.06em;font-weight:800;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent;}
@@ -7316,7 +7316,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
       q('.snow').style.opacity=s.snow?1:0;
       if(s.ch){q('.chap').textContent=s.ch;q('.chap').classList.add('on');}
       if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');}
-      el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;tx.classList.add('on');}
+      el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;const mx=Math.max(...s.t.split('\n').map(l=>l.length)),fw=el.clientWidth*.84;tx.style.fontSize=Math.min(Math.max(15,Math.min(30,Math.min(innerWidth,innerHeight)*.046)),fw/(mx*1.14))+'px';tx.classList.add('on');}
       q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
     if(k===2){try{ensureAC();se&&se('fanfare');}catch(e){}}};
   el.onclick=e=>{if(e.target.closest('.skip')){end();return;}next();};next();}
