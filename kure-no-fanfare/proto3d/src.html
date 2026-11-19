@@ -302,11 +302,15 @@ const VISION={},VX=CRS.lh?-60:60;const REPLAY={buf:[],i:null};
  VISION.ann=panel(W*.2,W*.2,new THREE.MeshBasicMaterial({map:ann}));
  VISION.board=canvasTex(256,384,(g,w,h)=>{g.fillStyle='#050505';g.fillRect(0,0,w,h);});VISION.boardCv=VISION.board.image;
  panel(W*.4375,W*.125,new THREE.MeshBasicMaterial({map:VISION.board}));}
+/* margins as the official result has them (passed in), else measured from the picture */
+function offMg(r){const f=IN&&IN.field.find(x=>x.no===r.no);return f&&f.mg?String(f.mg):null;}
+function boardMg(ord,k){const b=ord[k+1];if(!b)return '';const m=offMg(b);if(m)return m.replace('･',' ');const L=(ord[k].d-b.d)/2.4;return L<.15?'ハナ':L<.3?'アタマ':L<.5?'クビ':L<.8?'1/2':String(Math.round(L));}
+function mgSpoken(m){if(!m)return null;if(/ハナ|アタマ|クビ/.test(m))return m+'差';if(m==='大差')return '大差';const x=m.replace('･1/2','馬身半').replace('1/2','半馬身');return /馬身/.test(x)?x:x+'馬身';}
 function drawVisionBoard(ord,final){const c=VISION.boardCv.getContext('2d'),w=256,h=384;c.fillStyle='#050505';c.fillRect(0,0,w,h);
   c.fillStyle='#ffb000';c.font='bold 26px monospace';c.fillText(CRS.jp+' 11R',10,32);if(final){c.fillStyle='#e02020';c.fillRect(150,8,96,32);c.fillStyle='#fff';c.font='bold 24px sans-serif';c.fillText('確定',168,33);}
   ['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'].forEach((r,k)=>{const y=80+k*46;c.fillStyle='#1f5fd1';c.beginPath();c.arc(24,y-9,15,0,7);c.fill();c.fillStyle='#fff';c.font='bold 18px serif';c.textAlign='center';c.fillText(r,24,y-3);c.textAlign='left';
-    c.fillStyle='#ffb000';c.font='bold 36px monospace';c.fillText(ord&&ord[k]?String(ord[k].no).padStart(2,' '):'',52,y+4);if(k<4&&ord&&final){c.font='bold 20px sans-serif';c.fillText(['クビ','1/2','ハナ','1'][k],160,y+20);}});
-  c.fillStyle='#ffb000';c.font='bold 22px sans-serif';c.fillText('芝 良',10,330);c.fillText('ダ 良',10,366);VISION.board.needsUpdate=true;}
+    c.fillStyle='#ffb000';c.font='bold 36px monospace';c.fillText(ord&&ord[k]?String(ord[k].no).padStart(2,' '):'',52,y+4);if(k<4&&ord&&final){c.font='bold 20px sans-serif';c.fillText(boardMg(ord,k),160,y+20);}});
+  c.fillStyle='#ffb000';c.font='bold 22px sans-serif';const sf=QS.get('surf')==='ダ';c.fillText('芝 '+(sf?'良':GOING),10,330);c.fillText('ダ '+(sf?GOING:'良'),10,366);VISION.board.needsUpdate=true;}
 drawVisionBoard(null,false);
 // trees: the course is closed in by a deep belt of big broadleaf trees (you see almost nothing beyond), clipped cypresses along the inside rails,
 // and low hedges in the infield
@@ -825,7 +829,7 @@ const SLOPES={tokyo:[[1500,1200,-.6],[1100,900,.8],[800,520,-.7],[480,260,.9]],n
 function slopeAt(s){const d0=((FIN-s)%P+P)%P;let g=0;(SLOPES[CKEY]||[]).forEach(([a,b,gr])=>{[d0,d0-P].forEach(d=>{if(d<=a&&d>=b){const e=Math.min(1,(a-d)/30,(d-b)/30);g+=gr*Math.max(0,e);}});});return g;}
 let lastLead=0,kmh=0,slv=0;const CHN={px:null};const fav=[];
 function hud(byD,tau,dt){if(!mapDone){document.getElementById('crsnm').textContent=CRS.jp+'  '+CRS.en;document.getElementById('dstnm').textContent=D.toLocaleString()+'m';document.getElementById('rcnm').textContent=(QS.get('surf')==='ダ'?'ダ':'芝')+D+'m';document.getElementById('sfnm').textContent=QS.get('surf')==='ダ'?'DIRT':'TURF';document.getElementById('rcttl').textContent=IN&&IN.title?IN.title:(RACE_TITLE||CRS.name);drawMap();document.getElementById('mark').innerHTML=logoSVG(28,'#ffffff');document.getElementById('mark').style.opacity='.85';}const T=window.__mapT,n=RUN.length,lead=byD[0];
-  const el=started?Math.min(SIMT,TT):0,sec=Math.floor(el),ds=Math.floor((el-sec)*10);document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}.${String(sec%60).padStart(2,'0')}.${ds}`;
+  const el0=started?Math.min(SIMT,TT):0,el=SIMT>=TT?Math.round(el0*10)/10:Math.floor(el0*10)/10,sec=Math.floor(el+1e-6),ds=Math.round((el-sec)*10)%10;document.getElementById('tm').textContent=!started?'':sec<60?`${sec}.${ds}`:`${Math.floor(sec/60)}.${String(sec%60).padStart(2,'0')}.${ds}`;
   const nowS=SIMT;if(started&&tau<1.0&&lead.pd!=null&&nowS>lastLead){const v=(lead.d-lead.pd)/(nowS-lastLead)*3.6;if(v>20&&v<90)kmh+=(v-kmh)*.15;}RUN.forEach(r=>r.pd=r.d);lastLead=nowS;document.getElementById('kmh').textContent=kmh.toFixed(1);
   {const g=slopeAt(START+(started?lead.d:0));slv+=(g-slv)*.2;const sv=Math.abs(slv)<.05?0:slv;document.getElementById('slp').textContent=sv.toFixed(1);document.getElementById('slh').style.transform=`rotate(${Math.max(-14,Math.min(14,-sv*7)).toFixed(1)}deg)`;}
   // map progress: from the start to the leader
@@ -1017,7 +1021,7 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
   if(rem<330)once('400',()=>`残り300！ 先頭は${nm(L)}、リード${lenTxt(gap(L,S2))}。${nm(S2)}、${nm(S3)}が迫る！`);
   if(rem<170)once('200',()=>{const g=gap(L,S2);return g<1.5*LEN?`${nm(L)}か！ ${nm(S2)}か！ 並んでゴールへ！`:`${nm(L)}、抜け出した！ これは強い！`;});
   if(rem<70&&me!==L&&pm<=3)once('me2',()=>`${nm(me)}も来ている！ ${nm(me)}も来ている！`);
-  if(tau>=1)once('goal',()=>{const w=byD[0];RUN.forEach(r=>r.won=r===w);return `${nm(w)}、ゴールイン！ 鞍上${jk(w)}、ガッツポーズ！ 2着${nm(byD[1])}、着差は${lenTxt(gap(byD[0],byD[1]))}${w.mine?'。やりました、あの勝負服が先頭でゴール！':''}`;});}
+  if(tau>=1)once('goal',()=>{const w=byD[0];RUN.forEach(r=>r.won=r===w);return `${nm(w)}、ゴールイン！ 鞍上${jk(w)}、ガッツポーズ！ 2着${nm(byD[1])}、着差は${mgSpoken(offMg(byD[1]))||lenTxt(gap(byD[0],byD[1]))}${w.mine?'。やりました、あの勝負服が先頭でゴール！':''}`;});}
 /* ---------- loop ---------- */
 const clock=new THREE.Clock();let last=0,calls=[];
 const say=s=>{document.getElementById('call').textContent=s;if(IN){try{parent.postMessage({type:'race3d-call',text:s},'*');}catch(e){}}};

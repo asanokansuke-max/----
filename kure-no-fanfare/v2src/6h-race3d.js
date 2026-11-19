@@ -11,7 +11,7 @@ function r3dDoc(RC,mode){const inp=r3dInput(RC);inp.mode=mode||'race';return R3D
 function r3dInput(RC){const r=RC.race,hex=c=>/^#[0-9a-f]{6}$/i.test(c||'')?c:'#888888';
   return {course:R3D_CRS[r.course]||'tokyo',dist:r.dist,surf:r.surf,going:r.going||'良',grade:r3dGrade(r),race:r.key==='有馬記念'?'arima':'',time:r.key==='有馬記念'?'evening':'',
     title:r.name,mon:typeof M==='function'&&S?M(S.t):0,leadNo:RC.leadNo,time:RC.time,pace:RC.pace,shape:RC.shape,
-    field:[...RC.field].sort((a,b)=>a.no-b.no).map(f=>({no:f.no,name:f.name,a:hex(f.silks&&f.silks.a),b:hex(f.silks&&f.silks.b),p:f.silks&&f.silks.p,coat:f.coat||(f.h&&f.h.coat)||'鹿毛',used:f.used||f.style,j:f.jname||'',bl:f.h?!!f.h.blaze:null,gapL:f.gapL||0,odds:f.odds,mine:!!f.mine}))};}
+    field:[...RC.field].sort((a,b)=>a.no-b.no).map(f=>({no:f.no,name:f.name,a:hex(f.silks&&f.silks.a),b:hex(f.silks&&f.silks.b),p:f.silks&&f.silks.p,coat:f.coat||(f.h&&f.h.coat)||'鹿毛',used:f.used||f.style,j:f.jname||'',bl:f.h?!!f.h.blaze:null,mg:f.margin||'',gapL:f.gapL||0,odds:f.odds,mine:!!f.mine}))};}
 let R3D=null;
 (function(){const st=document.createElement('style');st.textContent=`
 #r3d{position:fixed;inset:0;z-index:80;background:radial-gradient(120% 80% at 50% 0%,#17301f,#070d09 70%);color:#eef3ef;display:flex;font-family:"Zen Kaku Gothic New",sans-serif;
