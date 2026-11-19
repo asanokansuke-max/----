@@ -54,8 +54,8 @@ function decide(RC,k){if(!RC.dec||RC.dec.k)return;RC.dec.k=k;const el=document.g
     f.perf+=d;if(f.why)f.why.dec=d;RC.dec.d=d;if(txt)msgs.push(txt);});
   if(el){el.innerHTML=k==='auto'?'<div class="q">指示は出さず、騎手に任せた。</div>':`<div class="q"><b>指示：${{out:'外に出す',in:'内を突く',early:'早めに動く'}[k]}</b></div>`;setTimeout(()=>el.remove(),2600);}
   if(k!=='auto')r3dRegap(RC,extra);msgs.forEach(m=>{try{r3dCall(m);}catch(e){}});}
-function cheerTiming(RC,rem){if(RC.cheer)return;const q=rem>=180&&rem<=380?'best':rem>380?'early':'late',d={best:.6,early:-.25,late:.15}[q];RC.cheer={q,rem:Math.round(rem),d};
-  decMine(RC).forEach(f=>{f.perf+=d;if(f.why)f.why.cheer=d;});r3dRegap(RC);}
+/* the shout from the stand is for you, not the horse: it changes nothing in the race */
+function cheerTiming(RC,rem){if(!RC.cheer)RC.cheer={rem:Math.round(rem)};}
 r3dState=(o=>function(d){const R0=R3D&&R3D.RC;if(R3D&&d.me)R3D.mePos=d.me.pos;const r=o.apply(this,arguments);if(!R0)return r;
   const D=R0.race.dist,trig=Math.min(950,D*.46);if(d.phase==='race'&&d.rem!=null&&d.rem<trig&&d.rem>420&&!R0.dec)showDecision(R0);
   if(!R0.cheerHook){const cb=document.getElementById('r3dcheer');if(cb){R0.cheerHook=1;cb.addEventListener('click',()=>{if(R3D&&R3D.rem!=null)cheerTiming(R0,R3D.rem);});}}
@@ -74,8 +74,6 @@ function reviewOf(RC,f){const W=f.why||{},r=RC.race,it=[],cc=typeof courseChar==
   if(f.cond<=2)it.push(['m','状態がひと息だった',-1]);else if(f.cond>=5)it.push(['p','状態は絶好だった',1]);
   if(f.fat>45)it.push(['m','疲れが残っていた',-1]);
   if(RC.dec&&RC.dec.k){const k=RC.dec.k,d=W.dec||0;if(k==='auto')it.push(['n','3コーナーでは騎手に任せた',0]);else add(d,`3コーナーの指示「${{out:'外に出す',in:'内を突く',early:'早めに動く'}[k]}」が当たった`,`3コーナーの指示「${{out:'外に出す',in:'内を突く',early:'早めに動く'}[k]}」は裏目に出た`,`3コーナーの指示「${{out:'外に出す',in:'内を突く',early:'早めに動く'}[k]}」`);}
-  if(RC.cheer)it.push([RC.cheer.q==='best'?'p':RC.cheer.q==='early'?'m':'n',RC.cheer.q==='best'?`残り${RC.cheer.rem}mの「行けー！」がぴたりとはまった`:RC.cheer.q==='early'?`残り${RC.cheer.rem}mの「行けー！」は早すぎた`:`残り${RC.cheer.rem}mの「行けー！」は少し遅かった`,RC.cheer.d]);
-  else if(RC.dec)it.push(['n','直線で「行けー！」を押さなかった（残り380〜180mが勝負どころ）',0]);
   if(W.luck>0)it.push(['p','人気以上の激走だった',W.luck]);else if(W.luck<0)it.push(['m',f.ev==='不利'?'道中で不利を受けた':'伸びきれなかった（展開のあや）',W.luck]);
   // the biggest minus → one piece of advice for next time
   const worst=[...it].filter(x=>x[0]==='m').sort((a,b)=>a[2]-b[2])[0];let nx='';
@@ -86,7 +84,6 @@ function reviewOf(RC,f){const W=f.why||{},r=RC.race,it=[],cc=typeof courseChar==
       :/坂/.test(t)?'坂のある中山・阪神は避けるか、調教でパワーをつけてから。'
       :/気性/.test(t)?'ふれあいでなつかせるか、信頼の厚い騎手を乗せると落ち着く。'
       :/状態|疲れ/.test(t)?'間隔をあけて、状態が上がってから使いたい。'
-      :/早すぎ|遅かった/.test(t)?'「行けー！」は残り380〜180mで押すのがいちばん効く。'
       :/裏目/.test(t)?'3コーナーの指示は、ペースと脚質を見て。スローなら早め、ハイなら外。':'';}
   return {it,nx};}
 showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{const me=RC&&RC.order.filter(f=>f.mine);const ban=$('#sheet .result-banner');
