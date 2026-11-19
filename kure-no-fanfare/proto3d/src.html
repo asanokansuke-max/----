@@ -86,14 +86,27 @@ const MON=({tokyo:{col:'#2b4f9e',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',ban
   nakayama:{col:'#1d6b44',edge:'#f2f2ee',ink:'#ffffff',band:'#f4f4ef',bandInk:'#1d6b44'},hanshin:{col:'#7a2a7d',edge:'#f2f2ee',ink:'#ffffff',band:'#f4f4ef',bandInk:'#7a2a7d'},
   sapporo:{col:'#3b8fc4',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#3b8fc4'},chukyo:{col:'#c8102e',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#c8102e'},niigata:{col:'#e07b1a',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#e07b1a'},kokura:{col:'#1a8fa0',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#1a8fa0'},hakodate:{col:'#2f5fa8',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#2f5fa8'},fukushima:{col:'#d4762a',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#d4762a'}})[CKEY]||{col:'#2f6b45',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#2f6b45'};
 if(RACE==='derby'||RACE==='arima'){MON.band='#c8231c';MON.bandInk='#f6e7b0';}
-const LS=CRS.ls,RAD=CRS.rad,P=2*LS+2*Math.PI*RAD;   // straight length, turn radius, lap
+/* the real tracks: lap length and the home straight (from the last turn to the post), turf and dirt, and for the turf the
+   inner (内回り) / outer (外回り) course each distance is run on. The stadium-shaped 3D course is sized so its lap and its
+   straight match, so a race of D metres starts where the real one does: D metres back from the post along the lap */
+const REALC={tokyo:{t:{lap:2083,st:526},d:{lap:1899,st:502}},
+  nakayama:{t:{lap:1667,st:310,out:{lap:1840,st:310},o:[1200,1600,2200,2600,4100]},d:{lap:1493,st:308}},
+  kyoto:{t:{lap:1783,st:328,out:{lap:1894,st:404},o:[1600,1800,2200,2400,3000,3200]},d:{lap:1608,st:329}},
+  hanshin:{t:{lap:1689,st:357,out:{lap:2089,st:474},o:[1600,1800,2400,2600]},d:{lap:1518,st:353}},
+  chukyo:{t:{lap:1706,st:413},d:{lap:1530,st:411}},niigata:{t:{lap:1623,st:359,out:{lap:2223,st:659},o:[1600,1800,2000]},d:{lap:1473,st:354}},
+  sapporo:{t:{lap:1641,st:266},d:{lap:1487,st:264}},hakodate:{t:{lap:1627,st:262},d:{lap:1476,st:260}},
+  fukushima:{t:{lap:1600,st:292},d:{lap:1445,st:296}},kokura:{t:{lap:1615,st:293},d:{lap:1445,st:291}}};
+const TRK=(()=>{const rc=REALC[CKEY],dirt=QS.get('surf')==='ダ',dist=+(QS.get('dist')||CRS.dist);if(!rc)return {ls:CRS.ls,rad:CRS.rad,fin:CRS.fin,side:''};
+  let t=dirt?rc.d:rc.t,side='';if(!dirt&&t.out){if(t.o.includes(dist)){t=t.out;side='外回り';}else side='内回り';}
+  const fin=CRS.fin,ls=t.st+fin,rad=Math.max(60,(t.lap-2*ls)/(2*Math.PI));return {ls,rad,fin,side,lap:t.lap,st:t.st};})();
+const LS=TRK.ls,RAD=TRK.rad,P=2*LS+2*Math.PI*RAD;   // straight length, turn radius, lap
 function pathAt(s,lane){const q=pathAt0(s,lane);if(CRS.lh){q.x=-q.x;q.hx=-q.hx;}return q;}
 function pathAt0(s,lane){s=((s%P)+P)%P;const r=RAD+lane;
   if(s<LS)return {x:-LS/2+s,z:-r,hx:1,hz:0};s-=LS;
   if(s<Math.PI*RAD){const t=-Math.PI/2+s/RAD;return {x:LS/2+r*Math.cos(t),z:r*Math.sin(t),hx:-Math.sin(t),hz:Math.cos(t)};}s-=Math.PI*RAD;
   if(s<LS)return {x:LS/2-s,z:r,hx:-1,hz:0};s-=LS;
   const t=Math.PI/2+s/RAD;return {x:-LS/2+r*Math.cos(t),z:r*Math.sin(t),hx:-Math.sin(t),hz:Math.cos(t)};}
-const FIN=LS-CRS.fin;   // finish post on the home straight
+const FIN=LS-TRK.fin;   // finish post on the home straight
 
 /* procedural textures */
 function canvasTex(w,h,draw,rep){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;if(rep)t.repeat.set(...rep);return t;}
