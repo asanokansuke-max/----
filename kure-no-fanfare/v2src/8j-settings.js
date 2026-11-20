@@ -66,3 +66,42 @@ THEMES.parade={bpm:112,ch:[C(46,58,62,65),C(45,57,60,65),C(43,58,62,67),C(39,58,
        [74,1],[77,.5],[82,.5],[86,2],[84,1],[82,.5],[79,.5],[75,1],[79,1],[77,1.5],[75,.5],[72,1],[76,1],[77,3],[null,1]],
   parts:{str:1,bass:'pulse',drums:1,timp:1,melI:'brass'}};
 showParade=(o=>function(){const r=o.apply(this,arguments);try{ensureAC();AUD.over='parade';bgmApply();}catch(e){}return r;})(showParade);
+
+/* ================= BGM のバリエーション =================
+   more original pieces: the home theme changes with the season, each person has a talk theme of their own feel,
+   the farm has its own tune, G1 paddocks are grander, and parades / sales / story scenes alternate */
+(function(){
+  const add=(k,th)=>{THEMES[k]=th;};
+  add('home_spring',{bpm:92,ch:[C(53,60,65,69),C(48,60,64,67),C(50,57,62,65),C(46,58,62,65),C(53,60,65,69),C(45,57,60,64),C(46,58,62,67),C(48,58,64,67)],mel:null,parts:{keys:'broken',bass:'root',hat:'soft'}});
+  add('home_summer',{bpm:104,ch:[C(50,57,62,66),C(47,54,59,62),C(43,55,59,62),C(45,57,61,64),C(50,57,62,66),C(42,57,61,66),C(43,55,59,64),C(45,57,61,67)],mel:null,parts:{arp:'pluck',bass:'pulse',drums:1}});
+  add('home_autumn',{bpm:78,ch:[C(45,57,60,64),C(41,57,60,65),C(48,55,60,64),C(43,55,59,62),C(45,57,60,64),C(38,57,62,65),C(40,56,59,64),C(45,57,60,64)],mel:null,parts:{pad:1,keys:'broken',bass:'root'}});
+  add('farm',{bpm:80,ch:[C(43,55,59,62),C(48,55,60,64),C(43,55,59,62),C(50,57,62,66),C(40,55,59,64),C(48,55,60,64),C(50,57,62,66),C(43,55,59,62)],mel:null,parts:{arp:'mbox',bass:'root',pad:1}});
+  add('talk_warm',{bpm:72,ch:[C(48,55,60,64),C(45,57,60,64),C(41,57,60,65),C(43,55,59,62)],mel:null,parts:{keys:'broken',bass:'root'}});
+  add('talk_bright',{bpm:88,ch:[C(50,57,62,66),C(55,59,62,67),C(52,59,64,67),C(45,57,61,64)],mel:null,parts:{arp:'pluck',bass:'root',hat:'soft'}});
+  add('talk_tense',{bpm:68,ch:[C(45,57,60,64),C(46,58,62,65),C(40,56,59,64),C(45,57,60,64)],mel:null,parts:{pad:1,pizz:1,bass:'root'}});
+  add('paddock_g1',{bpm:84,ch:[C(50,57,62,65),C(46,58,62,65),C(43,55,58,62),C(45,57,61,64),C(50,57,62,65),C(41,57,60,65),C(43,55,58,64),C(45,57,61,64)],mel:null,parts:{str:1,bass:'pulse',timp:1,melI:'brass'}});
+  add('paddock2',{bpm:96,ch:[C(48,55,60,64),C(45,57,60,64),C(50,57,62,65),C(43,55,59,62)],mel:null,parts:{pizz:1,bass:'pulse',hat:'soft'}});
+  add('sale2',{bpm:124,ch:[C(43,55,58,62),C(39,55,58,63),C(41,57,60,65),C(38,54,57,62)],mel:null,parts:{pizz:1,bass:'pulse',drums:1,str:1}});
+  add('story2',{bpm:58,ch:[C(48,55,60,63),C(44,56,60,63),C(41,56,60,65),C(43,55,59,62)],mel:null,parts:{str:1,melI:'keys',bass:'root'}});
+  add('parade2',{bpm:116,ch:[C(51,58,63,67),C(46,58,62,65),C(48,55,60,63),C(44,56,60,63),C(51,58,63,67),C(41,56,60,65),C(46,58,62,65),C(51,58,63,67)],
+    mel:[[75,1],[79,.5],[82,.5],[87,2],[86,1],[84,1],[82,2],[80,1],[84,1],[82,1],[79,1],[77,3],[null,1],[75,1],[79,.5],[82,.5],[87,2],[89,1],[87,1],[84,2],[82,1],[80,1],[77,1],[74,1],[75,3],[null,1]],
+    parts:{str:1,bass:'pulse',drums:1,melI:'brass'}});
+  add('parade3',{bpm:108,ch:[C(53,60,65,69),C(50,57,62,65),C(46,58,62,65),C(48,58,64,67),C(53,60,65,69),C(45,57,60,64),C(46,58,62,65),C(48,58,64,67)],mel:null,parts:{str:1,bass:'pulse',drums:1,timp:1,melI:'brass'}});
+  // a melody for each new piece without one: chord tones on a fixed seed so the loop always repeats the same way
+  Object.entries(THEMES).forEach(([k,th])=>{if(th.mel)return;let seed=hash(k)*1e6;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+    th.mel=[];th.ch.forEach((ch,bi)=>{const tones=ch.slice(1).map(m=>m+12);const rh=[[1,1,2],[1.5,.5,2],[2,1,1],[1,1,1,1],[.5,.5,1,2]][Math.floor(rnd()*5)];let last=null;
+      rh.forEach((b,j)=>{let m=tones[Math.floor(rnd()*tones.length)];if(last!=null&&Math.abs(m-last)>7)m=tones.reduce((a,x)=>Math.abs(x-last)<Math.abs(a-last)?x:a,tones[0]);th.mel.push([rnd()<.1&&j>0?null:m,b]);last=m;});});
+    th.parts.melI=th.parts.melI||'pluck';});
+})();
+const BGM_VAR={
+  home:()=>{const m=S?M(S.t):4;return m>=3&&m<=5?'home_spring':m>=6&&m<=8?'home_summer':m>=9&&m<=11?'home_autumn':'home';},
+  talk:()=>{const id=UI.talk&&UI.talk.id||'';return ['kujo','rei','washio'].includes(id)?'talk_tense':['hayase','hinata','komori','kiryu','mio'].includes(id)?'talk_bright':['togawa','nakahara','mikuni','kitami','shibahara','koyanagi'].includes(id)?'talk_warm':'talk';},
+  paddock:()=>{const r=UI.race&&UI.race.race;return r&&r.grade==='G1'?'paddock_g1':(S&&S.t%2)?'paddock2':'paddock';},
+  sale:()=>S&&Y(S.t)%2?'sale2':'sale',
+  story:()=>S&&S.t%2?'story2':'story',
+  parade:()=>{const r=UI.race&&UI.race.race;const k=r?Math.floor(hash(r.name)*3):0;return ['parade','parade2','parade3'][k];}};
+startTheme=(o=>function(name){const f=BGM_VAR[name];let n=name;try{if(f){n=f();if(!THEMES[n])n=name;}}catch(e){}return o.call(this,n);})(startTheme);
+/* bgmApply compares the scene name with the running piece; keep the scene name on the running piece so it doesn't restart */
+startTheme=(o=>function(name){const r=o.apply(this,arguments);if(AUD.cur){AUD.cur.variant=AUD.cur.name;AUD.cur.name=name;}return r;})(startTheme);
+bgmApply=(o=>function(){try{const w=sceneNow(),c=AUD.cur;if(c&&c.name===w&&BGM_VAR[w]){const v=BGM_VAR[w]();if(THEMES[v]&&c.variant!==v)c.name='';}}catch(e){}return o.apply(this,arguments);})(bgmApply);
+render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&UI.tab==='farm'&&AUD.base!=='farm'){AUD.base='farm';bgmApply();}}catch(e){}return r;})(render);
