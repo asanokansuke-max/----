@@ -130,8 +130,7 @@ vFarm=(o=>function(){const html=o.apply(this,arguments);const old=mine().filter(
    - the line being read is kept referenced (WebKit can drop it and then never says it finished, which silenced every later line)
    - a watchdog moves on if a line never reports that it finished
    - a voice engine that says "still speaking" when nothing is queued by us is reset, and a paused one is resumed */
-spNext=function(){const ss=window.speechSynthesis;if(!ss)return;clearTimeout(SPQ.wd);const it=SPQ.q.shift();if(!it){SPQ.busy=false;SPQ.cur=null;if(SPQ.kp){const k=SPQ.kp;SPQ.kp=null;try{k.play().catch(()=>{});}catch(e){}}return;}SPQ.busy=true;
-  try{const k=window.__keepAud;if(k&&!k.paused){k.pause();SPQ.kp=k;}}catch(e){}
+spNext=function(){const ss=window.speechSynthesis;if(!ss)return;clearTimeout(SPQ.wd);const it=SPQ.q.shift();if(!it){SPQ.busy=false;SPQ.cur=null;return;}SPQ.busy=true;
   const u=new SpeechSynthesisUtterance(it[0].replace(/[「」]/g,'').replace(/、/g,'、 '));u.lang='ja-JP';u.rate=it[1]?1.4:1.15;u.pitch=1.05;u.volume=.95;
   try{const jv=ss.getVoices().filter(v=>/ja/i.test(v.lang));const pv=typeof pickMaleVoice==='function'?pickMaleVoice(jv).v:jv[0];if(pv)u.voice=pv;}catch(e){}
   let done=false;const fin=()=>{if(done)return;done=true;clearTimeout(SPQ.wd);if(SPQ.cur===u){SPQ.busy=false;SPQ.cur=null;spNext();}};
@@ -143,7 +142,6 @@ spStop=function(){SPQ.q=[];SPQ.busy=false;SPQ.cur=null;clearTimeout(SPQ.wd);try{
 /* the voice test in the settings reads directly inside the tap and shows what the device's voice engine answered (so a silent phone tells us why) */
 ACT.stgTest=()=>{const ss=window.speechSynthesis,log=[];const show=()=>{try{toast('読み上げ: '+log.join(' / '));clearTimeout(toast.t);toast.t=setTimeout(()=>{const el=$('#toast');if(el)el.hidden=true;},9000);}catch(e){}};
   if(!ss||typeof SpeechSynthesisUtterance==='undefined'){toast('この端末は読み上げに対応していません');return;}
-  try{const k=window.__keepAud;if(k&&!k.paused){k.pause();setTimeout(()=>{try{k.play().catch(()=>{});}catch(e){}},6000);}}catch(e){}
   try{ss.cancel();if(ss.paused)ss.resume();}catch(e){}
   const jv=ss.getVoices().filter(v=>/ja/i.test(v.lang));log.push('声'+jv.length+'件');try{if(navigator.audioSession)log.push('session:'+navigator.audioSession.type);}catch(e){}
   const u=new SpeechSynthesisUtterance('最後の直線！ 内から、アケボノハツユキが伸びてくる！');u.lang='ja-JP';u.rate=1.1;u.volume=1;
@@ -157,3 +155,14 @@ r3dSound=(o=>function(d){try{const R=R3D;if(R&&SND.on&&d.phase==='race'&&!R.fres
     sndStart();}}catch(e){}return o.apply(this,arguments);})(r3dSound);
 (function(){let last=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>800){last=n;try{if(SND.on&&SND.ac&&SND.ac.state!=='running'&&SND.ac.state!=='closed'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}}return o.apply(this,arguments);})(r3dState);
   document.addEventListener('touchend',()=>{try{if(typeof R3D!=='undefined'&&R3D&&SND.ac&&SND.ac.state!=='running')SND.ac.resume();}catch(e){}},{passive:true,capture:true});})();
+/* hoofbeats booked further ahead, so a busy moment (fast-forward, a heavy frame) never leaves a gap; after a long stall they restart from now instead of piling up */
+sndHoofs=function(running,cad,vol){
+  const n=SND.nodes;if(!n)return;const ac=SND.ac,now=ac.currentTime;
+  n.hoofBus.gain.setTargetAtTime(running?vol:0,now,.12);
+  if(!running){n.next=now+.05;return;}
+  if(n.next<now)n.next=now+.03;
+  const T=1/cad,beats=[[0,.55,0],[.17,.7,1],[.33,1,2]];
+  while(n.next<now+.7){
+    for(let h=0;h<2;h++){const base=n.next+(h?.012+Math.random()*.012:0);
+      beats.forEach(([o,v,ti])=>{const src=ac.createBufferSource();src.buffer=n.th[ti];src.playbackRate.value=.92+Math.random()*.16;const g=ac.createGain();g.gain.value=v*(h?.35:1);src.connect(g);g.connect(n.hoofBus);src.start(base+o*T*.62);});}
+    n.next+=T;}};
