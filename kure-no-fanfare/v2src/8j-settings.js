@@ -117,7 +117,7 @@ render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&UI.tab==='farm'&
     w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
     return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));};
   const unlock=()=>{setSession();
-    try{if(!keep){keep=document.createElement('audio');keep.src=silentWav();keep.loop=true;keep.setAttribute('playsinline','');keep.setAttribute('x-webkit-airplay','deny');keep.preload='auto';keep.volume=.01;document.body.appendChild(keep);keep.style.display='none';}
+    try{if(!keep){keep=document.createElement('audio');keep.src=silentWav();keep.loop=true;keep.setAttribute('playsinline','');keep.setAttribute('x-webkit-airplay','deny');keep.preload='auto';keep.volume=.01;document.body.appendChild(keep);keep.style.display='none';window.__keepAud=keep;}
       if(keep.paused){const pr=keep.play();if(pr&&pr.catch)pr.catch(()=>{});}}catch(e){}
     try{[SND&&SND.ac,AUD&&AUD.ac].forEach(ac=>{if(ac&&ac.state==='suspended')ac.resume();});}catch(e){}};
   ['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{passive:true,capture:true}));
