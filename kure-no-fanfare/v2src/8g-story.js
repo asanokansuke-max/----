@@ -182,8 +182,8 @@ function opStandSVG(){const R=Math.random;let cols='',heads='',rows='',rays='',f
   for(let i=0;i<7;i++){const x=200+i*115+R()*40,w=14+R()*16;rays+=`<polygon class="ray" style="animation-delay:${(-R()*6).toFixed(1)}s" points="${x},106 ${x+w},106 ${x+w+60},180 ${x-10},180" fill="url(#opRay)"/>`;}
   for(const x of [260,400,560,720,880]){flags+=`<rect x="${x}" y="78" width="1.4" height="20" fill="#0a0a0e"/><path class="flag" d="M${x+1.4} 79 l11 2.5 l-11 2.5z" fill="#c8a24a" opacity=".9"/>`;}
   for(let x=486;x<700;x+=12)win+=`<rect x="${x}" y="88" width="7" height="3" fill="rgba(255,190,120,${(.35+R()*.4).toFixed(2)})"/>`;
-  return `<svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMax slice" overflow="visible">
-<defs><linearGradient id="opGap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf86"/><stop offset=".6" stop-color="#ff9448"/><stop offset="1" stop-color="#b9502a"/></linearGradient>
+  const head='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 200" preserveAspectRatio="xMidYMax slice">';
+  const body=`<defs><linearGradient id="opGap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf86"/><stop offset=".6" stop-color="#ff9448"/><stop offset="1" stop-color="#b9502a"/></linearGradient>
 <radialGradient id="opSun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff4d2"/><stop offset=".25" stop-color="#ffd08a"/><stop offset=".55" stop-color="#ff9a50" stop-opacity=".5"/><stop offset="1" stop-color="#ff8040" stop-opacity="0"/></radialGradient>
 <linearGradient id="opRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc27a" stop-opacity=".2"/><stop offset="1" stop-color="#ffb060" stop-opacity="0"/></linearGradient>
 <linearGradient id="opSeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2317"/><stop offset=".6" stop-color="#181012"/><stop offset="1" stop-color="#0b0a0d"/></linearGradient></defs>
@@ -196,12 +196,13 @@ function opStandSVG(){const R=Math.random;let cols='',heads='',rows='',rays='',f
 <polygon points="150,96 1000,96 1000,104 172,106" fill="#0a0a0e"/><rect x="150" y="95" width="850" height="1.3" fill="#ffb466" opacity=".85"/>
 ${flags}
 <rect x="166" y="180" width="834" height="20" fill="#09080b"/><rect x="166" y="180" width="834" height="1" fill="rgba(255,170,90,.3)"/>
-<g style="mix-blend-mode:screen">${rays}</g></svg>`;}
+`;
+  const img=(svg,c)=>`<img class="${c}" alt="" decoding="async" src="data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}">`;
+  return img(head+body+'</svg>','st')+img(head+body.split('</defs>')[0]+'</defs>'+rays.replace(/ class="ray" style="[^"]*"/g,'')+'</svg>','rays');}
 (function(){const st=document.createElement('style');st.textContent=`
 #opening .stand{left:0;right:0;bottom:calc(26% - 1px);height:min(21vw,26vh);background:none;clip-path:none;overflow:visible}
-#opening .stand svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-#opening .stand .ray{animation:opray 6s ease-in-out infinite}@keyframes opray{50%{opacity:.5}}
-#opening .stand .flag{transform-box:fill-box;transform-origin:0 50%;animation:opflag 1.6s ease-in-out infinite alternate}@keyframes opflag{to{transform:scaleX(.7) skewY(4deg)}}
+#opening .stand img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+#opening .stand .rays{animation:opray 7s ease-in-out infinite;will-change:opacity}@keyframes opray{50%{opacity:.45}}
 #opening .dusk{position:absolute;left:0;right:0;bottom:26%;height:46%;background:linear-gradient(0deg,rgba(255,138,70,.42),rgba(214,96,80,.2) 28%,rgba(90,50,80,.1) 60%,rgba(0,0,0,0));opacity:0;transition:opacity 2.5s;will-change:opacity;pointer-events:none}
 #opening .turf{height:26%;background:
   linear-gradient(90deg,rgba(255,160,80,.16),rgba(255,160,80,0) 45%),
@@ -210,4 +211,4 @@ ${flags}
 #opening .turf .apron{position:absolute;left:0;right:0;top:0;height:9%;background:linear-gradient(180deg,#2a2420,#3a3028)}
 #opening .turf .frail{position:absolute;left:0;right:0;top:9%;height:5px;background:linear-gradient(180deg,#f2ede0 0 2px,rgba(0,0,0,0) 2px),repeating-linear-gradient(90deg,#d9d3c4 0 2px,rgba(0,0,0,0) 2px 26px);opacity:.85}
 #opening .nrail{position:absolute;left:0;right:0;bottom:12%;height:14px;z-index:2;opacity:0;transition:opacity 2.5s;will-change:opacity;pointer-events:none;
-  background:linear-gradient(180deg,#f4efe2 0 4px,rgba(0,0,0,0) 4px),repeating-linear-gradient(90deg,#e6e0d0 0 4px,rgba(0,0,0,0) 4px 70px);filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}`;document.head.appendChild(st);})();
+  background:linear-gradient(180deg,#f4efe2 0 4px,rgba(0,0,0,0) 4px),repeating-linear-gradient(90deg,#e6e0d0 0 4px,rgba(0,0,0,0) 4px 70px)}`;document.head.appendChild(st);})();

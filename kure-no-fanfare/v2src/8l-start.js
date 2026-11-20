@@ -62,3 +62,21 @@ startTheme=(o=>function(name){const r=o.apply(this,arguments);try{if(name==='tit
 (function(){const go=()=>{try{if(S)return;ensureAC();AUD.over=null;AUD.base='title';bgmApply();}catch(e){}};
   const tap=()=>{go();if(AUD.cur){document.removeEventListener('pointerdown',tap,true);document.removeEventListener('touchend',tap,true);}};
   document.addEventListener('pointerdown',tap,true);document.addEventListener('touchend',tap,true);go();})();
+/* the fanfare without a hitch: the hall reverb is computed once (ahead of time, while the screen is still), and the notes are built a little ahead of when they sound instead of all at once */
+function brassIR(ac){if(SND._ir&&SND._ir.ctx===ac)return SND._ir.buf;const ir=ac.createBuffer(2,ac.sampleRate*1.6,ac.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c),L=d.length;for(let i=0;i<L;i++){const x=1-i/L;d[i]=(Math.random()*2-1)*x*x*Math.sqrt(x)*.5;}}const rv=ac.createConvolver();rv.buffer=ir;const wet=ac.createGain();wet.gain.value=.35;rv.connect(wet);wet.connect(ac.destination);SND._ir={ctx:ac,buf:ir,rv};return ir;}
+brass=function(notes,bpm,vol){
+  if(!SND.ac||!SND.on)return;const ac=SND.ac,t0=ac.currentTime+.08,b=60/bpm;
+  const out=ac.createGain();out.gain.value=vol;brassIR(ac);out.connect(ac.destination);out.connect(SND._ir.rv);
+  const N=notes.slice().sort((a,c)=>a[1]-c[1]);let i=0;
+  const make=([m,st,ln,v=1])=>{const ts=Math.max(t0+st*b,ac.currentTime+.02),te=t0+(st+ln)*b;
+    const lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=1.2;lp.frequency.setValueAtTime(500,ts);lp.frequency.linearRampToValueAtTime(2600*v,ts+.06);lp.frequency.setTargetAtTime(1500,ts+.1,.3);
+    const g=ac.createGain();g.gain.setValueAtTime(0,ts);g.gain.linearRampToValueAtTime(.22*v,ts+.035);g.gain.setTargetAtTime(.16*v,ts+.06,.15);g.gain.setValueAtTime(.16*v,Math.max(ts+.06,te-.06));g.gain.linearRampToValueAtTime(0,te+.08);
+    [[-6,'sawtooth',.5],[6,'sawtooth',.5],[0,'square',.18]].forEach(([dt,ty,a])=>{const o=ac.createOscillator();o.type=ty;o.frequency.value=mf(m);o.detune.value=dt;if(ln>1.5){const vib=ac.createOscillator();vib.frequency.value=5.2;const vg=ac.createGain();vg.gain.value=4;vib.connect(vg);vg.connect(o.detune);vib.start(ts);vib.stop(te+.15);}const og=ac.createGain();og.gain.value=a;o.connect(og);og.connect(lp);o.start(ts);o.stop(te+.15);});
+    lp.connect(g);g.connect(out);};
+  const pump=()=>{const lim=ac.currentTime+.9;let k=0;while(i<N.length&&(t0+N[i][1]*b<lim||k<2)&&k<4){make(N[i++]);k++;}if(i<N.length)setTimeout(pump,i<6?40:200);};pump();};
+/* compute the reverb ahead: at the first touch, and when the opening starts (the screen is black then) */
+(function(){const warm=()=>{try{if(SND.ac)setTimeout(()=>{try{brassIR(SND.ac);}catch(e){}},120);}catch(e){}};document.addEventListener('pointerdown',warm,{capture:true,once:true});setTimeout(warm,900);})();
+/* the opening's grandstand is drawn and decoded ahead, on the title screen, so the curtain rises without a stutter */
+(function(){const pre=()=>{try{if(window.__opStand)return;const h=opStandSVG();window.__opStand=h;const box=document.createElement('div');box.innerHTML=h;box.querySelectorAll('img').forEach(im=>{try{im.decode&&im.decode().catch(()=>{});}catch(e){}});window.__opStandImgs=box;}catch(e){}};
+  opStandSVG=(o=>function(){if(window.__opStand){const h=window.__opStand;window.__opStand=null;return h;}return o.apply(this,arguments);})(opStandSVG);
+  (window.requestIdleCallback||(f=>setTimeout(f,600)))(pre,{timeout:1500});})();
