@@ -7320,7 +7320,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
   el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${Array.from({length:36},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
-    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><svg viewBox="0 0 120 70"><path fill="#d9d4c8" d="M14 38c6-6 16-8 30-7l22 1 12-12c4-4 10-6 14-4l9 6-2 4-7-2-8 13c0 6-3 10-9 12l9 6 10-1v4l-13 2-12-8H44l-9 8-15 5-1-4 13-6 3-8c-6-1-10-4-11-8-5 0-10 3-14 8l-3-3c4-6 8-9 12-10z"/><path fill="#1d2a6b" d="M48 22l14 2 4 9-12 3-8-6z"/></svg></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
+    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><canvas width="360" height="220"></canvas></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
   document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
   const snow=on=>{q('.snow').innerHTML=on?Array.from({length:22},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
   snow(true);q('.snow').style.cssText='opacity:0;transition:opacity 1.5s';
@@ -7331,10 +7331,10 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky2').style.opacity=s.sky?1:0;
       q('.snow').style.opacity=s.snow?1:0;
       if(s.ch){q('.chap').textContent=s.ch;q('.chap').classList.add('on');}
-      if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');}
+      if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');opGallop(r.querySelector('canvas'));}
       el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;const mx=Math.max(...s.t.split('\n').map(l=>l.length)),fw=el.clientWidth*.84;tx.style.fontSize=Math.min(Math.max(15,Math.min(30,Math.min(innerWidth,innerHeight)*.046)),fw/(mx*1.14))+'px';tx.classList.add('on');}
       q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
-    if(k===2){try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
+    if(k===2){try{if(AUD.mus&&AUD.ac){AUD.mus.gain.setTargetAtTime(.02,AUD.ac.currentTime,.2);setTimeout(()=>{try{AUD.mus.gain.setTargetAtTime(AUD.bgm?.22*AUD.vol:0,AUD.ac.currentTime,1.2);}catch(e){}},7000);}}catch(e){}try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
   el.onclick=e=>{try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();}catch(x){}if(e.target.closest('.skip')){end();return;}next();};next();}
 /* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
 ACT.newGame=(o=>function(){const args=arguments;if(START.noOpening){START.noOpening=0;return o.apply(this,args);}try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'高瀬';
@@ -7372,13 +7372,23 @@ vStable=(o=>function(){return tipCard()+o.apply(this,arguments);})(vStable);
 #opening .tap{bottom:calc(7vh + 34px);z-index:4;letter-spacing:.35em;animation:optap 2.4s ease-in-out infinite}@keyframes optap{50%{opacity:.25}}
 #opening.ttlmode .dots,#opening.ttlmode .chap{opacity:0}
 #opening .skip{z-index:5;top:calc(7vh + 12px);background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.22);letter-spacing:.15em}
-#opening .runner{position:absolute;bottom:17%;left:0;width:30vmin;transform:translate3d(-40vmin,0,0);z-index:1;opacity:.9;will-change:transform}
-#opening .runner svg{width:100%;display:block;filter:none}
+#opening .runner{position:absolute;bottom:15%;left:0;width:38vmin;transform:translate3d(-40vmin,0,0);z-index:1;opacity:.9;will-change:transform}
+#opening .runner canvas{width:100%;display:block}
 #opening .runner.go{animation:oprun 3.2s cubic-bezier(.3,.1,.4,1) forwards}
 @keyframes oprun{0%{transform:translate3d(-40vmin,0,0)}100%{transform:translate3d(115vw,-1vh,0)}}
 #opening .ttl small:after{content:"親子二代の馬主物語";display:block;margin-top:14px;letter-spacing:.4em;font-size:.95em;color:#e8dcc0;opacity:.8}
 #opening .ttl b{animation:opttl 2.6s ease-out both}@keyframes opttl{from{letter-spacing:.3em;opacity:0}to{opacity:1}}
 #opening .ttl:before{content:"";position:absolute;left:20%;right:20%;top:calc(100% + 6px);height:1px;background:linear-gradient(90deg,transparent,#c9a75e,transparent)}`;document.head.appendChild(st);})();
+
+/* the grey in the opening: drawn by the same horse renderer as the game, galloping, a rider in navy and gold, backlit by the low sun */
+function opGallop(cv){if(!cv||typeof drawHorse!=='function')return;const c=cv.getContext('2d'),t0=performance.now();
+  const step=now=>{if(!cv.isConnected)return;const t=(now-t0)/1000;if(t>3.6)return;c.clearRect(0,0,cv.width,cv.height);
+    c.save();c.globalAlpha=.95;drawHorse(c,cv.width*.5,cv.height*.86,2.1,t*Math.PI*2*2.3,'芦毛',{a:'#1d2a5a',b:'#c9a227',p:'山形'},7,false,{});c.restore();
+    // rim light from the sun behind
+    c.save();c.globalCompositeOperation='source-atop';const g=c.createLinearGradient(0,0,cv.width,0);g.addColorStop(0,'rgba(255,170,90,0)');g.addColorStop(.7,'rgba(255,170,90,.12)');g.addColorStop(1,'rgba(255,190,120,.35)');c.fillStyle=g;c.fillRect(0,0,cv.width,cv.height);c.restore();
+    requestAnimationFrame(step);};requestAnimationFrame(step);}
+/* the title theme plays softly through the opening; it steps aside for the fanfare */
+ACT.startOpen=(o=>function(){try{ensureAC();AUD.over=null;AUD.base='title';bgmApply();}catch(e){}return o.apply(this,arguments);})(ACT.startOpen);
 /* =========================================================
    語り継がれるもの: a lifetime record kept across playthroughs,
    titles earned along the way, and a second run that inherits
@@ -7755,9 +7765,10 @@ render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&$('#modal').hidd
 (function(){const st=document.createElement('style');st.textContent=`
 .ttlpage{position:relative;min-height:100%;display:grid;place-items:center;padding:40px 22px calc(40px + env(safe-area-inset-bottom,0px));background:radial-gradient(120% 70% at 50% 115%,#4a3220 0%,#1a1a22 45%,#07090d 80%);color:#efe9da;text-align:center;overflow:hidden}
 .ttlpage .in{display:grid;gap:18px;justify-items:center;max-width:520px;position:relative}
+.ttlpage .lead,.ttlpage .kick,.ttlpage .en{white-space:nowrap}
 .ttlpage .kick{font:600 12px "Zen Kaku Gothic New",sans-serif;letter-spacing:.5em;color:#c9a75e}
-.ttlpage h1{margin:0;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:min(56px,10.5vw);letter-spacing:.08em;line-height:1.25;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ttlpage .en{font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.5em;color:#a99f88}
+.ttlpage h1{margin:0;white-space:nowrap;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:min(52px,9.6vw);letter-spacing:.04em;line-height:1.25;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ttlpage .en{font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.4em;color:#a99f88}
 .ttlpage .lead{font-family:"Shippori Mincho B1",serif;font-size:14px;line-height:2;color:#d8cfbb;margin:6px 0 10px}
 .ttlpage .go{min-width:220px;min-height:52px;border-radius:999px;border:1px solid #c9a75e;background:linear-gradient(180deg,rgba(201,167,94,.28),rgba(201,167,94,.08));color:#fff3d0;font:700 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.3em;padding-left:.3em}
 .ttlpage .sub{background:none;border:0;color:#a99f88;font:500 12px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em;text-decoration:underline;text-underline-offset:4px}

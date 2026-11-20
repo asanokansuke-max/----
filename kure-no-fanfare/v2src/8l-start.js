@@ -4,9 +4,10 @@
 (function(){const st=document.createElement('style');st.textContent=`
 .ttlpage{position:relative;min-height:100%;display:grid;place-items:center;padding:40px 22px calc(40px + env(safe-area-inset-bottom,0px));background:radial-gradient(120% 70% at 50% 115%,#4a3220 0%,#1a1a22 45%,#07090d 80%);color:#efe9da;text-align:center;overflow:hidden}
 .ttlpage .in{display:grid;gap:18px;justify-items:center;max-width:520px;position:relative}
+.ttlpage .lead,.ttlpage .kick,.ttlpage .en{white-space:nowrap}
 .ttlpage .kick{font:600 12px "Zen Kaku Gothic New",sans-serif;letter-spacing:.5em;color:#c9a75e}
-.ttlpage h1{margin:0;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:min(56px,10.5vw);letter-spacing:.08em;line-height:1.25;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ttlpage .en{font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.5em;color:#a99f88}
+.ttlpage h1{margin:0;white-space:nowrap;font-family:"Shippori Mincho B1",serif;font-weight:800;font-size:min(52px,9.6vw);letter-spacing:.04em;line-height:1.25;background:linear-gradient(180deg,#fff3d0,#d9a441 60%,#9b6a1d);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ttlpage .en{font:500 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.4em;color:#a99f88}
 .ttlpage .lead{font-family:"Shippori Mincho B1",serif;font-size:14px;line-height:2;color:#d8cfbb;margin:6px 0 10px}
 .ttlpage .go{min-width:220px;min-height:52px;border-radius:999px;border:1px solid #c9a75e;background:linear-gradient(180deg,rgba(201,167,94,.28),rgba(201,167,94,.08));color:#fff3d0;font:700 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.3em;padding-left:.3em}
 .ttlpage .sub{background:none;border:0;color:#a99f88;font:500 12px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em;text-decoration:underline;text-underline-offset:4px}
