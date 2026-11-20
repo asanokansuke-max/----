@@ -7902,6 +7902,25 @@ beginMonth=(o=>function(){const r=o.apply(this,arguments);try{trainerSuggest();}
   if(d.arima)v.body=`${h.name}、有馬記念に出られます。\n\n${V(TV(h.trainer),'consult',{h:h.name,r:'有馬記念（中山芝2500m）',c:COND[h.cond-1]})}\n\n暮れの中山です。${ownerName()}さん、行きましょう。`;
   else{const race=racesFor(h).find(r=>r.key===d.key);if(race&&race.grade!=='G1')v.title=`${h.name}を${race.name}（${race.grade}）へ`;}
   return v;};}
+
+/* ================= 故障: no sudden vanishing =================
+   a career-ending injury only comes after warning signs (a fracture before, or the trainer's warning about the legs that you
+   ran through); otherwise it is a fracture with time off. And when a career does end, there is a proper farewell and a choice */
+injuryRoll=(o=>function(h,mult){const r=o.apply(this,arguments);if(r==='競走能力喪失'&&!(h.injHist>0||h.riskRun)){h.status='休養';h.rest=9+Math.floor(R()*3);h.injHist=(h.injHist||0)+1;return '骨折';}
+  if(r==='骨折'||r==='軽い屈腱炎')h.injHist=(h.injHist||0)+1;return r;})(injuryRoll);
+{const f0=EV.legWorry.f;EV.legWorry.f=(d,i)=>{const r=f0(d,i);const h=HZ(d.hid);if(h&&i!==0)h.riskRun=1;return r;};}
+EV.injury.r=(o=>function(d){const v=o.apply(this,arguments);const h=HZ(d.hid);if(!v||!h||d.kind!=='競走能力喪失')return v;
+  const best=h.gw&&h.gw.length?`重賞${h.gw.length}勝`:h.wins?`${h.wins}勝`:'';
+  v.body+=`\n\n${h.name}は、これで競走生活を終えることになります。通算${h.starts}戦${h.wins}勝${best&&h.wins?`（${best}）`:''}。\n\n三國「…最後に、どうしてあげましょうか」`;
+  v.ch=[h.sex==='牝'?'繁殖牝馬として牧場に帰す':h.gw&&h.gw.length?'種牡馬にする':'乗馬として第二の馬生へ','功労馬として中原牧場で余生を過ごさせる（毎月10万円）', '引退式をしてから送り出す'];return v;})(EV.injury.r);
+EV.injury.f=(o=>function(d,i){const h=HZ(d.hid);if(!h||d.kind!=='競走能力喪失')return o.apply(this,arguments);h.mainJ=null;
+  if(i===1){h.status='功労馬';log(`${h.name}が功労馬として中原牧場へ`);trust('nakahara',4);return `${h.name}は中原牧場に帰った。\n\n中原「おかえり。…ゆっくりしていけ」\n\n（牧場タブで、いつでも会いに行ける）`;}
+  let t=retireHorse(h);if(i===2){h.fans+=3000;S.fame+=1;t=`最終レースのあと、${h.name}の引退式が行われた。冷たい風の中、スタンドに残った大勢のファンが名前を呼んだ。\n\n`+t;}
+  return t;})(EV.injury.f);
+monthlyCost=(o=>function(){return o.apply(this,arguments)+mine().filter(h=>h.status==='功労馬').length*10;})(monthlyCost);
+/* 功労馬 on the farm tab */
+vFarm=(o=>function(){const html=o.apply(this,arguments);const old=mine().filter(h=>h.status==='功労馬');if(!old.length)return html;
+  return html+`<section class="sec"><h2>功労馬<small>中原牧場で余生を過ごす馬たち</small></h2>${old.map(h=>`<article class="panel horse farm"><div class="hhead"><button class="portrait" data-act="touch" data-hid="${h.id}" aria-label="${esc(h.name)}に会いに行く">${horseSVG(h,56)}</button><div style="min-width:0;flex:1"><h3>${esc(h.name)}</h3><div class="meta">${h.sex}${ageOf(h)}・${h.coat}　通算${h.starts}戦${h.wins}勝${h.gw.length?'　'+esc(h.gw.join('・')):''}</div></div></div><div class="cardfoot solo"><button class="btn pri2" data-act="touch" data-hid="${h.id}">会いに行く</button></div></article>`).join('')}</section>`;})(vFarm);
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
