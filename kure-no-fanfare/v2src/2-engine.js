@@ -212,7 +212,9 @@ function buildField(race,ents){
   fld.forEach((f,i)=>f.no=i+1);
   // the betting public does not see true ability: it reads past form, the jockey and the stable talk, and guesses (more so about horses with few runs)
   const pub=f=>{const h=f.h,st=h?(h.starts||0):3+Math.floor(R()*8),w=st===0?.62:st<3?.7:st<8?.78:.84;
-    const form=h&&st?clamp((h.wins||0)/st*7-1.2,-2,4):0;return f.exp*w+(race.mean+form+(f.jsk-70)*.08)*(1-w)+randn()*(st===0?1.6:1.1);};
+    const form=h&&st?clamp((h.wins||0)/st*7-1.2,-2,4):0;return f.exp*w+(race.mean+form)*(1-w)+jkPop(f)+randn()*(st===0?1.6:1.1);};
+  // the rider: fans back a top jockey beyond the horse's merit ("騎手人気"), and shy away from an unknown name
+  const jkPop=f=>{const j=f.jsk||65;return (j-70)*.09+(j>=86?2.2:j>=80?.8:0);};
   fld.forEach(f=>f.mexp=pub(f));
   const ex=fld.map(f=>Math.exp(f.mexp/3.4)),sum=ex.reduce((a,b)=>a+b,0);
   fld.forEach((f,i)=>f.odds=clamp(Math.round(.8/(ex[i]/sum)*10)/10,1.1,999.9));
