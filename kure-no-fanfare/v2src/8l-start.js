@@ -80,3 +80,10 @@ brass=function(notes,bpm,vol){
 (function(){const pre=()=>{try{if(window.__opStand)return;const h=opStandSVG();window.__opStand=h;const box=document.createElement('div');box.innerHTML=h;box.querySelectorAll('img').forEach(im=>{try{im.decode&&im.decode().catch(()=>{});}catch(e){}});window.__opStandImgs=box;}catch(e){}};
   opStandSVG=(o=>function(){if(window.__opStand){const h=window.__opStand;window.__opStand=null;return h;}return o.apply(this,arguments);})(opStandSVG);
   (window.requestIdleCallback||(f=>setTimeout(f,600)))(pre,{timeout:1500});})();
+/* no page zoom: pinch and double-tap never zoom the game screen (iOS ignores user-scalable, so the gestures are stopped here too) */
+(function(){const st=document.createElement('style');st.textContent='html,body,#app,#opening,.modal,.ov{touch-action:manipulation}';document.head.appendChild(st);
+  try{let m=document.querySelector('meta[name=viewport]');if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}m.content='width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no';}catch(e){}
+  const stop=e=>{if(e.cancelable)e.preventDefault();};
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,stop,{passive:false}));
+  document.addEventListener('touchmove',e=>{if(e.touches&&e.touches.length>1)stop(e);},{passive:false});
+  document.addEventListener('dblclick',stop,{passive:false});})();
