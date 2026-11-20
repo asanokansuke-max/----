@@ -88,7 +88,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     {t:'ファンファーレが鳴った瞬間、\nスタンドが揺れた。\n\nあんな音を、\nあとにも先にも聞いたことがない。',sky:1,sun:1,stand:1},
     {run:1,t:'最後の直線。\n一頭の芦毛が、\n大外から飛んできた。\n\nゴール板を過ぎたとき、\n父は泣いていた。',sun:1,stand:1,turf:1},
     {t:'「いつか、うちの勝負服で──」\n\n帰りの電車で、そう言った。\n父は、笑っただけだった。',sun:1,stand:1,turf:1},
-    {ch:'そして、四十年後',t:`四十年後。\n\n${nm}は、小さな町工場を\n一代で大きな会社にした。\n\n父は、もういない。`},
+    {ch:'そして、四十年後',t:`四十年後。\n\n${nm==="あなた"?"":nm+"は、"}小さな町工場を\n一代で大きな会社にした。\n\n父は、もういない。`},
     {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
@@ -110,7 +110,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     if(k===2){try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
   el.onclick=e=>{try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();}catch(x){}if(e.target.closest('.skip')){end();return;}next();};next();}
 /* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
-ACT.newGame=(o=>function(){const args=arguments;try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'高瀬';
+ACT.newGame=(o=>function(){const args=arguments;if(START.noOpening){START.noOpening=0;return o.apply(this,args);}try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'高瀬';
   try{showOpening(null,nm);}catch(e){}
   setTimeout(()=>{o.apply(this,args);try{if(S){S.flags.opened=1;save();}}catch(e){}},80);})(ACT.newGame);
 
