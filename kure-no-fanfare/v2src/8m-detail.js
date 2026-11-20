@@ -126,3 +126,16 @@ vFarm=(o=>function(){const html=o.apply(this,arguments);const old=mine().filter(
   // only on a touch: bringing the sound back on its own during a race could cut off the commentary voice on iPhone
   ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(window.speechSynthesis&&speechSynthesis.speaking)return;wake();},{passive:true,capture:true}));
 })();
+/* commentary voice that never gets stuck on iPhone:
+   - the line being read is kept referenced (WebKit can drop it and then never says it finished, which silenced every later line)
+   - a watchdog moves on if a line never reports that it finished
+   - a voice engine that says "still speaking" when nothing is queued by us is reset, and a paused one is resumed */
+spNext=function(){const ss=window.speechSynthesis;if(!ss)return;clearTimeout(SPQ.wd);const it=SPQ.q.shift();if(!it){SPQ.busy=false;SPQ.cur=null;return;}SPQ.busy=true;
+  const u=new SpeechSynthesisUtterance(it[0].replace(/[「」]/g,'').replace(/、/g,'、 '));u.lang='ja-JP';u.rate=it[1]?1.4:1.15;u.pitch=1.05;u.volume=.95;
+  try{const jv=ss.getVoices().filter(v=>/ja/i.test(v.lang));const pv=typeof pickMaleVoice==='function'?pickMaleVoice(jv).v:jv[0];if(pv)u.voice=pv;}catch(e){}
+  let done=false;const fin=()=>{if(done)return;done=true;clearTimeout(SPQ.wd);if(SPQ.cur===u){SPQ.busy=false;SPQ.cur=null;spNext();}};
+  u.onend=u.onerror=fin;SPQ.cur=u;
+  SPQ.wd=setTimeout(()=>{if(SPQ.cur===u&&!done){try{ss.cancel();}catch(e){}fin();}},2500+it[0].length*260);
+  try{if(ss.paused)ss.resume();}catch(e){}ss.speak(u);};
+speak=(o=>function(t,f){const r=o.apply(this,arguments);try{const ss=window.speechSynthesis;if(ss&&SPQ.q.length&&!SPQ.busy){if(ss.speaking||ss.pending)ss.cancel();spNext();}}catch(e){}return r;})(speak);
+spStop=function(){SPQ.q=[];SPQ.busy=false;SPQ.cur=null;clearTimeout(SPQ.wd);try{speechSynthesis.cancel();}catch(e){}};
