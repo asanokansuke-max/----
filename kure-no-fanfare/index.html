@@ -7389,6 +7389,15 @@ function opGallop(cv){if(!cv||typeof drawHorse!=='function')return;const c=cv.ge
     requestAnimationFrame(step);};requestAnimationFrame(step);}
 /* the title theme plays softly through the opening; it steps aside for the fanfare */
 ACT.startOpen=(o=>function(){try{ensureAC();AUD.over=null;AUD.base='title';bgmApply();}catch(e){}return o.apply(this,arguments);})(ACT.startOpen);
+/* full screen: no letterbox bars; every layer fills the whole screen (including the notch and home-bar areas) */
+(function(){const st=document.createElement('style');st.textContent=`
+#opening{position:fixed;left:0;top:0;width:100vw;height:100vh;height:100dvh;inset:0}
+#opening .lb{display:none!important}
+#opening .sky,#opening .sky2{inset:-2%}
+#opening .chap{top:calc(env(safe-area-inset-top,0px) + 64px)}
+#opening .skip{top:calc(env(safe-area-inset-top,0px) + 14px)}
+#opening .dots{bottom:calc(env(safe-area-inset-bottom,0px) + 22px)}
+#opening .tap{bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}`;document.head.appendChild(st);})();
 /* =========================================================
    語り継がれるもの: a lifetime record kept across playthroughs,
    titles earned along the way, and a second run that inherits
