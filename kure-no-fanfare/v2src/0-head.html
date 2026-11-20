@@ -511,3 +511,10 @@ td small{font-size:10px;color:var(--muted)}
 <div id="modal" class="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div id="toast" class="toast" hidden></div>
 <script>
+/* if the game fails to start, say so on screen (instead of a blank page) and offer a way out */
+(function(){var errs=[];function show(){try{var app=document.getElementById('app');if(app&&app.children.length)return;var d=document.getElementById('bootErr');if(!d){d=document.createElement('div');d.id='bootErr';d.style.cssText='position:fixed;inset:0;z-index:9999;background:#f7f4ec;color:#222;padding:24px 18px;font:14px/1.7 sans-serif;overflow:auto';document.body.appendChild(d);}
+d.innerHTML='<b style="font-size:17px">ゲームを開けませんでした</b><p>お手数ですが、この画面をスクリーンショットで送ってください。</p><pre style="white-space:pre-wrap;font-size:12px;background:#fff;border:1px solid #ccc;padding:10px;border-radius:8px">'+errs.join('\n').replace(/</g,'&lt;')+'\n'+navigator.userAgent+'</pre><button id="bootRe" style="margin-top:10px;padding:12px 16px;border-radius:10px;border:1px solid #888;background:#fff;font-size:14px">もう一度読み込む</button>';document.getElementById('bootRe').onclick=function(){location.reload();};}catch(e){}}
+window.addEventListener('error',function(e){errs.push((e.message||'error')+' @'+(e.lineno||'?')+':'+(e.colno||'?'));setTimeout(show,300);});
+window.addEventListener('load',function(){setTimeout(function(){var app=document.getElementById('app');if(app&&!app.children.length){if(!errs.length)errs.push('no error, but nothing was drawn');show();}},2500);});})();
+</script>
+<script>
