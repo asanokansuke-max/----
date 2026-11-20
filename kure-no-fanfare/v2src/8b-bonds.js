@@ -95,7 +95,7 @@ const withCtx=(fn,ctx)=>function(){const s=TCTX;TCTX=typeof ctx==='function'?ctx
 ACT.reply=withCtx(ACT.reply,()=>'世間話の返事');
 ACT.gift=withCtx(ACT.gift,d=>`手土産（${d.g}）`);
 ACT.topic=withCtx(ACT.topic,d=>{const t=UI.talk;const tp=t&&(TOPICS[t.id]||[]).find(x=>x.id===d.tp);return tp?'会って：'+tp.label.replace(/[「」]/g,''):'会って話した';});
-ACT.evc=withCtx(ACT.evc,d=>{const e=S.inbox.find(x=>x.id===+d.id);const v=e&&EV[e.type].r(e.data);return v?'出来事：'+v.title:'出来事';});
+ACT.evc=withCtx(ACT.evc,d=>{const e=S.inbox.find(x=>x.id===+d.id);const v=e&&EV[e.type]&&EV[e.type].r(e.data);return v?'出来事：'+v.title:'出来事';});
 ACT.phReply=withCtx(ACT.phReply,()=>{const m=UI.phone&&UI.phone.mail;return m?'メッセージ：'+(m.subj||'').slice(0,16):'メッセージ';});
 if(ACT.callCh)ACT.callCh=withCtx(ACT.callCh,'電話で');
 

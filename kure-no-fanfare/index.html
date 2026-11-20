@@ -2004,7 +2004,7 @@ function steps(){
 function vStable(){
   const nIn=S.inbox.length;
   const act=racing().filter(h=>h.status!=='引退');
-  return `${steps()}${nIn?`<section class="sec"><h2>月初の出来事<small>すべて目を通すと、月を進められます</small></h2><div class="mails">${S.inbox.map(e=>{const v=EV[e.type].r(e.data);if(!v)return'';return `<button class="mail" data-act="ev" data-id="${e.id}">${v.p?avatar(v.p,38):''}<span style="min-width:0"><span class="from">${esc(v.from)}</span><br><span class="ttl">${esc(v.title)}</span></span></button>`;}).join('')}</div></section>`:''}
+  return `${steps()}${nIn?`<section class="sec"><h2>月初の出来事<small>すべて目を通すと、月を進められます</small></h2><div class="mails">${S.inbox.map(e=>{let v=null;try{v=EV[e.type]&&EV[e.type].r(e.data);}catch(x){v=null;}if(!v)return'';return `<button class="mail" data-act="ev" data-id="${e.id}">${v.p?avatar(v.p,38):''}<span style="min-width:0"><span class="from">${esc(v.from)}</span><br><span class="ttl">${esc(v.title)}</span></span></button>`;}).join('')}</div></section>`:''}
   ${S.sale?`<div class="panel banner"><b>${S.sale.kind}</b><span class="muted">${S.sale.blocked?'療養中のため参加できない':'今月だけ開催'}</span><span class="sp"></span><button class="btn gold" data-act="tab" data-tab="sale">セリ会場へ</button></div>`:''}
   ${S.restPenalty>0?`<div class="panel banner warnb">${esc(S.parent.name)}は療養中（あと${S.restPenalty}か月）。人に会えず、セリにも行けない。本業の収入も半分になる。</div>`:''}
   <section class="sec"><h2>厩舎<small>馬ごとに今月の指示を出す。月々の預託料 ${yen(monthlyCost())}</small></h2>
@@ -2371,10 +2371,10 @@ const ACT={
   sw:d=>{syncStart();START.silks[d.w]=d.c;renderStart();},
   pat:d=>{syncStart();START.silks.p=d.p;renderStart();},
   newGame:()=>{syncStart();newGame({name:START.name.trim()||'高瀬',kanmei:(START.kanmei.trim()||'アケボノ').slice(0,5),silks:{...START.silks}});startMonthReport();UI.tab='stable';render();openNextEvent();},
-  ev:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;const v=EV[e.type].r(e.data);
+  ev:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;if(!EV[e.type]){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}const v=EV[e.type].r(e.data);
     if(!v){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}
     openModal(`<div class="evhead">${v.p?avatar(v.p,56):''}<div><div class="from-line">${esc(v.from)}</div><h2>${esc(v.title)}</h2></div></div><div class="letter">${esc(v.body)}</div><div class="choices">${v.ch.map((c,i)=>`<button class="btn ${i===0?'pri':''}" data-act="evc" data-id="${e.id}" data-i="${i}">${esc(c)}</button>`).join('')}</div>`,{lock:true});},
-  evc:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;const out=EV[e.type].f(e.data,+d.i);S.inbox=S.inbox.filter(x=>x!==e);save();
+  evc:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e||!EV[e.type])return;const out=EV[e.type].f(e.data,+d.i);S.inbox=S.inbox.filter(x=>x!==e);save();
     if(out&&out.next==='interlude'){render();showInterlude();return;}
     render();
     if(out)openModal(`<div class="letter">${esc(out)}</div><div class="row"><span class="sp"></span><button class="btn pri" data-act="evnext">${S.inbox.length?'次へ':'閉じる'}</button></div>`,{lock:true});
@@ -2447,7 +2447,7 @@ const ACT={
 };
 function planOmakaseOne(h){planOmakase([h]);if(!S.month.orders[h.id])S.month.orders[h.id]={type:'train',int:'普通',by:'trainer'};}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const f=ACT[b.dataset.act];if(f)f(b.dataset,b);});
-load();if(S&&!S.rep)startMonthReport();render();
+load();if(S&&!S.rep)startMonthReport();try{render();}catch(e){}
 /* size a scene canvas so the whole sheet fits the screen without a scroll (never below min) */
 function fitH(cv,H,min=180){try{const md=document.getElementById('modal'),sh=document.getElementById('sheet');if(!md||md.hidden||!sh||!sh.contains(cv))return H;
   const cs=getComputedStyle(md),avail=md.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom),others=sh.scrollHeight-cv.offsetHeight;
@@ -6561,7 +6561,7 @@ const withCtx=(fn,ctx)=>function(){const s=TCTX;TCTX=typeof ctx==='function'?ctx
 ACT.reply=withCtx(ACT.reply,()=>'世間話の返事');
 ACT.gift=withCtx(ACT.gift,d=>`手土産（${d.g}）`);
 ACT.topic=withCtx(ACT.topic,d=>{const t=UI.talk;const tp=t&&(TOPICS[t.id]||[]).find(x=>x.id===d.tp);return tp?'会って：'+tp.label.replace(/[「」]/g,''):'会って話した';});
-ACT.evc=withCtx(ACT.evc,d=>{const e=S.inbox.find(x=>x.id===+d.id);const v=e&&EV[e.type].r(e.data);return v?'出来事：'+v.title:'出来事';});
+ACT.evc=withCtx(ACT.evc,d=>{const e=S.inbox.find(x=>x.id===+d.id);const v=e&&EV[e.type]&&EV[e.type].r(e.data);return v?'出来事：'+v.title:'出来事';});
 ACT.phReply=withCtx(ACT.phReply,()=>{const m=UI.phone&&UI.phone.mail;return m?'メッセージ：'+(m.subj||'').slice(0,16):'メッセージ';});
 if(ACT.callCh)ACT.callCh=withCtx(ACT.callCh,'電話で');
 
@@ -8104,4 +8104,7 @@ body,button,.sheet,#app,#r3d,#opening,.paper{-webkit-user-select:none;user-selec
 input,textarea,select,[contenteditable]{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
 img,canvas,svg{-webkit-user-drag:none;user-drag:none}`;document.head.appendChild(st);})();
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault();});
+
+/* boot, once every part of the game is loaded: a saved game is drawn again now that all event types exist (an event saved by a later part could not be drawn by the first render) */
+try{if(S){if(Array.isArray(S.inbox))S.inbox=S.inbox.filter(e=>e&&EV[e.type]);render();}}catch(e){console.error(e);}
 </script>
