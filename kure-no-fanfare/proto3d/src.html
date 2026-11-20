@@ -1006,7 +1006,11 @@ const nm=r=>r.name,lenTxt=m=>{const L=m/LEN;if(L<.15)return 'ハナ差';if(L<.3)
 const jk=r=>r.jn||'鞍上';
 const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};
 function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[2],last=byD[byD.length-1],me=RUN.find(r=>r.mine),pm=byD.indexOf(me)+1,gap=(a,b)=>a.d-b.d;
-  once('s',()=>{const slow=[...RUN].sort((a,b)=>b.early-a.early)[0];return slow.early>22?`${slow.no}番${nm(slow)}は、ややダッシュがつきません`:'各馬そろった、きれいなスタートです';});
+  once('s',()=>{const slow=[...RUN].sort((a,b)=>b.early-a.early)[0],fast=[...RUN].sort((a,b)=>a.early-b.early)[0],x=Math.random(),P=a=>a[Math.floor(Math.random()*a.length)];
+    if(x<.12&&slow.early>22)return P([`${slow.no}番${nm(slow)}は、ややダッシュがつきません`,`${nm(slow)}、出たなりで後方から`]);
+    if(x<.32&&slow.early>20)return P([`${nm(slow)}はいつも通り、後方からの競馬`,`${slow.no}番${nm(slow)}、無理をせず最後方に控えます`,`${nm(slow)}は今日も後ろから。じっくり構えます`]);
+    if(x<.52)return P([`好スタートは${fast.no}番${nm(fast)}`,`${fast.no}番${nm(fast)}、いいスタートを切りました`,`ポンと出たのは${nm(fast)}`]);
+    return P(['各馬そろった、きれいなスタートです','まずまず揃ったスタート','横一線のスタート。さあ、何が行くか','ほぼ揃ったスタートを切りました','きれいに揃いました。各馬、ポジション争い']);});
   if(d>180)once('lead',()=>`ハナを切ったのは${L.no}番${nm(L)}、鞍上${jk(L)}。2番手に${nm(S2)}、その外${nm(S3)}`);
   if(d>270)once('look',()=>{L.look=1.4;return `${jk(L)}、後ろを振り返って隊列を確認します`;});
   if(d>300)once('pos',()=>{const fr=byD.slice(0,4);if(gap(fr[0],fr[1])<1.2*LEN)CM.settle=fr[1];return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
