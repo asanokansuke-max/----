@@ -11,6 +11,8 @@
 .ttlpage .go{min-width:220px;min-height:52px;border-radius:999px;border:1px solid #c9a75e;background:linear-gradient(180deg,rgba(201,167,94,.28),rgba(201,167,94,.08));color:#fff3d0;font:700 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.3em;padding-left:.3em}
 .ttlpage .sub{background:none;border:0;color:#a99f88;font:500 12px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em;text-decoration:underline;text-underline-offset:4px}
 .ttlpage .glow{position:absolute;left:50%;bottom:-20vmin;width:90vmin;height:60vmin;margin-left:-45vmin;border-radius:50%;background:radial-gradient(ellipse,rgba(255,170,90,.28),rgba(255,170,90,0) 70%);pointer-events:none}
+.setupwrap,.ttlwrap{flex:1;min-height:0;width:100%;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;height:100%}
+.setup .begin{position:sticky;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:2;box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .setup{max-width:520px;margin:0 auto;padding:28px 18px calc(28px + env(safe-area-inset-bottom,0px));display:grid;gap:16px}
 .setup .hd{text-align:center;display:grid;gap:4px}.setup .hd small{font-size:11px;letter-spacing:.4em;color:var(--muted)}
 .setup .hd h2{margin:0;font-family:"Shippori Mincho B1",serif;font-size:24px;letter-spacing:.1em}
@@ -31,20 +33,20 @@
 let START_STEP='title';
 renderStart=(o=>function(){if(START_STEP==='setup'){renderSetup();return;}
   let L=null;try{L=typeof legLoad==='function'?legLoad():null;}catch(e){}const hasRec=L&&((L.runs||[]).length||Object.keys(L.titles||{}).length);
-  $('#app').innerHTML=`<div class="ttlpage"><div class="glow"></div><div class="in">
+  $('#app').innerHTML=`<div class="ttlwrap"><div class="ttlpage"><div class="glow"></div><div class="in">
     <div class="kick">親子二代の馬主物語</div><h1>暮れの<br>ファンファーレ</h1><div class="en">KURE NO FANFARE</div>
     <p class="lead">いつか、自分の勝負服で<br>暮れの中山の直線を。</p>
     <button class="go" data-act="startOpen">はじめる</button>
     ${hasRec?'<button class="sub" data-act="startRecord">これまでの物語</button>':''}
-    <button class="sub" data-act="startSkipOp">オープニングを飛ばす</button></div></div>`;})(renderStart);
+    <button class="sub" data-act="startSkipOp">オープニングを飛ばす</button></div></div></div>`;})(renderStart);
 function renderSetup(){const sw=w=>Object.entries(SILK_COLORS).map(([n,c])=>`<button class="sw" style="background:${c}" aria-label="${n}" aria-pressed="${START.silks[w]===c}" data-act="sw" data-w="${w}" data-c="${c}"></button>`).join('');
-  $('#app').innerHTML=`<div class="setup"><div class="hd"><small>STEP</small><h2>あなたの物語</h2></div>
+  $('#app').innerHTML=`<div class="setupwrap"><div class="setup"><div class="hd"><small>STEP</small><h2>あなたの物語</h2></div>
    <div class="card"><div><label class="l" for="f-name">あなたの名前（名字）</label><input type="text" id="f-name" maxlength="10" value="${esc(START.name)}" placeholder="例：高瀬" autocomplete="off"></div>
     <div><label class="l" for="f-kan">冠名</label><input type="text" id="f-kan" maxlength="5" value="${esc(START.kanmei)}" autocomplete="off"><div class="hint">あなたの馬の名前の頭につく言葉。例：アケボノ○○</div></div></div>
    <div class="card"><label class="l" style="margin:0">勝負服<span style="font-weight:500">　子の代にも受け継がれます</span></label>
     <div class="silkrow"><div class="pv">${silk(START.silks,80)}</div><div><p class="tiny">胴の色</p><div class="sws">${sw('a')}</div><p class="tiny">袖・柄の色</p><div class="sws">${sw('b')}</div></div></div>
     <div><p class="tiny">柄</p><div class="pats">${PATTERNS.map(p=>`<button aria-pressed="${START.silks.p===p}" data-act="pat" data-p="${p}">${p}</button>`).join('')}</div></div></div>
-   <button class="begin" data-act="beginStory">物語を始める</button><button class="back" data-act="startBack">タイトルへ戻る</button></div>`;}
+   <button class="begin" data-act="beginStory">物語を始める</button><button class="back" data-act="startBack">タイトルへ戻る</button></div></div>`;}
 ACT.sw=d=>{syncStart();START.silks[d.w]=d.c;renderStart();};
 ACT.pat=d=>{syncStart();START.silks.p=d.p;renderStart();};
 ACT.startOpen=()=>{try{showOpening(()=>{START_STEP='setup';renderStart();},'あなた');}catch(e){START_STEP='setup';renderStart();}};
