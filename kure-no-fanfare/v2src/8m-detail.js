@@ -150,3 +150,10 @@ ACT.stgTest=()=>{const ss=window.speechSynthesis,log=[];const show=()=>{try{toas
   try{const pv=typeof pickMaleVoice==='function'?pickMaleVoice(jv).v:jv[0];if(pv){u.voice=pv;log.push(pv.name);}}catch(e){}
   window.__stgU=u;let st=false;u.onstart=()=>{st=true;log.push('開始');show();};u.onend=()=>{log.push('終了');show();};u.onerror=e=>{log.push('エラー:'+(e&&e.error));show();};
   ss.speak(u);setTimeout(()=>{if(!st){log.push('始まらない speaking='+ss.speaking+' pending='+ss.pending);show();}},2500);};
+/* hoofs and crowd at the off: the same as turning the sound off and on — fresh sound nodes the moment the gates open
+   (on iPhone the ones made earlier, before the fanfare and the voice, can stay silent), and the sound is woken whenever it has been cut off during a race */
+r3dSound=(o=>function(d){try{const R=R3D;if(R&&SND.on&&d.phase==='race'&&!R.fresh){R.fresh=1;const wake=()=>{try{if(SND.ac&&SND.ac.state!=='running'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}};wake();
+    if(SND.nodes){const old=SND.nodes;SND.nodes=null;try{old.master.gain.setTargetAtTime(0,SND.ac.currentTime,.15);setTimeout(()=>{try{old.cs.stop();old.master.disconnect();}catch(e){}},1500);}catch(e){}}
+    sndStart();}}catch(e){}return o.apply(this,arguments);})(r3dSound);
+(function(){let last=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>800){last=n;try{if(SND.on&&SND.ac&&SND.ac.state!=='running'&&SND.ac.state!=='closed'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}}return o.apply(this,arguments);})(r3dState);
+  document.addEventListener('touchend',()=>{try{if(typeof R3D!=='undefined'&&R3D&&SND.ac&&SND.ac.state!=='running')SND.ac.resume();}catch(e){}},{passive:true,capture:true});})();
