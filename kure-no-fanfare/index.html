@@ -7652,6 +7652,25 @@ startTheme=(o=>function(name){const f=BGM_VAR[name];let n=name;try{if(f){n=f();i
 startTheme=(o=>function(name){const r=o.apply(this,arguments);if(AUD.cur){AUD.cur.variant=AUD.cur.name;AUD.cur.name=name;}return r;})(startTheme);
 bgmApply=(o=>function(){try{const w=sceneNow(),c=AUD.cur;if(c&&c.name===w&&BGM_VAR[w]){const v=BGM_VAR[w]();if(THEMES[v]&&c.variant!==v)c.name='';}}catch(e){}return o.apply(this,arguments);})(bgmApply);
 render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&UI.tab==='farm'&&AUD.base!=='farm'){AUD.base='farm';bgmApply();}}catch(e){}return r;})(render);
+
+/* ================= 消音モードでも鳴らす =================
+   iPhone mutes Web Audio when the ring/silent switch is on, unless the page is playing "media". Two things make it count as media,
+   like a video: the Audio Session API (Safari 17+) set to playback, and, for older iOS, a silent looping <audio> started on the first tap */
+(function(){
+  const setSession=()=>{try{if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';}catch(e){}};
+  setSession();
+  let keep=null;
+  const silentWav=()=>{const sr=8000,n=sr/2,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+    w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
+    return URL.createObjectURL(new Blob([b],{type:'audio/wav'}));};
+  const unlock=()=>{setSession();
+    try{if(!keep){keep=document.createElement('audio');keep.src=silentWav();keep.loop=true;keep.setAttribute('playsinline','');keep.setAttribute('x-webkit-airplay','deny');keep.preload='auto';keep.volume=.01;document.body.appendChild(keep);keep.style.display='none';}
+      if(keep.paused){const pr=keep.play();if(pr&&pr.catch)pr.catch(()=>{});}}catch(e){}
+    try{[SND&&SND.ac,AUD&&AUD.ac].forEach(ac=>{if(ac&&ac.state==='suspended')ac.resume();});}catch(e){}};
+  ['touchend','click','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{passive:true,capture:true}));
+  // back from the background: resume the sound
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&keep){unlock();}});
+})();
 /* =========================================================
    人の物語を増やす: 柴原・北見のその後、他の二つの馬主（アルカディア・北辰）、
    勝利騎手インタビューの言葉
