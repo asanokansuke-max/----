@@ -89,3 +89,19 @@ Object.assign(FACES,{
   kitami:{sx:'f',age:46,skin:'#efc8a6',hair:'#1c1715',hs:'bob',eye:'sharp',brow:2,mouth:'calm',wear:'jacket',cloth:'#4a2e44'},
   saotome:{sx:'m',age:42,skin:'#f0cba8',hair:'#151515',hs:'side',eye:'sharp',brow:1,mouth:'smirk',glasses:'#1d1d1d',wear:'suit',cloth:'#1d3c4a',tie:'#1d6f8a'},
   otaka:{sx:'m',age:63,skin:'#c98e62',hair:'#d0ccc4',hs:'swept',eye:'narrow',brow:3,mouth:'smile',wrinkle:3,wear:'work',cloth:'#2e5a36'}});
+
+/* ================= 馬名を付ける =================
+   every horse you bring in (the first one, a sale purchase, one from a trainer or another farm) is named by you */
+lotAward=(o=>function(l,w,price){const r=o.apply(this,arguments);if(w==='me'&&l.h){l.h.needName=1;l.h.nameHint=l.h.name;}return r;})(lotAward);
+ACT.evc=(o=>function(d){const before=new Set(S?S.horses.map(h=>h.id):[]);const r=o.apply(this,arguments);try{S.horses.forEach(h=>{if(h.owner==='me'&&!before.has(h.id)&&!['当歳'].includes(h.status)&&!h.unnamed&&h.needName==null){h.needName=1;h.nameHint=h.name;}});save();}catch(e){}return r;})(ACT.evc);
+function nameDialog(h){const sug=[...new Set([h.nameHint,makeName(S.kanmei),makeName(S.kanmei),makeName()].filter(n=>n&&n.length<=9))].slice(0,4);
+  const blood=h.sire&&ST(h.sire)?`父 ${esc(ST(h.sire).n)}${h.damName?`／母 ${esc(h.damName)}`:''}`:'';
+  openModal(`<div class="from-line">新しい仲間</div><h2>名前を付ける</h2>
+   <div class="row" style="gap:12px">${horseSVG(h,64)}<div><b>${h.sex||''}${ageOf(h)}歳・${esc(h.coat||'')}</b><div class="muted" style="font-size:12.5px">${blood}</div><div class="muted" style="font-size:12.5px">${h.trainer&&P(h.trainer)?esc(P(h.trainer).n.split(' ')[0])+'厩舎':h.status==='繁殖'?'繁殖牝馬':''}</div></div></div>
+   <div class="field"><label for="nm2">馬名（9文字まで。冠名「${esc(S.kanmei)}」を付けるのもおすすめ）</label><input type="text" id="nm2" maxlength="9" value="${esc(h.nameHint||S.kanmei)}" autocomplete="off"></div>
+   <div class="row" style="flex-wrap:wrap;gap:6px">${sug.map(n=>`<button class="btn sm" data-act="nmPick" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+   <div class="row"><span class="sp"></span><button class="btn pri" data-act="nmOk" data-hid="${h.id}">この名前にする</button></div>`,{lock:true});}
+ACT.nmPick=d=>{const i=$('#nm2');if(i)i.value=d.n;};
+ACT.nmOk=d=>{const h=HZ(d.hid),v=($('#nm2').value||'').trim();if(!h)return;if(!v){toast('馬名を入れてください');return;}if(v.length>9){toast('9文字までです');return;}if(v!==h.name&&usedName(v)){toast('その名前はもう使われています');return;}
+  const old=h.name;h.name=v;delete h.needName;delete h.nameHint;S.log.forEach(l=>{if(l.text&&old)l.text=l.text.split(old).join(v);});save();closeModal();toast(`「${v}」と名付けた`);render();};
+render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&$('#modal').hidden&&!document.getElementById('opening')){const h=S.horses.find(x=>x.owner==='me'&&x.needName);if(h)setTimeout(()=>{if($('#modal').hidden)nameDialog(h);},250);}}catch(e){}return r;})(render);

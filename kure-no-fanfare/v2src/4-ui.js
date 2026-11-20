@@ -434,7 +434,7 @@ function renderStart(){
    <div class="hero"><div class="kicker">親子二代の馬主物語</div><h1><span class="nw">暮れの</span><br><span class="nw">ファンファーレ</span></h1>
     <p>子どもの頃、父親に手を引かれて見た、十二月の中山競馬場。<br>一代で会社を築いたあなたは、還暦を前に馬主になった。<br>小さな牧場の芦毛から、すべてが始まる。</p></div>
    <div class="panel form">
-    <div class="field"><label for="f-name">あなた（父）の名前</label><input type="text" id="f-name" maxlength="10" value="${esc(START.name)}" placeholder="例：浅野"></div>
+    <div class="field"><label for="f-name">あなた（父）の名前</label><input type="text" id="f-name" maxlength="10" value="${esc(START.name)}" placeholder="例：高瀬"></div>
     <div class="field"><label for="f-kan">冠名（馬の名前の頭につける言葉）</label><input type="text" id="f-kan" maxlength="5" value="${esc(START.kanmei)}"></div>
     <div class="field"><label>勝負服（子の代にも受け継がれる）</label>
      <div class="silkprev">${silk(START.silks,76)}</div>
@@ -459,7 +459,7 @@ const ACT={
   close:()=>{closeModal();render();},
   sw:d=>{syncStart();START.silks[d.w]=d.c;renderStart();},
   pat:d=>{syncStart();START.silks.p=d.p;renderStart();},
-  newGame:()=>{syncStart();newGame({name:START.name.trim()||'浅野',kanmei:(START.kanmei.trim()||'アケボノ').slice(0,5),silks:{...START.silks}});startMonthReport();UI.tab='stable';render();openNextEvent();},
+  newGame:()=>{syncStart();newGame({name:START.name.trim()||'高瀬',kanmei:(START.kanmei.trim()||'アケボノ').slice(0,5),silks:{...START.silks}});startMonthReport();UI.tab='stable';render();openNextEvent();},
   ev:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;const v=EV[e.type].r(e.data);
     if(!v){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}
     openModal(`<div class="evhead">${v.p?avatar(v.p,56):''}<div><div class="from-line">${esc(v.from)}</div><h2>${esc(v.title)}</h2></div></div><div class="letter">${esc(v.body)}</div><div class="choices">${v.ch.map((c,i)=>`<button class="btn ${i===0?'pri':''}" data-act="evc" data-id="${e.id}" data-i="${i}">${esc(c)}</button>`).join('')}</div>`,{lock:true});},

@@ -48,9 +48,9 @@ EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags
   return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`来たか。\n\n…九条さんには断りを入れた。あんたが先月の帰りぎわ、馬房の前で一度だけ振り返ったのを見とった。\n\n値段は1600万。それ以上はいらん。`:k===1?`来たか。\n\n九条さんには、断りを入れた。\n\nあの話を最後まで黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`来たか。\n\n九条さんには断った。こいつが選んだんだ、わしは何も言えん。\n\n600万でいい。…大事にしてやってくれ。`)+`\n\nどこの厩舎に預けるかは、あんたが決めてくれ。\n戸川さん（美浦のベテラン。無理をさせず大きいところを狙う）か、早瀬さん（栗東の若手。数を使って経験を積ませる）か。`,
   ch:[`戸川厩舎に預ける（${price}万円）`,`早瀬厩舎に預ける（${price}万円）`]};},
   f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
-    h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
+    h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.needName=1;h.nameHint=h.name;h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
     S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
-    return `「${h.name}。いい名前だ」中原は目を細めた。\n\n${h.name}は${who(h.trainer)}厩舎に入った。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};
+    return `中原は、芦毛の首をぽんと叩いた。「名前は、あんたが付けてやってくれ」\n\n${who(h.trainer).split(" ")[0]}厩舎に入ることになった。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};
 EV.meetShibahara={r:()=>({p:'shibahara',from:'柴原 誠',title:'ごあいさつ',body:`柴原だ。美浦で厩舎をやってる。\n\nうちはダートと短いところが専門でな。芝の長いところで夢を見る馬主さんは多いが、砂の千二で勝つ馬も、同じ一勝だ。\n\nスピードのある馬が手に入ったら、声をかけてくれ。`,ch:['ぜひ、そのときは','覚えておきます']}),f:(d,i)=>{S.people.shibahara.met=true;trust('shibahara',i===0?8:3);return '柴原は無骨に頭を下げた。これからは新しく入る馬を柴原厩舎にも預けられる。';}};
 EV.meetKitami={r:()=>({p:'kitami',from:'北見 玲子',title:'栗東の名門',body:`北見です。栗東で厩舎を預かっています。\n\n率直に申し上げます。うちは預託の枠が限られていて、実績のある馬主さんからお受けしています。\n\n${ownerName()}さんの馬は、拝見しています。もう少し結果が出れば──馬主の格が20を超えたら、ぜひお話をさせてください。`,ch:['必ず、その日を','肝に銘じます']}),f:(d,i)=>{S.people.kitami.met=true;trust('kitami',i===0?6:3);return S.fame>=20?'北見はわずかにほほえんだ。「…もう、その資格はお持ちですね」北見厩舎に馬を預けられるようになった。':'「お待ちしています」北見は静かに一礼した。（馬主の格20で、北見厩舎に預けられる）';}};
 storyTriggers=(o=>function(first){const r=o.apply(this,arguments);if(S.part!==1)return r;const t=S.t-S.startT;
@@ -110,7 +110,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     if(k===2){try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
   el.onclick=e=>{try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();}catch(x){}if(e.target.closest('.skip')){end();return;}next();};next();}
 /* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
-ACT.newGame=(o=>function(){const args=arguments;try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'浅野';
+ACT.newGame=(o=>function(){const args=arguments;try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'高瀬';
   try{showOpening(null,nm);}catch(e){}
   setTimeout(()=>{o.apply(this,args);try{if(S){S.flags.opened=1;save();}}catch(e){}},80);})(ACT.newGame);
 

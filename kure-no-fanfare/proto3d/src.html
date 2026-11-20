@@ -371,7 +371,7 @@ const COATS={鹿毛:'#7a4a2a',黒鹿毛:'#4a2e1f',青鹿毛:'#272120',栗毛:'#a
 const SILKS=[['#c8262e','#f2c230'],['#1f4ea3','#ffffff'],['#f2f2f2','#2b3a55'],['#1d8a4a','#f2c230'],['#e04f8a','#ffffff'],['#2b2b2b','#d62828'],['#f2c230','#1f4ea3'],['#7b2cbf','#f2f2f2'],['#ff7f11','#1d1d1d'],['#14b8a6','#ffffff'],['#9d2a2a','#f2f2f2'],['#33415c','#ffd166'],['#ffffff','#e11d48'],['#3f9a6a','#f2f2f2']];
 const NAMES_DEF=['アケボノハヤテ','クジョウレガリア','ハートスター','カノンナイト','ムーンホマレ','ゼファーゲート','ダイヤサンダー','ブルードリーム','オリオンムーン','ナギランナー','アークレグナム','レガシーウイング','ゴールドヒカリ','コマチゴールド'];
 const NAMES=IN?IN.field.map(f=>f.name):NAMES_DEF;
-const JK_DEF=['佐伯','高森','早川','久住','藤代','真壁','柏木','森永','上原','吉岡','浅野','宮下','桐生','滝本','水谷','黒田'];
+const JK_DEF=['佐伯','高森','早川','久住','藤代','真壁','柏木','森永','上原','吉岡','岩城','宮下','桐生','滝本','水谷','黒田'];
 const JKN=i=>{const j=IN&&IN.field[i]&&IN.field[i].j||JK_DEF[i%JK_DEF.length];return String(j).split(/[ 　]/)[0];};if(IN){SILKS.length=0;IN.field.forEach(f=>SILKS.push([f.a,f.b]));}
 const PATI={'一本輪':0,'二本輪':0,'縦縞':1,'山形':2,'横縞':3,'段違い':3};
 let horseGLTF=null;
