@@ -7319,7 +7319,7 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
-  el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${Array.from({length:36},()=>`<i style="left:${(Math.random()*96+2).toFixed(1)}%;top:${(30+Math.random()*60).toFixed(0)}%;animation-delay:${(Math.random()*3).toFixed(1)}s"></i>`).join('')}</div><div class="turf"></div><div class="snow"></div>
+  el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${opStandSVG()}</div><div class="turf"></div><div class="snow"></div>
     <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><canvas width="360" height="220"></canvas></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
   document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
   const snow=on=>{q('.snow').innerHTML=on?Array.from({length:22},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
@@ -7398,6 +7398,31 @@ ACT.startOpen=(o=>function(){try{ensureAC();AUD.over=null;AUD.base='title';bgmAp
 #opening .skip{top:calc(env(safe-area-inset-top,0px) + 14px)}
 #opening .dots{bottom:calc(env(safe-area-inset-bottom,0px) + 22px)}
 #opening .tap{bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}`;document.head.appendChild(st);})();
+
+/* the grandstand at sunset: the low sun sits behind it and pours in through the gap under the roof, rays falling forward over the crowd onto the track */
+function opStandSVG(){const W=1000,R=Math.random;let cols='',heads='',rows='';
+  for(let x=70;x<=930;x+=86)cols+=`<rect x="${x}" y="46" width="5" height="150" fill="#07070a"/>`;
+  for(let r=0;r<7;r++){const y=84+r*12;rows+=`<rect x="40" y="${y+6}" width="920" height="1.2" fill="rgba(255,170,90,${(.16-r*.02).toFixed(2)})"/>`;
+    for(let x=46;x<954;x+=5+R()*4){if(R()<.12)continue;const hy=y+3+R()*2,rr=1.6+R()*.8;heads+=`<ellipse cx="${x.toFixed(1)}" cy="${hy.toFixed(1)}" rx="${rr.toFixed(1)}" ry="${(rr*1.15).toFixed(1)}"/>`+(r<3?`<path d="M${(x-rr).toFixed(1)} ${(hy-.4).toFixed(1)}a${rr.toFixed(1)} ${rr.toFixed(1)} 0 0 1 ${(rr*2).toFixed(1)} 0" stroke="rgba(255,190,110,${(.75-r*.2).toFixed(2)})" stroke-width=".8" fill="none"/>`:'');}}
+  let rays='';for(let i=0;i<7;i++){const x=120+i*125+R()*40,w=18+R()*22;rays+=`<polygon class="ray" style="animation-delay:${(-R()*6).toFixed(1)}s" points="${x},50 ${x+w},50 ${x+w+70},176 ${x-30},176" fill="url(#opRay)"/>`;}
+  return `<svg viewBox="0 0 ${W} 200" preserveAspectRatio="xMidYMax slice" overflow="visible">
+<defs><linearGradient id="opGap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd38a"/><stop offset=".55" stop-color="#ff9a4a"/><stop offset="1" stop-color="#c2522a"/></linearGradient>
+<radialGradient id="opSun" cx=".5" cy=".55" r=".5"><stop offset="0" stop-color="#fff2c8"/><stop offset=".35" stop-color="#ffc070" stop-opacity=".9"/><stop offset="1" stop-color="#ff8a40" stop-opacity="0"/></radialGradient>
+<linearGradient id="opRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc27a" stop-opacity=".22"/><stop offset="1" stop-color="#ffb060" stop-opacity="0"/></linearGradient>
+<linearGradient id="opSeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2216"/><stop offset=".5" stop-color="#1a1112"/><stop offset="1" stop-color="#0a0a0d"/></linearGradient></defs>
+<rect x="30" y="48" width="940" height="32" fill="url(#opGap)" opacity=".85"/>
+<ellipse cx="540" cy="66" rx="110" ry="40" fill="url(#opSun)"/>
+<rect x="30" y="80" width="940" height="120" fill="url(#opSeat)"/>
+<g fill="#0b0809">${heads}</g>${rows}${cols}
+<polygon points="0,30 1000,30 1000,42 990,50 10,50 0,42" fill="#0a0a0e"/>
+<rect x="0" y="29" width="1000" height="1.6" fill="#ffb466" opacity=".85"/>
+<rect x="10" y="49" width="980" height="1.4" fill="#ff9a50" opacity=".6"/>
+<rect x="30" y="176" width="940" height="24" fill="#060608"/><rect x="30" y="176" width="940" height="1.2" fill="rgba(255,170,90,.35)"/>
+<g style="mix-blend-mode:screen">${rays}</g></svg>`;}
+(function(){const st=document.createElement('style');st.textContent=`
+#opening .stand{left:0;right:0;bottom:calc(20% - 2px);height:22vmin;background:none;clip-path:none;overflow:visible}
+#opening .stand svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#opening .stand .ray{animation:opray 6s ease-in-out infinite}@keyframes opray{50%{opacity:.55}}`;document.head.appendChild(st);})();
 /* =========================================================
    語り継がれるもの: a lifetime record kept across playthroughs,
    titles earned along the way, and a second run that inherits
