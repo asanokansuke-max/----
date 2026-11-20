@@ -50,10 +50,15 @@ function renderSetup(){const sw=w=>Object.entries(SILK_COLORS).map(([n,c])=>`<bu
    <button class="begin" data-act="beginStory">物語を始める</button><button class="back" data-act="startBack">タイトルへ戻る</button></div></div>`;}
 ACT.sw=d=>{syncStart();START.silks[d.w]=d.c;renderStart();};
 ACT.pat=d=>{syncStart();START.silks.p=d.p;renderStart();};
-ACT.startOpen=()=>{try{showOpening(()=>{START_STEP='setup';renderStart();},'あなた');}catch(e){START_STEP='setup';renderStart();}};
+ACT.startOpen=()=>{try{showOpening(()=>{if(S)return;START_STEP='setup';renderStart();},'あなた');}catch(e){START_STEP='setup';renderStart();}};
 ACT.startSkipOp=()=>{START_STEP='setup';renderStart();};
 ACT.startBack=()=>{syncStart();START_STEP='title';renderStart();};
 ACT.startRecord=()=>{try{const L=legLoad(),ks=Object.keys(L.titles||{});openModal(`<h2>これまでの物語</h2>${(L.runs||[]).slice(0,8).map(x=>`<div class="row" style="gap:8px;flex-wrap:wrap"><b>${esc(x.title||x.kind)}</b><span class="muted" style="font-size:12px">${x.y}年・${esc(x.owner)}${x.horse?'・'+esc(x.horse):''}</span></div>`).join('')||'<p class="muted">まだありません</p>'}
   ${ks.length?`<div class="row" style="flex-wrap:wrap;gap:6px">${ks.map(k=>`<span class="chip">${esc(TITLES[k]||k)}</span>`).join('')}</div>`:''}<div class="row"><span class="sp"></span><button class="btn pri" data-act="close">閉じる</button></div>`);}catch(e){}};
 ACT.beginStory=()=>{syncStart();START.noOpening=1;START_STEP='title';ACT.newGame();};
 if(typeof S==='undefined'||!S){try{renderStart();}catch(e){}}
+/* title music from the first moment: quietly, as soon as the browser lets sound play (the first touch anywhere on the title or setup page) */
+startTheme=(o=>function(name){const r=o.apply(this,arguments);try{if(name==='title'&&AUD.cur)AUD.cur.bus.gain.setTargetAtTime(.5,AUD.ac.currentTime,.8);}catch(e){}return r;})(startTheme);
+(function(){const go=()=>{try{if(S)return;ensureAC();AUD.over=null;AUD.base='title';bgmApply();}catch(e){}};
+  const tap=()=>{go();if(AUD.cur){document.removeEventListener('pointerdown',tap,true);document.removeEventListener('touchend',tap,true);}};
+  document.addEventListener('pointerdown',tap,true);document.addEventListener('touchend',tap,true);go();})();

@@ -92,22 +92,22 @@ function showOpening(done,nm0){const nm=nm0||(S&&S.parent.name)||'あなた';
     {t:`そして今日、\n${nm}は馬主になる。`,sun:1,stand:1,turf:1},
     {ttl:1,sun:1,stand:1,turf:1,snow:1}];
   const el=document.createElement('div');el.id='opening';
-  el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="sun"></div><div class="stand">${opStandSVG()}</div><div class="turf"></div><div class="snow"></div>
-    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><canvas width="360" height="220"></canvas></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
+  el.innerHTML=`<div class="sky"></div><div class="sky2"></div><div class="dusk"></div><div class="sun"></div><div class="stand">${opStandSVG()}</div><div class="turf"><i class="apron"></i><i class="frail"></i></div><div class="snow"></div>
+    <div class="txt"></div><div class="ttl"><i style="position:absolute;left:15%;right:15%;top:-30%;bottom:-30%;background:radial-gradient(ellipse,rgba(255,180,80,.22),rgba(255,180,80,0) 70%)"></i><b style="position:relative">暮れのファンファーレ</b><small>KURE NO FANFARE</small></div><div class="runner"><canvas width="360" height="220"></canvas></div><div class="nrail"></div><div class="lb t"></div><div class="lb b"></div><div class="chap"></div><div class="dots"></div><button class="skip">スキップ</button><div class="tap">タップで進む</div>`;
   document.body.appendChild(el);const q=s=>el.querySelector(s);let k=-1,busy=false,T=null;
   const snow=on=>{q('.snow').innerHTML=on?Array.from({length:22},()=>`<i style="left:${(Math.random()*110).toFixed(0)}%;animation-duration:${(6+Math.random()*8).toFixed(1)}s;animation-delay:${(-Math.random()*10).toFixed(1)}s;width:${(2+Math.random()*3).toFixed(0)}px;height:${(2+Math.random()*3).toFixed(0)}px"></i>`).join(''):'';};
   snow(true);q('.snow').style.cssText='opacity:0;transition:opacity 1.5s';
-  const end=()=>{clearTimeout(T);el.classList.add('out');setTimeout(()=>{el.remove();done&&done();},1200);};
+  let dead=false;const end=()=>{if(dead)return;dead=true;clearTimeout(T);el.classList.add('out');setTimeout(()=>{el.remove();done&&done();},1200);};
   q('.dots').innerHTML=SC.map(()=>'<i></i>').join('');
-  const next=()=>{if(busy)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');q('.chap').classList.remove('on');
+  const next=()=>{if(busy||dead)return;k++;if(k>=SC.length){end();return;}busy=true;const s=SC[k],tx=q('.txt');tx.classList.remove('on');q('.chap').classList.remove('on');
     q('.dots').querySelectorAll('i').forEach((d,j)=>d.classList.toggle('on',j<=k));
-    setTimeout(()=>{q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.sky2').style.opacity=s.sky?1:0;
+    setTimeout(()=>{if(dead)return;q('.sun').style.opacity=s.sun?1:0;q('.stand').style.opacity=s.stand?1:0;q('.turf').style.opacity=s.turf?1:0;q('.nrail').style.opacity=s.turf?1:0;q('.dusk').style.opacity=s.stand?1:0;q('.sky2').style.opacity=s.sky?1:0;
       q('.snow').style.opacity=s.snow?1:0;
       if(s.ch){q('.chap').textContent=s.ch;q('.chap').classList.add('on');}
       if(s.run){const r=q('.runner');r.classList.remove('go');void r.offsetWidth;r.classList.add('go');opGallop(r.querySelector('canvas'));}
       el.classList.toggle('ttlmode',!!s.ttl);if(s.ttl){q('.ttl').style.opacity=1;}else{tx.textContent=s.t;const mx=Math.max(...s.t.split('\n').map(l=>l.length)),fw=el.clientWidth*.84;tx.style.fontSize=Math.min(Math.max(15,Math.min(30,Math.min(innerWidth,innerHeight)*.046)),fw/(mx*1.14))+'px';tx.classList.add('on');}
       q('.tap').style.opacity=.8;busy=false;clearTimeout(T);T=setTimeout(next,s.ttl?4200:Math.max(4200,s.t.length*120));},k?900:700);
-    if(k===2){try{if(AUD.mus&&AUD.ac){AUD.mus.gain.setTargetAtTime(.02,AUD.ac.currentTime,.2);setTimeout(()=>{try{AUD.mus.gain.setTargetAtTime(AUD.bgm?.22*AUD.vol:0,AUD.ac.currentTime,1.2);}catch(e){}},7000);}}catch(e){}try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
+    if(k===2&&!dead){try{if(AUD.mus&&AUD.ac){AUD.mus.gain.setTargetAtTime(.02,AUD.ac.currentTime,.2);setTimeout(()=>{try{AUD.mus.gain.setTargetAtTime(AUD.bgm?.22*AUD.vol:0,AUD.ac.currentTime,1.2);}catch(e){}},7000);}}catch(e){}try{if(!SND.ac)sndInit();if(SND.ac.state==='suspended')SND.ac.resume();const on=SND.on;SND.on=true;fanfare({grade:'G1',key:'有馬記念',g:1});SND.on=on;}catch(e){}}};
   el.onclick=e=>{try{if(!SND.ac)sndInit();if(SND.ac&&SND.ac.state==='suspended')SND.ac.resume();}catch(x){}if(e.target.closest('.skip')){end();return;}next();};next();}
 /* the curtain goes up first; the game is set up behind it while the screen is still dark, so the heavy first render never lands mid-scene */
 ACT.newGame=(o=>function(){const args=arguments;if(START.noOpening){START.noOpening=0;return o.apply(this,args);}try{syncStart();}catch(e){}const nm=(START.name||'').trim()||'高瀬';
@@ -172,27 +172,42 @@ ACT.startOpen=(o=>function(){try{ensureAC();AUD.over=null;AUD.base='title';bgmAp
 #opening .dots{bottom:calc(env(safe-area-inset-bottom,0px) + 22px)}
 #opening .tap{bottom:calc(env(safe-area-inset-bottom,0px) + 40px)}`;document.head.appendChild(st);})();
 
-/* the grandstand at sunset: the low sun sits behind it and pours in through the gap under the roof, rays falling forward over the crowd onto the track */
-function opStandSVG(){const W=1000,R=Math.random;let cols='',heads='',rows='';
-  for(let x=70;x<=930;x+=86)cols+=`<rect x="${x}" y="46" width="5" height="150" fill="#07070a"/>`;
-  for(let r=0;r<7;r++){const y=84+r*12;rows+=`<rect x="40" y="${y+6}" width="920" height="1.2" fill="rgba(255,170,90,${(.16-r*.02).toFixed(2)})"/>`;
-    for(let x=46;x<954;x+=5+R()*4){if(R()<.12)continue;const hy=y+3+R()*2,rr=1.6+R()*.8;heads+=`<ellipse cx="${x.toFixed(1)}" cy="${hy.toFixed(1)}" rx="${rr.toFixed(1)}" ry="${(rr*1.15).toFixed(1)}"/>`+(r<3?`<path d="M${(x-rr).toFixed(1)} ${(hy-.4).toFixed(1)}a${rr.toFixed(1)} ${rr.toFixed(1)} 0 0 1 ${(rr*2).toFixed(1)} 0" stroke="rgba(255,190,110,${(.75-r*.2).toFixed(2)})" stroke-width=".8" fill="none"/>`:'');}}
-  let rays='';for(let i=0;i<7;i++){const x=120+i*125+R()*40,w=18+R()*22;rays+=`<polygon class="ray" style="animation-delay:${(-R()*6).toFixed(1)}s" points="${x},50 ${x+w},50 ${x+w+70},176 ${x-30},176" fill="url(#opRay)"/>`;}
-  return `<svg viewBox="0 0 ${W} 200" preserveAspectRatio="xMidYMax slice" overflow="visible">
-<defs><linearGradient id="opGap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd38a"/><stop offset=".55" stop-color="#ff9a4a"/><stop offset="1" stop-color="#c2522a"/></linearGradient>
-<radialGradient id="opSun" cx=".5" cy=".55" r=".5"><stop offset="0" stop-color="#fff2c8"/><stop offset=".35" stop-color="#ffc070" stop-opacity=".9"/><stop offset="1" stop-color="#ff8a40" stop-opacity="0"/></radialGradient>
-<linearGradient id="opRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc27a" stop-opacity=".22"/><stop offset="1" stop-color="#ffb060" stop-opacity="0"/></linearGradient>
-<linearGradient id="opSeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2216"/><stop offset=".5" stop-color="#1a1112"/><stop offset="1" stop-color="#0a0a0d"/></linearGradient></defs>
-<rect x="30" y="48" width="940" height="32" fill="url(#opGap)" opacity=".85"/>
-<ellipse cx="540" cy="66" rx="110" ry="40" fill="url(#opSun)"/>
-<rect x="30" y="80" width="940" height="120" fill="url(#opSeat)"/>
+/* the racecourse at sunset, seen from the infield: the low sun setting beside the grandstand, light pouring through the gap under the roof onto a backlit crowd,
+   the apron and the white outside rail in front of it, the turf course, and the inside rail in the foreground */
+function opStandSVG(){const R=Math.random;let cols='',heads='',rows='',rays='',flags='',win='',trees='M0 200';
+  for(let x=0;x<=1000;x+=14)trees+=` L${x} ${(176+Math.sin(x*.05)*4+R()*6).toFixed(0)}`;trees+=' L1000 200Z';
+  for(let x=200;x<=990;x+=66)cols+=`<rect x="${x}" y="104" width="3" height="76" fill="#08070a"/>`;
+  for(let r=0;r<5;r++){const y=124+r*11;rows+=`<rect x="170" y="${y+5}" width="830" height="1" fill="rgba(255,170,90,${(.14-r*.02).toFixed(2)})"/>`;
+    for(let x=174;x<998;x+=3.6+R()*3){if(R()<.12)continue;const hy=y+2+R()*2,rr=1.1+R()*.6;heads+=`<ellipse cx="${x.toFixed(1)}" cy="${hy.toFixed(1)}" rx="${rr.toFixed(1)}" ry="${(rr*1.15).toFixed(1)}"/>`+(r<2?`<path d="M${(x-rr).toFixed(1)} ${(hy-.3).toFixed(1)}a${rr.toFixed(1)} ${rr.toFixed(1)} 0 0 1 ${(rr*2).toFixed(1)} 0" stroke="rgba(255,190,110,${(.7-r*.25).toFixed(2)})" stroke-width=".7" fill="none"/>`:'');}}
+  for(let i=0;i<7;i++){const x=200+i*115+R()*40,w=14+R()*16;rays+=`<polygon class="ray" style="animation-delay:${(-R()*6).toFixed(1)}s" points="${x},106 ${x+w},106 ${x+w+60},180 ${x-10},180" fill="url(#opRay)"/>`;}
+  for(const x of [260,400,560,720,880]){flags+=`<rect x="${x}" y="78" width="1.4" height="20" fill="#0a0a0e"/><path class="flag" d="M${x+1.4} 79 l11 2.5 l-11 2.5z" fill="#c8a24a" opacity=".9"/>`;}
+  for(let x=486;x<700;x+=12)win+=`<rect x="${x}" y="88" width="7" height="3" fill="rgba(255,190,120,${(.35+R()*.4).toFixed(2)})"/>`;
+  return `<svg viewBox="0 0 1000 200" preserveAspectRatio="xMidYMax slice" overflow="visible">
+<defs><linearGradient id="opGap" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf86"/><stop offset=".6" stop-color="#ff9448"/><stop offset="1" stop-color="#b9502a"/></linearGradient>
+<radialGradient id="opSun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff4d2"/><stop offset=".25" stop-color="#ffd08a"/><stop offset=".55" stop-color="#ff9a50" stop-opacity=".5"/><stop offset="1" stop-color="#ff8040" stop-opacity="0"/></radialGradient>
+<linearGradient id="opRay" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc27a" stop-opacity=".2"/><stop offset="1" stop-color="#ffb060" stop-opacity="0"/></linearGradient>
+<linearGradient id="opSeat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2317"/><stop offset=".6" stop-color="#181012"/><stop offset="1" stop-color="#0b0a0d"/></linearGradient></defs>
+<circle cx="88" cy="176" r="70" fill="url(#opSun)"/><circle cx="88" cy="178" r="13" fill="#fff0c8"/>
+<path d="${trees}" fill="#110e15"/>
+<rect x="480" y="82" width="226" height="24" fill="#0c0b10"/>${win}<rect x="480" y="81" width="226" height="1.2" fill="#ffb466" opacity=".7"/>
+<rect x="170" y="106" width="830" height="20" fill="url(#opGap)" opacity=".85"/>
+<rect x="170" y="124" width="830" height="58" fill="url(#opSeat)"/>
 <g fill="#0b0809">${heads}</g>${rows}${cols}
-<polygon points="0,30 1000,30 1000,42 990,50 10,50 0,42" fill="#0a0a0e"/>
-<rect x="0" y="29" width="1000" height="1.6" fill="#ffb466" opacity=".85"/>
-<rect x="10" y="49" width="980" height="1.4" fill="#ff9a50" opacity=".6"/>
-<rect x="30" y="176" width="940" height="24" fill="#060608"/><rect x="30" y="176" width="940" height="1.2" fill="rgba(255,170,90,.35)"/>
+<polygon points="150,96 1000,96 1000,104 172,106" fill="#0a0a0e"/><rect x="150" y="95" width="850" height="1.3" fill="#ffb466" opacity=".85"/>
+${flags}
+<rect x="166" y="180" width="834" height="20" fill="#09080b"/><rect x="166" y="180" width="834" height="1" fill="rgba(255,170,90,.3)"/>
 <g style="mix-blend-mode:screen">${rays}</g></svg>`;}
 (function(){const st=document.createElement('style');st.textContent=`
-#opening .stand{left:0;right:0;bottom:calc(20% - 2px);height:22vmin;background:none;clip-path:none;overflow:visible}
+#opening .stand{left:0;right:0;bottom:calc(26% - 1px);height:min(21vw,26vh);background:none;clip-path:none;overflow:visible}
 #opening .stand svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
-#opening .stand .ray{animation:opray 6s ease-in-out infinite}@keyframes opray{50%{opacity:.55}}`;document.head.appendChild(st);})();
+#opening .stand .ray{animation:opray 6s ease-in-out infinite}@keyframes opray{50%{opacity:.5}}
+#opening .stand .flag{transform-box:fill-box;transform-origin:0 50%;animation:opflag 1.6s ease-in-out infinite alternate}@keyframes opflag{to{transform:scaleX(.7) skewY(4deg)}}
+#opening .dusk{position:absolute;left:0;right:0;bottom:26%;height:46%;background:linear-gradient(0deg,rgba(255,138,70,.42),rgba(214,96,80,.2) 28%,rgba(90,50,80,.1) 60%,rgba(0,0,0,0));opacity:0;transition:opacity 2.5s;will-change:opacity;pointer-events:none}
+#opening .turf{height:26%;background:
+  linear-gradient(90deg,rgba(255,160,80,.16),rgba(255,160,80,0) 45%),
+  repeating-linear-gradient(90deg,rgba(255,255,255,.016) 0 9vw,rgba(0,0,0,0) 9vw 18vw),
+  linear-gradient(180deg,#2c4a29,#21401f 35%,#132a14 75%,#0b170c)}
+#opening .turf .apron{position:absolute;left:0;right:0;top:0;height:9%;background:linear-gradient(180deg,#2a2420,#3a3028)}
+#opening .turf .frail{position:absolute;left:0;right:0;top:9%;height:5px;background:linear-gradient(180deg,#f2ede0 0 2px,rgba(0,0,0,0) 2px),repeating-linear-gradient(90deg,#d9d3c4 0 2px,rgba(0,0,0,0) 2px 26px);opacity:.85}
+#opening .nrail{position:absolute;left:0;right:0;bottom:12%;height:14px;z-index:2;opacity:0;transition:opacity 2.5s;will-change:opacity;pointer-events:none;
+  background:linear-gradient(180deg,#f4efe2 0 4px,rgba(0,0,0,0) 4px),repeating-linear-gradient(90deg,#e6e0d0 0 4px,rgba(0,0,0,0) 4px 70px);filter:drop-shadow(0 3px 3px rgba(0,0,0,.5))}`;document.head.appendChild(st);})();
