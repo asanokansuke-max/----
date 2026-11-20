@@ -171,6 +171,8 @@ sndHoofs=function(running,cad,vol){
    it goes back to the silent-mode-friendly one when the race ends. (The voice itself is only heard with silent mode off.) */
 (function(){const setW=w=>{window.__sessWant=w;try{if(navigator.audioSession&&navigator.audioSession.type!==w)navigator.audioSession.type=w;}catch(e){}
     try{if(SND.ac&&SND.ac.state!=='running'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}};
+  // only where it is needed: Chrome (and other non-Safari browsers) on iPhone; Safari mixes the voice and the hoofs already
+  const NEED=/CriOS|FxiOS|EdgiOS|OPiOS/.test(navigator.userAgent);if(!NEED)return;
   open3D=(o=>function(){if(VOICE_ON)setW('ambient');return o.apply(this,arguments);})(open3D);
   close3D=(o=>function(){const r=o.apply(this,arguments);setW('playback');return r;})(close3D);
   addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-done')setTimeout(()=>setW('playback'),600);});
