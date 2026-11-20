@@ -8049,11 +8049,8 @@ vFarm=(o=>function(){const html=o.apply(this,arguments);const old=mine().filter(
   setTimeout(()=>{try{if(SND.ac)bufs(SND.ac);}catch(e){}},2500);
   // bring the sound back whenever it has been cut off
   const wake=()=>{try{[SND.ac,AUD.ac].forEach(ac=>{if(ac&&ac.state!=='running'&&ac.state!=='closed'){const p=ac.resume();if(p&&p.catch)p.catch(()=>{});}});}catch(e){}};
-  let hooked=null;const hook=()=>{try{const ac=SND.ac;if(!ac||hooked===ac)return;hooked=ac;ac.addEventListener('statechange',()=>{if(ac.state!=='running'&&(typeof R3D!=='undefined'&&R3D))setTimeout(wake,60);});}catch(e){}};
-  ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{hook();wake();},{passive:true,capture:true}));
-  let last=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>700){last=n;hook();if(SND.ac&&SND.ac.state!=='running')wake();}return o.apply(this,arguments);})(r3dState);
-  // the commentary voice: after each line, make sure the race sound is still on
-  if(window.speechSynthesis){const sp0=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=u=>{try{const e0=u.onend;u.onend=function(){try{e0&&e0.apply(this,arguments);}finally{setTimeout(wake,30);}};u.addEventListener&&u.addEventListener('start',()=>setTimeout(wake,120));}catch(e){}return sp0(u);};}
+  // only on a touch: bringing the sound back on its own during a race could cut off the commentary voice on iPhone
+  ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{if(window.speechSynthesis&&speechSynthesis.speaking)return;wake();},{passive:true,capture:true}));
 })();
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
