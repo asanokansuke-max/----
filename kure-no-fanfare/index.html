@@ -8027,6 +8027,34 @@ monthlyCost=(o=>function(){return o.apply(this,arguments)+mine().filter(h=>h.sta
 /* 功労馬 on the farm tab */
 vFarm=(o=>function(){const html=o.apply(this,arguments);const old=mine().filter(h=>h.status==='功労馬');if(!old.length)return html;
   return html+`<section class="sec"><h2>功労馬<small>中原牧場で余生を過ごす馬たち</small></h2>${old.map(h=>`<article class="panel horse farm"><div class="hhead"><button class="portrait" data-act="touch" data-hid="${h.id}" aria-label="${esc(h.name)}に会いに行く">${horseSVG(h,56)}</button><div style="min-width:0;flex:1"><h3>${esc(h.name)}</h3><div class="meta">${h.sex}${ageOf(h)}・${h.coat}　通算${h.starts}戦${h.wins}勝${h.gw.length?'　'+esc(h.gw.join('・')):''}</div></div></div><div class="cardfoot solo"><button class="btn pri2" data-act="touch" data-hid="${h.id}">会いに行く</button></div></article>`).join('')}</section>`;})(vFarm);
+/* race sound, steadier:
+   - the hoof and crowd sounds are made once and kept (making them at every start held up the screen for a moment)
+   - on iPhone the sound can be cut off ("interrupted") when the commentary voice starts or another app plays; it is brought back whenever that happens */
+(function(){
+  const BUF={ac:null};
+  const bufs=ac=>{if(BUF.ac===ac)return BUF;const sr=ac.sampleRate;
+    const mkThud=(f0,f1,len,knock)=>{const n=Math.floor(sr*len),b=ac.createBuffer(1,n,sr),d=b.getChannelData(0);let ph=0,lp=0;
+      for(let i=0;i<n;i++){const t=i/sr,e=Math.exp(-t/(len*.28));const f=f1+(f0-f1)*Math.exp(-t/.025);ph+=2*Math.PI*f/sr;lp+=((Math.random()*2-1)-lp)*.05;d[i]=Math.sin(ph)*e+lp*knock*Math.exp(-t/.008);}return b;};
+    const nb=ac.createBuffer(1,sr*4,sr),nd=nb.getChannelData(0);let br=0;for(let i=0;i<nd.length;i++){br=(br+.04*(Math.random()*2-1))/1.04;nd[i]=br*4;}
+    BUF.ac=ac;BUF.th=[mkThud(120,48,.16,1.2),mkThud(105,44,.18,1),mkThud(140,52,.2,1.4)];BUF.nb=nb;return BUF;};
+  sndStart=function(){
+    if(!SND.ac||!SND.on||SND.nodes)return;const ac=SND.ac,B=bufs(ac);
+    const master=ac.createGain();master.gain.value=.7;master.connect(ac.destination);
+    const comp=ac.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=4;comp.connect(master);
+    const hoofBus=ac.createGain();hoofBus.gain.value=0;const hlp=ac.createBiquadFilter();hlp.type='lowpass';hlp.frequency.value=380;hoofBus.connect(hlp);hlp.connect(comp);
+    const cs=ac.createBufferSource();cs.buffer=B.nb;cs.loop=true;const clp=ac.createBiquadFilter();clp.type='lowpass';clp.frequency.value=480;clp.Q.value=.3;
+    const cg=ac.createGain();cg.gain.value=0;cs.connect(clp);clp.connect(cg);cg.connect(master);cs.start();
+    SND.nodes={cs,cg,clp,hoofBus,th:B.th,master,next:ac.currentTime+.1};};
+  // make them ahead, while nothing is moving (shortly after the game opens)
+  setTimeout(()=>{try{if(SND.ac)bufs(SND.ac);}catch(e){}},2500);
+  // bring the sound back whenever it has been cut off
+  const wake=()=>{try{[SND.ac,AUD.ac].forEach(ac=>{if(ac&&ac.state!=='running'&&ac.state!=='closed'){const p=ac.resume();if(p&&p.catch)p.catch(()=>{});}});}catch(e){}};
+  let hooked=null;const hook=()=>{try{const ac=SND.ac;if(!ac||hooked===ac)return;hooked=ac;ac.addEventListener('statechange',()=>{if(ac.state!=='running'&&(typeof R3D!=='undefined'&&R3D))setTimeout(wake,60);});}catch(e){}};
+  ['touchend','click'].forEach(ev=>document.addEventListener(ev,()=>{hook();wake();},{passive:true,capture:true}));
+  let last=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>700){last=n;hook();if(SND.ac&&SND.ac.state!=='running')wake();}return o.apply(this,arguments);})(r3dState);
+  // the commentary voice: after each line, make sure the race sound is still on
+  if(window.speechSynthesis){const sp0=speechSynthesis.speak.bind(speechSynthesis);speechSynthesis.speak=u=>{try{const e0=u.onend;u.onend=function(){try{e0&&e0.apply(this,arguments);}finally{setTimeout(wake,30);}};u.addEventListener&&u.addEventListener('start',()=>setTimeout(wake,120));}catch(e){}return sp0(u);};}
+})();
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
