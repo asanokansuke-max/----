@@ -166,3 +166,13 @@ sndHoofs=function(running,cad,vol){
     for(let h=0;h<2;h++){const base=n.next+(h?.012+Math.random()*.012:0);
       beats.forEach(([o,v,ti])=>{const src=ac.createBufferSource();src.buffer=n.th[ti];src.playbackRate.value=.92+Math.random()*.16;const g=ac.createGain();g.gain.value=v*(h?.35:1);src.connect(g);g.connect(n.hoofBus);src.start(base+o*T*.62);});}
     n.next+=T;}};
+/* the commentary voice and the hoofbeats together: on iPhone the "playback" sound mode (used so the game sounds even in silent mode) gives way
+   to the voice, cutting the hoofs whenever the caller speaks. During a race with the commentary on, the sound mode is set to one that mixes with the voice;
+   it goes back to the silent-mode-friendly one when the race ends. (The voice itself is only heard with silent mode off.) */
+(function(){const setW=w=>{window.__sessWant=w;try{if(navigator.audioSession&&navigator.audioSession.type!==w)navigator.audioSession.type=w;}catch(e){}
+    try{if(SND.ac&&SND.ac.state!=='running'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}};
+  open3D=(o=>function(){if(VOICE_ON)setW('ambient');return o.apply(this,arguments);})(open3D);
+  close3D=(o=>function(){const r=o.apply(this,arguments);setW('playback');return r;})(close3D);
+  addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-done')setTimeout(()=>setW('playback'),600);});
+  // the commentary switched on or off during a race
+  document.addEventListener('click',e=>{if(e.target&&e.target.id==='r3dvc')setTimeout(()=>{if(typeof R3D!=='undefined'&&R3D)setW(VOICE_ON?'ambient':'playback');},0);},true);})();

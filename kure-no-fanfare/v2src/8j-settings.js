@@ -110,7 +110,7 @@ render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&UI.tab==='farm'&
    iPhone mutes Web Audio when the ring/silent switch is on, unless the page is playing "media". Two things make it count as media,
    like a video: the Audio Session API (Safari 17+) set to playback, and, for older iOS, a silent looping <audio> started on the first tap */
 (function(){
-  const setSession=()=>{try{if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';}catch(e){}};
+  const setSession=()=>{try{const w=window.__sessWant||'playback';if(navigator.audioSession&&navigator.audioSession.type!==w)navigator.audioSession.type=w;}catch(e){}};
   setSession();
   let keep=null;
   const silentWav=()=>{const sr=8000,n=sr/2,b=new ArrayBuffer(44+n*2),v=new DataView(b),w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
