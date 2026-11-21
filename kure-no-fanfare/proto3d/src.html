@@ -225,10 +225,10 @@ function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE
   const m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3(),c=new THREE.Color();let n=0;
   const add=(x,y,z,face)=>{if(n>=N)return;const s=.9+rnd()*.2,lean=(rnd()-.5)*.08;e.set(lean,face+(rnd()-.5)*.8,0);q.setFromEuler(e);
     sc.set(s,s,s);v.set(x,y+.43*s,z);m.compose(v,q,sc);legs.setMatrixAt(n,m);v.set(x,y+1.18*s,z);sc.set(s*(1.05+rnd()*.25),s,s*(.68+rnd()*.15));m.compose(v,q,sc);coat.setMatrixAt(n,m);coat.setColorAt(n,c.set(people()));
-    sc.set(s,s,s);v.set(x,y+1.66*s,z);m.compose(v,q,sc);head.setMatrixAt(n,m);head.setColorAt(n,c.set(rnd()<.18?'#d8c2a6':rnd()<.7?'#23201d':'#7a7470'));
-    v.set(x,y+(rnd()<.22?1.76:-5)*s,z);m.compose(v,q,sc);hat.setMatrixAt(n,m);hat.setColorAt(n,c.set(['#1f2a33','#e9e4d6','#7a1f24','#3a3a3a'][n%4]));n++;};
+    sc.set(s,s,s);v.set(x,y+1.66*s,z);m.compose(v,q,sc);head.setMatrixAt(n,m);const fc=face===Math.PI;head.setColorAt(n,c.set(fc?(rnd()<.5?'#e2c4a4':'#d2ad88'):(rnd()<.18?'#d8c2a6':rnd()<.7?'#23201d':'#7a7470')));
+    const realHat=rnd()<.2;v.set(x,y+(realHat||fc?1.76:-5)*s,z);m.compose(v,q,sc);hat.setMatrixAt(n,m);hat.setColorAt(n,c.set(realHat?['#1f2a33','#e9e4d6','#7a1f24','#3a3a3a','#c8452f'][n%5]:rnd()<.85?'#1c1916':'#6f6a66'));n++;};
   const grp=new THREE.Group();grp.add(legs,coat,head,hat);[legs,coat,head,hat].forEach(x=>x.layers.set(1));return {grp,add,done:()=>{[legs,coat,head,hat].forEach(x=>{x.count=n;x.instanceMatrix.needsUpdate=true;});}};}
-const people=(()=>{const cols=['#2b3a55','#3a3a3a','#4a3b30','#d8d2c4','#5a2d2d','#2e4a3f','#7d6a52','#1b1b1e','#bdb6a6','#1f2a33','#8a8f94','#46566b','#5e6b4a','#2f2f35','#e9e6de','#3c4a63'];return ()=>cols[Math.floor(rnd()*cols.length)];})();
+const people=(()=>{const cols=['#2b3a55','#3a3a3a','#4a3b30','#d8d2c4','#5a2d2d','#2e4a3f','#7d6a52','#1b1b1e','#bdb6a6','#1f2a33','#8a8f94','#46566b','#5e6b4a','#2f2f35','#e9e6de','#3c4a63','#1b1b1e','#22252b','#2b3a55'],acc=['#c8452f','#e07a2a','#c9b28a','#2f5f9f','#d9a441','#9b2335','#f0ece2'];return ()=>rnd()<.13?acc[Math.floor(rnd()*acc.length)]:cols[Math.floor(rnd()*cols.length)];})();
 // seating tiers: rows of seats with spectators (instanced), stepped up and back, under a cantilever roof
 const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.BoxGeometry(.46,.5,.08);g.translate(0,.05,0);return g;})(),new THREE.MeshStandardMaterial({color:'#2c5f8a',roughness:.6,emissive:'#0d1f2e',emissiveIntensity:.5}),16000)};
 {const tiers=[{y0:6,z0:STZ-36,rows:14,dz:.9,dy:.45},{y0:17,z0:STZ-52,rows:12,dz:.95,dy:.55}];
@@ -240,7 +240,7 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
    for(let x=-SLEN/2+1;x<SLEN/2-1&&n<N;x+=.55){if(((x+SLEN/2)%16)<1.3)continue;   // stair aisles
      if(n<N&&SEATS.n<SEATS.N){m.makeTranslation(STX+x,y+.28,z-.32);SEATS.mesh.setMatrixAt(SEATS.n++,m);}
      if(rnd()>.84*CROWD*(r<t.rows*.6||CROWD>.9?1:.6))continue;const jx=x+(rnd()-.5)*.15,sit=rnd()<.8;
-     m.makeTranslation(STX+jx,y+(sit?.3:.5),z);body.setMatrixAt(n,m);body.setColorAt(n,c.set(people()));m.makeTranslation(STX+jx,y+(sit?.7:.95),z+.02);head.setMatrixAt(n,m);head.setColorAt(n,c.set(rnd()<.75?'#2a211c':rnd()<.5?'#d9c4a8':'#6b6b6b'));n++;}}
+     m.makeTranslation(STX+jx,y+(sit?.3:.5),z);body.setMatrixAt(n,m);body.setColorAt(n,c.set(people()));m.makeTranslation(STX+jx,y+(sit?.7:.95),z+.02);head.setMatrixAt(n,m);head.setColorAt(n,c.set(rnd()<.62?(rnd()<.5?'#dcbf9f':'#c9a582'):rnd()<.8?'#2a211c':'#6b6b6b'));n++;}}
    // tier fascia (front wall) with the stand name band
    const top=t.y0+t.rows*t.dy;const back=new THREE.Mesh(new THREE.BoxGeometry(SLEN,6,1),glass);back.position.set(STX,top+3,t.z0-t.rows*t.dz-.6);scene.add(back);
    const lip=new THREE.Mesh(new THREE.BoxGeometry(SLEN,1.2,.6),white);lip.position.set(STX,t.y0-.6,t.z0+.6);scene.add(lip);});
@@ -265,7 +265,7 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
  sign.position.set(STX,31,STZ-64.9);scene.add(sign);}
 // apron: paving between the stand and the track, people standing at the rail, umbrellas when it rains
 {const pave=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,34),new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,w,h)=>{g.fillStyle='#77756e';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=(y/16%2)*16;x<w;x+=32){g.fillStyle=`rgba(255,255,255,${.04+rnd()*.05})`;g.fillRect(x,y,30,14);}},[40,6]),roughness:.95}));
- pave.rotation.x=-Math.PI/2;pave.position.set(STX,.03,STZ-17);pave.receiveShadow=true;scene.add(pave);
+ pave.rotation.x=-Math.PI/2+(CROWD>=.95?Math.atan(.1):0);pave.position.set(STX,CROWD>=.95?1.4:.03,STZ-17);pave.receiveShadow=true;scene.add(pave);
  {const lawn=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,15),new THREE.MeshStandardMaterial({map:grassTex,roughness:1}));lawn.rotation.x=-Math.PI/2;lawn.position.set(STX,.05,-RAD-38.5);lawn.receiveShadow=true;scene.add(lawn);}
  // flower beds and a hedge just outside the outer rail (as at the real courses)
  const bed=new THREE.Mesh(new THREE.BoxGeometry(SLEN,.5,2.2),new THREE.MeshStandardMaterial({color:'#3f6a33',roughness:1}));bed.position.set(STX,.25,-RAD-33.5);scene.add(bed);
@@ -276,7 +276,7 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
  const fence=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,SLEN,6),pipe);fence.rotation.z=Math.PI/2;fence.position.set(STX,1.05,-RAD-35.5);scene.add(fence);
  {const full=CROWD>=.95,MOB=matchMedia('(pointer:coarse)').matches&&!QS.get('hq'),dz=MOB?.82:.62,dx=MOB?.74:.52,N=full?(MOB?12500:26000):Math.round(1800*CROWD),cm=crowdMesh(N);
   // a phone gets the same packed apron with a little more room between people (about half the figures), which keeps the G1 broadcast sharp
-  if(full){for(let z=-RAD-36.1;z>-RAD-62&&true;z-=dz)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=dx){if(rnd()<.06)continue;cm.add(x+(rnd()-.5)*.2,0,z+(rnd()-.5)*.2,Math.PI);}}
+  if(full){for(let z=-RAD-36.1;z>-RAD-62&&true;z-=dz)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=dx){if(rnd()<.06)continue;{const zz=z+(rnd()-.5)*.2;cm.add(x+(rnd()-.5)*.2,Math.max(0,(-RAD-33-zz)*.1),zz,Math.PI);}}}
   else for(let k=0;k<N;k++){const x=STX-SLEN/2+rnd()*SLEN,z=-RAD-36.2-Math.pow(rnd(),1.6)*26;cm.add(x,0,z,Math.PI);}cm.done();scene.add(cm.grp);}}
 // trackside: advertising boards along the outer rail, a hedge inside the inner rail, light towers
 {
@@ -681,7 +681,8 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   else if(name==='vision'){const w=Math.min(5,Math.max(0,performance.now()/1000-window.__t0w-6));cpos.set(VX+12-w*2,8,-RAD-30);tgt.set(VX,13,-RAD+42);fov=44;}
   else if(name==='goal'){const f=pathAt(FIN+3,-13);cpos.set(f.x,2.4,f.z);const lp=pathAt(START+lead.d-1.5,3);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,13);}
   // G1: during the fanfare, a slow pan along the packed stand from the infield — the apron crowd in front, the tiers rising behind
-  else if(name==='crowd'){const t=Math.max(0,PRE.t-2.6);cpos.set(STX-62+t*5.5,6.5,-RAD+10);tgt.set(STX-50+t*5.5,5.5,STZ-28);fov=38;}
+  else if(name==='crowd'){const t=Math.max(0,PRE.t-2.6);if(t<3.4){cpos.set(STX-62+t*5.5,6.5,-RAD+10);tgt.set(STX-50+t*5.5,5.5,STZ-28);fov=38;}
+    else{const u=t-3.4;cpos.set(STX-22+u*1.4,4.2,-RAD-26);tgt.set(STX+10+u*1.4,2.6,-RAD-50);fov=52;}}   // then from the outside rail, along the sea of faces
   // G1: after the line, the winner pulls up in front of the full stand, seen from the inside of the course
   else if(name==='standwin'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),cp=pathAt(START+w.d+11,-3);cpos.set(cp.x,1.8,cp.z);tgt.set(wp.x*.85+cp.x*.15,2.9,wp.z-5);fov=40;}
   else if(name==='after'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),ah=pathAt(START+w.d+9,26);cpos.set(ah.x,3.6,ah.z);tgt.set(wp.x,1.6,wp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7.5/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.6;}}
