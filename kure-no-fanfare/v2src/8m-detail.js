@@ -252,3 +252,5 @@ ACT.kuchi=()=>{
   const cv=$('#kcv'),c=cv.getContext('2d');const W=cv.clientWidth,H=Math.round(W*.66),dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';c.scale(dpr,dpr);drawKuchi(c,W,H,{...photo,nocap:true});
   UI.kuchi=photo;};
 ACT.shutter=(o=>function(){const w=document.querySelector('.kwrap');const r=o.apply(this,arguments);if(w){w.classList.remove('shot');void w.offsetWidth;w.classList.add('shot');}return r;})(ACT.shutter);
+/* a result is never shown for a race that has not been run yet (the order is decided first) — this used to stop the month dead */
+showResult=(o=>function(){const RC=UI.race;if(RC&&!RC.order&&RC.field){try{runSim(RC);RC.watched=false;}catch(e){console.error('runSim',e);}}if(RC&&!RC.order)return;return o.apply(this,arguments);})(showResult);

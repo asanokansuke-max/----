@@ -77,4 +77,4 @@ img,canvas,svg{-webkit-user-drag:none;user-drag:none}`;document.head.appendChild
 document.addEventListener('contextmenu',e=>{if(!e.target.closest('input,textarea'))e.preventDefault();});
 
 /* boot, once every part of the game is loaded: a saved game is drawn again now that all event types exist (an event saved by a later part could not be drawn by the first render) */
-try{if(S){if(Array.isArray(S.inbox))S.inbox=S.inbox.filter(e=>e&&EV[e.type]);render();}}catch(e){console.error(e);}
+try{if(S){if(Array.isArray(S.inbox))S.inbox=S.inbox.filter(e=>{if(!e||!EV[e.type])return false;try{return !!EV[e.type].r(e.data);}catch(x){console.error('drop event',e.type,x);return false;}});render();}}catch(e){console.error(e);}

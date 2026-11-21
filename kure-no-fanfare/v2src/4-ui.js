@@ -460,17 +460,17 @@ const ACT={
   sw:d=>{syncStart();START.silks[d.w]=d.c;renderStart();},
   pat:d=>{syncStart();START.silks.p=d.p;renderStart();},
   newGame:()=>{syncStart();newGame({name:START.name.trim()||'高瀬',kanmei:(START.kanmei.trim()||'アケボノ').slice(0,5),silks:{...START.silks}});startMonthReport();UI.tab='stable';render();openNextEvent();},
-  ev:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;if(!EV[e.type]){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}const v=EV[e.type].r(e.data);
+  ev:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e)return;if(!EV[e.type]){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}let v=null;try{v=EV[e.type].r(e.data);}catch(err){console.error('event',e.type,err);v=null;}
     if(!v){S.inbox=S.inbox.filter(x=>x!==e);save();openNextEvent();return;}
     openModal(`<div class="evhead">${v.p?avatar(v.p,56):''}<div><div class="from-line">${esc(v.from)}</div><h2>${esc(v.title)}</h2></div></div><div class="letter">${esc(v.body)}</div><div class="choices">${v.ch.map((c,i)=>`<button class="btn ${i===0?'pri':''}" data-act="evc" data-id="${e.id}" data-i="${i}">${esc(c)}</button>`).join('')}</div>`,{lock:true});},
-  evc:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e||!EV[e.type])return;const out=EV[e.type].f(e.data,+d.i);S.inbox=S.inbox.filter(x=>x!==e);save();
+  evc:d=>{const e=S.inbox.find(x=>x.id===+d.id);if(!e||!EV[e.type])return;let out='';try{out=EV[e.type].f(e.data,+d.i);}catch(err){console.error('event choice',e.type,err);out='';}S.inbox=S.inbox.filter(x=>x!==e);save();
     if(out&&out.next==='interlude'){render();showInterlude();return;}
     render();
     if(out)openModal(`<div class="letter">${esc(out)}</div><div class="row"><span class="sp"></span><button class="btn pri" data-act="evnext">${S.inbox.length?'次へ':'閉じる'}</button></div>`,{lock:true});
     else openNextEvent();},
   evnext:()=>openNextEvent(),
   inherit:d=>{const n=($('#cname').value||'').trim()||'遥';startPart2(n,d.c);save();UI.tab='stable';render();openNextEvent();toast('第二部　子の代');},
-  advance:()=>{if(S.inbox.length){toast('先に月初の出来事に目を通してください');openNextEvent();return;}beginRaces();},
+  advance:()=>{S.inbox=S.inbox.filter(e=>{if(!e||!EV[e.type])return false;try{return !!EV[e.type].r(e.data);}catch(x){console.error('drop event',e.type,x);return false;}});if(S.inbox.length){toast('先に月初の出来事に目を通してください');openNextEvent();return;}beginRaces();},
   ord:d=>{const h=HZ(d.hid);S.month.orders[h.id]=d.ty==='train'?{type:'train',int:d.int}:{type:'rest'};save();render();},
   mode:d=>{const h=HZ(d.hid);h.mode=d.m;if(d.m==='omakase'){delete S.month.orders[h.id];planOmakaseOne(h);}else S.month.orders[h.id]={type:'train',int:'普通'};save();render();},
   reg:d=>{UI.reg={hid:+d.hid,key:null,j:null,msg:''};drawReg();},
