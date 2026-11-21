@@ -495,9 +495,9 @@ function newYear(){
   });
   log(`${y}年。${S.part===1?`${S.parent.name}`:`${S.child.name}`}にとって${yearNo()}年目の年が明けた`);
 }
-function addStallion(h,own){
+function addStallion(h,own,q0){
   if(S.stallions.some(s=>s.id==='h'+h.id))return;
-  const q=clamp(Math.round(h.pot+2+h.g1),70,95);
+  const q=q0!=null?q0:clamp(Math.round(h.pot+2+h.g1),70,95);
   const s={id:'h'+h.id,n:h.name,q,dist:h.dist,surf:h.surf,g:h.growth,tp:h.temper==='気難しい'?'気難しい':h.temper,fee:Math.min(3500,Math.round(80*Math.exp((q-70)/6)/10)*10),desc:`${h.gw.slice(-2).join('・')||'活躍馬'}の血`,owner:h.owner==='me'?'':OWN[h.owner]?.n.slice(0,2)||'',fromSold:h.id===S.br.soldId,own:!!own,bornY:Y(S.t)};
   S.stallions.push(s);
   news(`${h.name}が種牡馬入り（種付け料 ${yen(s.fee)}）`);

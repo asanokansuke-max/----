@@ -139,7 +139,7 @@ const EV={
    f:(d)=>{const h=HZ(d.hid);if(h)h.eye=nakaharaEye(h);return '牧場タブから、仔馬に会いに行ける。';}},
  nyukyu:{r:d=>{const h=HZ(d.hid);if(!h||h.status!=='育成')return null;const tl=trainersAvail();return{p:'mikuni',from:'三國 透',title:`${h.name}の入厩`,body:`${h.name}が2歳になり、トレセンに入る時期です。どちらの厩舎に預けますか。\n\n${tl.map(id=>`${who(id)}：${TR(id).policy==='spaced'?'間隔をあけて大きいところを狙う':'数を使って経験を積ませる'}。${SL[TR(id).eye]}を見る目が確か。`).join('\n')}`,ch:tl.map(id=>`${who(id)}厩舎へ`)};},
    f:(d,i)=>{const h=HZ(d.hid);const id=trainersAvail()[i];h.trainer=id;h.status='現役';h.ev=evalHorse(h);trust(id,3);if(h.unnamed)return `${h.name}は${who(id)}厩舎に入った。厩舎タブで名前を付けよう。`;return `${h.name}は${who(id)}厩舎に入った。デビューは6月から。`;}},
- retireTalk:{r:d=>{const h=HZ(d.hid);if(!h||!['現役','放牧','休養'].includes(h.status))return null;return{p:h.trainer,from:who(h.trainer),title:`${h.name}のこれから`,body:`${V(TV(h.trainer),d.unraced?'retUnraced':d.forced?'retForced':'retAge',{h:h.name,a:ageOf(h)})}\n\n（三國「${h.sex==='牝'?'牝馬ですから、繁殖に上げる道があります。この血を残せます':h.gw.length?'重賞を勝っていますから、種牡馬の話も来るでしょう':'引退すれば、乗馬クラブが引き取ってくれます'}」）`,ch:[h.sex==='牝'?'引退して繁殖牝馬にする':h.gw.length?'引退して種牡馬に':'引退させる',...(d.forced?[]:['まだ走らせる'])]};},
+ retireTalk:{r:d=>{const h=HZ(d.hid);if(!h||!['現役','放牧','休養'].includes(h.status))return null;return{p:h.trainer,from:who(h.trainer),title:`${h.name}のこれから`,body:`${V(TV(h.trainer),d.unraced?'retUnraced':d.forced?'retForced':'retAge',{h:h.name,a:ageOf(h)})}\n\n（三國「${h.sex==='牝'?'牝馬ですから、繁殖に上げる道があります。この血を残せます':h.gw.length?'重賞を勝っていますから、種牡馬の話も来るでしょう':studTier(h)===2?'重賞はありませんが、これだけ走った馬です。小さな牧場なら、種牡馬として迎えてくれるはずです':'引退すれば、乗馬クラブが引き取ってくれます'}」）`,ch:[h.sex==='牝'?'引退して繁殖牝馬にする':studTier(h)?'引退して種牡馬に':'引退させる',...(d.forced?[]:['まだ走らせる'])]};},
    f:(d,i)=>{const h=HZ(d.hid);if(i===0)return retireHorse(h,'auto');return '「わかりました。もうひと花、咲かせましょう」';}},
  injury:{r:d=>{const h=HZ(d.hid);if(!h)return null;return{p:h.trainer,from:who(h.trainer),title:`${h.name}、${d.kind}`,body:V(TV(h.trainer),d.kind==='競走能力喪失'?'injEnd':d.kind==='骨折'?'injFrac':'injMinor',{h:h.name,k:d.kind})+(d.kind==='競走能力喪失'&&h.sex==='牝'?'\n\n（三國「繁殖牝馬として、牧場に帰してあげましょう」）':''),ch:['わかった']};},
    f:d=>{const h=HZ(d.hid);if(h&&d.kind==='競走能力喪失'&&h.sex==='牝'){h.status='繁殖';h.mainJ=null;log(`${h.name}が繁殖牝馬になる`);}return '';}},
@@ -159,8 +159,13 @@ function retireHorse(h,how){
   h.mainJ=null;
   if(h.sex==='牝'){h.status='繁殖';log(`${h.name}が引退し、繁殖牝馬に`);return `${h.name}は牧場に帰り、繁殖牝馬になった。来年の春から、種付けの相談が来る。`;}
   if(h.gw.length){const v=h.g1?20000+h.g1*12000:2000+h.gw.length*1200;S.money+=v;h.status='引退';addStallion(h,true);log(`${h.name}が種牡馬入り`);return `${h.name}は種牡馬になった。シンジケートで${yen(v)}を得た。あなたの牝馬にも付けられる。`;}
+  // no graded win, but an open-class horse or a proven winner: a small stud takes him (a modest syndicate, a modest fee)
+  if(studTier(h)===2){const v=300+h.wins*80+Math.round((h.earn||0)*.02);S.money+=v;h.status='引退';addStallion(h,true,clamp(Math.round(h.pot-3),62,80));log(`${h.name}が種牡馬入り（地方の牧場で供用）`);
+    return `${h.name}は、日高の小さな牧場で種牡馬になった。${yen(v)}で権利が売れた。\n\n重賞は勝てなかったが、走りを覚えていてくれた生産者がいた。種付け料は安いが、あなたの牝馬にも付けられる。`;}
   h.status='引退';S.money+=100;log(`${h.name}が引退`);return `${h.name}は乗馬として第二の馬生へ。`;
 }
+/* can a colt stand at stud?  1 = graded winner (a real syndicate), 2 = open class or a proven winner (a small stud), 0 = no */
+function studTier(h){if(!h||h.sex==='牝')return 0;if(h.gw&&h.gw.length)return 1;if((h.cls||0)>=5||(h.wins||0)>=4||(h.earn||0)>=8000)return 2;return 0;}
 
 /* ---------- 人に会う ---------- */
 const GREET={};

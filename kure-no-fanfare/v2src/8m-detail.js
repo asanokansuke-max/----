@@ -92,7 +92,7 @@ injuryRoll=(o=>function(h,mult){const r=o.apply(this,arguments);if(r==='競走�
 EV.injury.r=(o=>function(d){const v=o.apply(this,arguments);const h=HZ(d.hid);if(!v||!h||d.kind!=='競走能力喪失')return v;
   const best=h.gw&&h.gw.length?`重賞${h.gw.length}勝`:h.wins?`${h.wins}勝`:'';
   v.body+=`\n\n${h.name}は、これで競走生活を終えることになります。通算${h.starts}戦${h.wins}勝${best&&h.wins?`（${best}）`:''}。\n\n三國「…最後に、どうしてあげましょうか」`;
-  v.ch=[h.sex==='牝'?'繁殖牝馬として牧場に帰す':h.gw&&h.gw.length?'種牡馬にする':'乗馬として第二の馬生へ','功労馬として中原牧場で余生を過ごさせる（毎月10万円）', '引退式をしてから送り出す'];return v;})(EV.injury.r);
+  v.ch=[h.sex==='牝'?'繁殖牝馬として牧場に帰す':studTier(h)?'種牡馬にする':'乗馬として第二の馬生へ','功労馬として中原牧場で余生を過ごさせる（毎月10万円）', '引退式をしてから送り出す'];return v;})(EV.injury.r);
 EV.injury.f=(o=>function(d,i){const h=HZ(d.hid);if(!h||d.kind!=='競走能力喪失')return o.apply(this,arguments);h.mainJ=null;
   if(i===1){h.status='功労馬';log(`${h.name}が功労馬として中原牧場へ`);trust('nakahara',4);return `${h.name}は中原牧場に帰った。\n\n中原「おかえり。…ゆっくりしていけ」\n\n（牧場タブで、いつでも会いに行ける）`;}
   let t=retireHorse(h);if(i===2){h.fans+=3000;S.fame+=1;t=`最終レースのあと、${h.name}の引退式が行われた。冷たい風の中、スタンドに残った大勢のファンが名前を呼んだ。\n\n`+t;}
