@@ -25,16 +25,18 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   c.fillStyle='rgba(120,90,150,.10)';for(let x=0;x<W;x+=3)c.fillRect(x,0,1,H);
   c.fillStyle='rgba(255,255,255,.55)';c.fillRect(lineX,H*.2,1.5,H*.8);
   // tags
-  const tag=(t,x,y)=>{c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;const tw=c.measureText(t).width+16;c.fillStyle='#fff';c.fillRect(x-tw/2,y-H*.045,tw,H*.065);c.strokeStyle='#333';c.lineWidth=1;c.strokeRect(x-tw/2,y-H*.045,tw,H*.065);c.fillStyle='#111';c.textAlign='center';c.fillText(t,x,y+H*.005);};
+  const tag=(t,x,y)=>{const F=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;c.font=F;const [p1,no,p2]=t.split('\u0000');if(no==null){const tw=c.measureText(t).width+16;c.fillStyle='#fff';c.fillRect(x-tw/2,y-H*.045,tw,H*.065);c.strokeStyle='#333';c.lineWidth=1;c.strokeRect(x-tw/2,y-H*.045,tw,H*.065);c.fillStyle='#111';c.textAlign='center';c.fillText(t,x,y+H*.005);return;}
+    const cr=H*.027,w1=c.measureText(p1).width,w2=c.measureText(p2).width,tw=w1+w2+cr*2+28;const x0=x-tw/2;c.fillStyle='#fff';c.fillRect(x0,y-H*.045,tw,H*.065);c.strokeStyle='#333';c.lineWidth=1;c.strokeRect(x0,y-H*.045,tw,H*.065);
+    c.fillStyle='#111';c.textAlign='left';c.fillText(p1,x0+8,y+H*.005);const cx=x0+12+w1+cr,cy=y-H*.012;c.beginPath();c.arc(cx,cy,cr,0,7);c.strokeStyle='#111';c.lineWidth=1.2;c.stroke();c.textAlign='center';c.font=`bold ${H*(+no>=10?.03:.036)}px Oswald,"Zen Kaku Gothic New",sans-serif`;const ls=c.letterSpacing;try{c.letterSpacing='0px';}catch(e){}c.fillText(no,cx,cy+H*.012);try{c.letterSpacing=ls;}catch(e){}c.font=F;c.textAlign='left';c.fillText(p2,cx+cr+6,y+H*.005);};
   const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
   const yOf=f=>{const k=lanes.findIndex(o=>o.f===f);return H*(.74+k*.11);};
   const noseOf=f=>{const k=lanes.findIndex(o=>o.f===f);return lineX-Math.min(4,rg(f))*BODY*H/112*(.84+k*.06);};
-  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*.55,W*.17,W*.72),yOf(f)-34*sc);}});
+  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 \u0000${f.no}\u0000 ${f.name}`,clamp(noseOf(f)-BODY*sc*.55,W*.17,W*.72),yOf(f)-34*sc);}});
   // course / race tag top-left
   c.fillStyle='#101010';c.fillRect(0,0,W*.14,H*.075);c.fillStyle='#1f5fd1';c.beginPath();c.moveTo(W*.14,0);c.lineTo(W*.17,0);c.lineTo(W*.15,H*.075);c.lineTo(W*.12,H*.075);c.fill();c.fillStyle='#101010';c.fillRect(W*.16,0,W*.09,H*.075);
   c.fillStyle='#fff';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;c.textAlign='left';c.fillText(r.course,W*.015,H*.057);c.fillText(`${r.g?11:9}R`,W*.175,H*.057);
   if(RC.photo){const lb=K?`${K+1}着 写真判定`:'写真判定';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;const lw=c.measureText(lb).width+16;c.fillStyle='#d9a400';c.fillRect(W-lw-6,4,lw,H*.07);c.fillStyle='#000';c.textAlign='center';c.fillText(lb,W-6-lw/2,H*.058);}
-  if(K>0&&ord[0]){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(W*.27,0,W*.4,H*.075);c.fillStyle='#fff';c.textAlign='left';c.fillText(`1着 ${circ[ord[0].no-1]} ${ord[0].name}（先着）`,W*.28,H*.057);}
+  if(K>0&&ord[0]){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(W*.27,0,W*.4,H*.075);c.fillStyle='#fff';c.textAlign='left';c.fillText(`1着 ${ord[0].no}番 ${ord[0].name}（先着）`,W*.28,H*.057);}
 }
 showBoard=(o=>function(){const r=o.apply(this,arguments);const RC=UI.race,pr=$('#sheet .board-pair');if(RC&&pr&&!$('#pfcv')){pr.insertAdjacentHTML('beforebegin','<div class="pfwrap '+(RC.photo?'big':'small')+'" style="border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #2b2f33"><canvas id="pfcv" style="display:block;width:100%" aria-label="決勝写真"></canvas></div>');
   const cv=$('#pfcv');const loop=()=>{if(!document.getElementById('pfcv'))return;drawPhotoFinish(cv,RC);setTimeout(()=>requestAnimationFrame(loop),80);};loop();}return r;})(showBoard);
