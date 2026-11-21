@@ -7306,14 +7306,14 @@ trainersAvail=(o=>function(){ensureNew();const L=o.apply(this,arguments);if(S.pe
 render=(o=>function(){ensureNew();return o.apply(this,arguments);})(render);
 
 /* ---------------- the first horse has to be earned ---------------- */
-EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`遠いところをよく来なさった。中原です。\n\nうちは繁殖牝馬が四頭の、小さな牧場でね。大きいところのセリには、なかなか出せん。\n\n…こいつだ。芦毛の2歳。母はうちで生まれて、うちで死んだ。気が強くて、セリでは誰も手を挙げなかった。\n\nそれが先週、九条さんのところの人が来てな。「1500万で引き取る」と。\n\n正直に言う。金はほしい。だが、わしはこいつを、ただの数字として扱う人には渡したくない。\n\n…あんたは、なんで馬主になりたい？`,
+EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`中原です。小さな牧場だ。\n\n…こいつだ。芦毛の2歳。気が強くて、セリでは誰も手を挙げなかった。九条さんのところが「1500万で引き取る」と言ってきとる。\n\nだが、ただの数字として扱う人には渡したくない。…あんたは、なんで馬主になりたい？`,
   ch:['「九条の倍、3000万出す」','「この馬の母の話を、聞かせてほしい」','「しばらく、ここで働かせてほしい」']}),
-  f:(d,i)=>{S.flags.fh=i;S.flags.fh2T=S.t+1;
-    if(i===0){trust('nakahara',-6);return '中原は、しばらく黙っていた。\n\n「…金の話なら、九条さんと同じだ」\n\n帰りの車で、三國がぽつりと言った。「来月、もう一度行きましょう。手ぶらで」';}
-    if(i===1){trust('nakahara',8);return '中原は縁側に腰を下ろし、ゆっくり話しはじめた。\n\n雪の朝に生まれた母馬のこと。一度も勝てなかったが、誰よりも人を信じる馬だったこと。最後の出産のあと、静かに眠るように逝ったこと。\n\n日が傾いたころ、中原は言った。「…来月、もう一度来なさい。こいつの顔を見に」';}
-    trust('nakahara',10);return '翌朝から、泥だらけになって寝わらを運んだ。中原は何も言わなかった。\n\n五日目の夕方、芦毛の2歳が、柵ごしにあなたの肩へ鼻を押しつけてきた。\n\n「…そいつが人に寄っていくのは、初めて見た」中原は背を向けたまま言った。「来月、話をしよう」';}};
+  f:(d,i)=>{S.flags.fh=i;S.flags.fh2T=-1;setTimeout(()=>{try{if(!S.horses.some(h=>h.first)&&!S.inbox.some(e=>e.type==='firstHorse2')){S.inbox.unshift({id:S.nid++,type:'firstHorse2',data:{}});save();render();}}catch(e){}},0);
+    if(i===0){trust('nakahara',-6);return '中原は、しばらく黙っていた。\n\n「…金の話なら、九条さんと同じだ」\n\n三國が小声で言った。「…もう少し、話を聞いてみましょう」';}
+    if(i===1){trust('nakahara',8);return '中原は縁側に腰を下ろし、ゆっくり話しはじめた。\n\n雪の朝に生まれた母馬のこと。一度も勝てなかったが、誰よりも人を信じる馬だったこと。最後の出産のあと、静かに眠るように逝ったこと。\n\n日が傾いたころ、中原は芦毛の首をなでた。「…あんたになら」';}
+    trust('nakahara',10);return '翌朝から、泥だらけになって寝わらを運んだ。中原は何も言わなかった。\n\n五日目の夕方、芦毛の2歳が、柵ごしにあなたの肩へ鼻を押しつけてきた。\n\n「…そいつが人に寄っていくのは、初めて見た」中原は背を向けたまま言った。「…話をしよう」';}};
 EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags.fhPrice=price;
-  return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`来たか。\n\n…九条さんには断りを入れた。あんたが先月の帰りぎわ、馬房の前で一度だけ振り返ったのを見とった。\n\n値段は1600万。それ以上はいらん。`:k===1?`来たか。\n\n九条さんには、断りを入れた。\n\nあの話を最後まで黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`来たか。\n\n九条さんには断った。こいつが選んだんだ、わしは何も言えん。\n\n600万でいい。…大事にしてやってくれ。`)+`\n\nどこの厩舎に預けるかは、あんたが決めてくれ。\n戸川さん（美浦のベテラン。無理をさせず大きいところを狙う）か、早瀬さん（栗東の若手。数を使って経験を積ませる）か。`,
+  return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`…九条さんには断りを入れる。1600万。それ以上はいらん。`:k===1?`九条さんには断る。あの話を黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`こいつが選んだんだ。600万でいい。…大事にしてやってくれ。`)+`\n\n預ける厩舎は、あんたが決めてくれ。\n戸川（美浦・大きいところを狙う）か、早瀬（栗東・数を使って鍛える）か。`,
   ch:[`戸川厩舎に預ける（${price}万円）`,`早瀬厩舎に預ける（${price}万円）`]};},
   f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
     h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.needName=1;h.nameHint=h.name;h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
