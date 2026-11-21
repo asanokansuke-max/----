@@ -93,3 +93,10 @@ showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if
 ACT.bkBuy=(o=>function(){const m0=S.money;const r=o.apply(this,arguments);const spent=m0-S.money;if(spent>0){S.betHold=(S.betHold||0)+spent;save();}return r;})(ACT.bkBuy);
 showResult=(o=>function(){const r=o.apply(this,arguments);try{if(S.betHold){S.betHold=0;save();}}catch(e){}return r;})(showResult);
 (function(){try{if(S&&S.betHold>0&&!UI.race){S.money+=S.betHold;const v=S.betHold;S.betHold=0;save();setTimeout(()=>{try{toast(`前回、レース前に中断したため、馬券代 ${yen(v)} を払い戻しました`);}catch(e){}},1500);}}catch(e){}})();
+
+/* the photo must show the pair the result names: the order can change mid-race (orders at the 3rd corner), so the broadcast is told
+   the current pair, and a photo of a different pair is thrown away and taken again */
+function pkOf(RC){if(!RC||!RC.photo||!RC.order)return null;const K=RC.photoK||0;return RC.order[K]&&RC.order[K+1]?[RC.order[K].no,RC.order[K+1].no]:null;}
+r3dRegap=(o=>function(RC,extra){try{reorder(RC);photoCall(RC);}catch(e){}const pk=pkOf(RC);return o.call(this,RC,Object.assign({},extra||{},{pk,pkPos:pk?[(RC.photoK||0)+1,(RC.photoK||0)+2]:null}));})(r3dRegap);
+addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-photo')return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(RC)RC.photoPk=d.pk||null;});
+showBoard=(o=>function(){const RC=UI.race;try{const want=pkOf(RC);if(RC&&RC.photoShot&&(!want||!RC.photoPk||RC.photoPk.join()!==want.join())){RC.photoShot=null;RC.photoAsked=0;}}catch(e){}return o.apply(this,arguments);})(showBoard);
