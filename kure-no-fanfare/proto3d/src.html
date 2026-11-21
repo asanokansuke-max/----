@@ -1183,7 +1183,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
       const hz=document.createElement('canvas');hz.width=OW;hz.height=OH;const hx=hz.getContext('2d');hx.drawImage(R3.domElement,0,0,OW,OH);const id=hx.getImageData(0,0,OW,OH),dd=id.data;
       for(let k=0;k<dd.length;k+=4){const r=dd[k],g=dd[k+1],b=dd[k+2];if(r>200&&b>200&&g<80)dd[k+3]=0;else if(r>150&&b>150&&g<120)dd[k+3]=110;}hx.putImageData(id,0,0);x.drawImage(hz,0,0);
       // the print: grey with a lavender cast, fine horizontal scan lines, a little grain
-      const im=x.getImageData(0,0,OW,OH),q=im.data;for(let k=0;k<q.length;k+=4){const L=q[k]*.3+q[k+1]*.59+q[k+2]*.11,y=((k/4)/OW)|0,ln=(y%3===0?-10:0)+(Math.random()-.5)*10;const v=L*.82+40+ln;q[k]=v*1.0;q[k+1]=v*.93;q[k+2]=v*1.06;}x.putImageData(im,0,0);
+      const im=x.getImageData(0,0,OW,OH),q=im.data;for(let k=0;k<q.length;k+=4){const L=q[k]*.3+q[k+1]*.59+q[k+2]*.11,y=((k/4)/OW)|0,ln=(y%3===0?-10:0)+(Math.random()-.5)*10;const v=L*.82+40+ln,c=.42;q[k]=(v*1.0)*(1-c)+(q[k]*.85+30+ln)*c;q[k+1]=(v*.93)*(1-c)+(q[k+1]*.85+26+ln)*c;q[k+2]=(v*1.06)*(1-c)+(q[k+2]*.85+38+ln)*c;}   x.putImageData(im,0,0);
       x.fillStyle='rgba(255,255,255,.5)';x.fillRect(OW/2,0,1,OH);
       // tags
       const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱',v3=new THREE.Vector3();const tag=(r,pl)=>{v3.set(r.g.position.x,2.5,r.g.position.z).project(tc);const px=(v3.x+1)/2*OW,py=(1-v3.y)/2*OH;const t=`${pl}着 ${circ[r.no-1]} ${r.name}`;
