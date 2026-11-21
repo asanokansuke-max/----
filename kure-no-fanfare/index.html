@@ -5107,7 +5107,7 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const BODY=80;
   // the photo is about the close finish: centred on the pair the judge had to split (1st-2nd, or 2nd-3rd when the winner was clear)
   const K=RC.photo?(RC.photoK||0):0,g0=(ord[K]&&ord[K].gapL)||0,rg=f=>Math.max(0,(f.gapL||0)-g0);
-  const lineX=W*.8,shown=ord.slice(K,Math.min(K+3,ord.length));
+  const lineX=W*.8,shown=ord.slice(K,Math.min(K+2,ord.length));   // only the pair the judge had to split
   const lanes=shown.map((f,i)=>({f,i})).sort((a,b)=>(a.f.lane||0)-(b.f.lane||0));
   lanes.forEach((o,k)=>{const f=o.f,y=H*(.74+k*.11),sc=H/112*(.84+k*.06),nose=lineX-Math.min(4,rg(f))*BODY*sc;   // one length = one horse's body at that depth
     c.save();c.filter='saturate(.7) contrast(1.08)';drawHorse(c,nose-53*sc,y,sc,.7+o.i*.9,f.coat||(f.h?f.h.coat:'鹿毛'),f.silks,f.no,false,{});c.restore();});
@@ -5119,7 +5119,7 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
   const yOf=f=>{const k=lanes.findIndex(o=>o.f===f);return H*(.74+k*.11);};
   const noseOf=f=>{const k=lanes.findIndex(o=>o.f===f);return lineX-Math.min(4,rg(f))*BODY*H/112*(.84+k*.06);};
-  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*1.3,W*.17,W*.62),yOf(f)-28*sc);}});
+  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*.55,W*.17,W*.72),yOf(f)-34*sc);}});
   // course / race tag top-left
   c.fillStyle='#101010';c.fillRect(0,0,W*.14,H*.075);c.fillStyle='#1f5fd1';c.beginPath();c.moveTo(W*.14,0);c.lineTo(W*.17,0);c.lineTo(W*.15,H*.075);c.lineTo(W*.12,H*.075);c.fill();c.fillStyle='#101010';c.fillRect(W*.16,0,W*.09,H*.075);
   c.fillStyle='#fff';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;c.textAlign='left';c.fillText(r.course,W*.015,H*.057);c.fillText(`${r.g?11:9}R`,W*.175,H*.057);
@@ -8780,6 +8780,16 @@ function pfPlace(RC){const cv=document.getElementById('pfcv');if(!cv||!RC.photoS
 (function(){const st=document.createElement('style');st.textContent=`.pft{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}.pft b{background:#d9a400;color:#000;font:800 11px "Zen Kaku Gothic New",sans-serif;padding:2px 7px;border-radius:3px}
 .pft span{background:#fff;color:#111;border:1px solid #333;font:700 11px "Zen Kaku Gothic New",sans-serif;padding:1px 7px}.pfline{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,.75)}`;document.head.appendChild(st);})();
 showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&RC.photoShot)setTimeout(()=>pfPlace(RC),50);}catch(e){}return r;})(showBoard);
+
+/* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
+   a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
+function shotRun(RC){if(typeof R3D_HTML!=='string')return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+  const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
+  setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';
+    if(!w.querySelector('.pfwait'))w.insertAdjacentHTML('beforeend','<div class="pfwait">写真判定中…</div>');}
+    if(!RC.photoAsked){RC.photoAsked=1;shotRun(RC);}setTimeout(()=>{const x=document.querySelector('.pfwait');if(x&&!RC.photoShot)x.remove();},30000);}}catch(e){}return r;})(showBoard);
+(function(){const st=document.createElement('style');st.textContent=`.pfwait{position:absolute;inset:0;display:grid;place-items:center;background:#6d6878;color:#fff;font:800 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em}`;document.head.appendChild(st);})();
 /* =========================================================
    有馬記念 公開枠順抽選会: before the Arima, the draw on the stage — horses are drawn one by one onto the
    8-frame board; when your turn comes you pick a capsule yourself, and the number it holds is your gate.

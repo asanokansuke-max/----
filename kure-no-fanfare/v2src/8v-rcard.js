@@ -74,3 +74,13 @@ function pfPlace(RC){const cv=document.getElementById('pfcv');if(!cv||!RC.photoS
 (function(){const st=document.createElement('style');st.textContent=`.pft{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}.pft b{background:#d9a400;color:#000;font:800 11px "Zen Kaku Gothic New",sans-serif;padding:2px 7px;border-radius:3px}
 .pft span{background:#fff;color:#111;border:1px solid #333;font:700 11px "Zen Kaku Gothic New",sans-serif;padding:1px 7px}.pfline{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,.75)}`;document.head.appendChild(st);})();
 showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&RC.photoShot)setTimeout(()=>pfPlace(RC),50);}catch(e){}return r;})(showBoard);
+
+/* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
+   a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
+function shotRun(RC){if(typeof R3D_HTML!=='string')return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+  const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
+  setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';
+    if(!w.querySelector('.pfwait'))w.insertAdjacentHTML('beforeend','<div class="pfwait">写真判定中…</div>');}
+    if(!RC.photoAsked){RC.photoAsked=1;shotRun(RC);}setTimeout(()=>{const x=document.querySelector('.pfwait');if(x&&!RC.photoShot)x.remove();},30000);}}catch(e){}return r;})(showBoard);
+(function(){const st=document.createElement('style');st.textContent=`.pfwait{position:absolute;inset:0;display:grid;place-items:center;background:#6d6878;color:#fff;font:800 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em}`;document.head.appendChild(st);})();

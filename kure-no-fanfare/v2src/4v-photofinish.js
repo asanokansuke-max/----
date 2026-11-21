@@ -17,7 +17,7 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const BODY=80;
   // the photo is about the close finish: centred on the pair the judge had to split (1st-2nd, or 2nd-3rd when the winner was clear)
   const K=RC.photo?(RC.photoK||0):0,g0=(ord[K]&&ord[K].gapL)||0,rg=f=>Math.max(0,(f.gapL||0)-g0);
-  const lineX=W*.8,shown=ord.slice(K,Math.min(K+3,ord.length));
+  const lineX=W*.8,shown=ord.slice(K,Math.min(K+2,ord.length));   // only the pair the judge had to split
   const lanes=shown.map((f,i)=>({f,i})).sort((a,b)=>(a.f.lane||0)-(b.f.lane||0));
   lanes.forEach((o,k)=>{const f=o.f,y=H*(.74+k*.11),sc=H/112*(.84+k*.06),nose=lineX-Math.min(4,rg(f))*BODY*sc;   // one length = one horse's body at that depth
     c.save();c.filter='saturate(.7) contrast(1.08)';drawHorse(c,nose-53*sc,y,sc,.7+o.i*.9,f.coat||(f.h?f.h.coat:'鹿毛'),f.silks,f.no,false,{});c.restore();});
@@ -29,7 +29,7 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
   const yOf=f=>{const k=lanes.findIndex(o=>o.f===f);return H*(.74+k*.11);};
   const noseOf=f=>{const k=lanes.findIndex(o=>o.f===f);return lineX-Math.min(4,rg(f))*BODY*H/112*(.84+k*.06);};
-  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*1.3,W*.17,W*.62),yOf(f)-28*sc);}});
+  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*.55,W*.17,W*.72),yOf(f)-34*sc);}});
   // course / race tag top-left
   c.fillStyle='#101010';c.fillRect(0,0,W*.14,H*.075);c.fillStyle='#1f5fd1';c.beginPath();c.moveTo(W*.14,0);c.lineTo(W*.17,0);c.lineTo(W*.15,H*.075);c.lineTo(W*.12,H*.075);c.fill();c.fillStyle='#101010';c.fillRect(W*.16,0,W*.09,H*.075);
   c.fillStyle='#fff';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;c.textAlign='left';c.fillText(r.course,W*.015,H*.057);c.fillText(`${r.g?11:9}R`,W*.175,H*.057);
