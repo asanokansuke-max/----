@@ -91,7 +91,9 @@ function drawKuchi(c,W,H,p){
   rope(c,[bit.r,{x:hx+16*hu,y:base-ph*.26},gL,gR,...right,{x:W+10,y:base-ph*.42}],rw);
   const vg=c.createRadialGradient(W/2,H/2,H*.35,W/2,H/2,W*.75);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.18)');c.fillStyle=vg;c.fillRect(0,0,W,H);
   c.fillStyle='#ff9a2e';c.font=`600 ${Math.max(9,H*.04)}px Oswald,monospace`;c.textAlign='right';c.fillText(`'${String(p.y).slice(2)} ${String(p.m).padStart(2,'0')}`,W-10,H*.075);
+  if(!p.nocap&&W>=480){
   c.fillStyle='rgba(255,255,255,.92)';c.fillRect(0,H*.905,W,H*.095);c.fillStyle='#222';c.textAlign='left';c.font=`bold ${Math.max(9,H*.036)}px sans-serif`;
   c.fillText(`${p.race}${p.grade&&/^G/.test(p.grade)?`（${p.grade}）`:''}　${p.name}`,10,H*.945);
   c.font=`${Math.max(8,H*.028)}px sans-serif`;c.fillStyle='#555';c.fillText(`左から ${[...L.map(q=>q.label),`${p.jname}騎手`,'（馬）','厩務員',...Rr.map(q=>q.label)].join('・')}`,10,H*.98);
+  }
 }

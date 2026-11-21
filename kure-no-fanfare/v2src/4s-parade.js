@@ -27,7 +27,7 @@ function showParade(){
       if(it.f.mine){c.font='bold 11px sans-serif';const tw=c.measureText(it.f.name).width+10;c.fillStyle='rgba(0,0,0,.72)';c.fillRect(it.x-tw/2,it.y-70*s,tw,16);c.fillStyle='#ffd166';c.textAlign='center';c.fillText(it.f.name,it.x,it.y-70*s+12);}});
     // the announcer introduces each horse as it comes out
     const idx=RC.prd3d?-1:Math.floor((t-lead)/gap);if(idx>shown&&idx>=0&&idx<F.length){shown=idx;const f=F[idx];
-      if(cast)cast.innerHTML=`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;
+      if(cast)cast.innerHTML=window.__castLine?window.__castLine(f):`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;
       if(f.mine){try{se('up');}catch(e){}}}
     if(!RC.prd3d&&t>lead+F.length*gap+600){const b=$('#prdgo');if(b&&b.disabled){b.disabled=false;if(cast)cast.innerHTML='<span class="pc-l">場内アナウンス</span>以上、出走馬の本馬場入場でした';}}
     // lower third

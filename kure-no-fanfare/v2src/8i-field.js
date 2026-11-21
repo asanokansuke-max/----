@@ -78,11 +78,16 @@ fanVoteEvent=function(){const y=Y(S.t);
   const list=all.slice(0,10).map(x=>({n:x.n||makeName(),f:x.f,me:x.me}));
   const mine0=all.filter(x=>x.me).map(x=>({n:x.n,f:x.f,rank:x.rank}));
   const ok=racing().filter(h=>ageOf(h)>=3&&(h.fans>=40000||h.earn>=20000||h.g1>0));
-  pushEv('fanVote',{list,mine:mine0,ok:ok.map(h=>h.name)});};
+  const why=h=>{const m=all.find(x=>x.me&&x.n===h.name),rk=m?m.rank:999,oku=(h.earn/10000).toFixed(1).replace(/\.0$/,'');
+    if(rk<=10)return `ファン投票${rk}位。上位10頭の優先出走権で選出`;
+    if(h.g1>0)return `ファン投票は${rk}位。G1馬で獲得賞金が上位のため、賞金順の出走枠で選出`;
+    if(h.earn>=20000)return `ファン投票は${rk}位。獲得賞金${oku}億円が上位のため、賞金順の出走枠で選出`;
+    return `ファン投票は${rk}位。上位馬の回避が続き、繰り上がりで出走枠に`;};
+  pushEv('fanVote',{list,mine:mine0,ok:ok.map(h=>h.name),okWhy:ok.map(h=>({n:h.name,w:why(h)}))});};
 EV.fanVote.r=d=>({p:'mikuni',from:'有馬記念 ファン投票',title:`${Y(S.t)}年 有馬記念 ファン投票`,
   body:'【最終結果　上位10頭】\n'+d.list.map((x,i)=>`${i+1}位　${x.n}${x.me?'　◀ あなたの馬':''}　${x.f.toLocaleString()}票`).join('\n')
     +((d.mine||[]).filter(m=>m.rank>10).length?'\n\n【あなたの馬】\n'+d.mine.filter(m=>m.rank>10).map(m=>`${m.rank}位　${m.n}　${m.f.toLocaleString()}票`).join('\n'):'')
-    +`\n\n${d.ok.length?`${d.ok.join('、')}は有馬記念に出走できます。暮れの中山へ。`:'今年は、あなたの馬は届きませんでした。ファン4万人、獲得賞金2億円、G1勝ちのどれかが必要です。'}`,ch:['よし']});
+    +'\n\n【出走の決まり方】\nファン投票の上位10頭に優先出走権。残りの枠は、獲得賞金の多い順に決まります。'+`\n\n${d.ok.length?(d.okWhy?d.okWhy.map(x=>`◆ ${x.n}\n${x.w}`).join('\n')+'\n\n':'')+`${d.ok.join('、')}は有馬記念に出走できます。暮れの中山へ。`:'今年は、あなたの馬は届きませんでした。ファン投票10位以内か、獲得賞金の上位（目安2億円、またはG1勝ち）が必要です。'}`,ch:['よし']});
 
 /* 開催: which tracks race in which month, as the real calendar runs (summer in the north, winter at Chukyo and Kokura) */
 const MEET={1:['中山','京都','中京','小倉'],2:['東京','京都','小倉','中京'],3:['中山','阪神','中京','福島'],4:['中山','阪神','福島','東京'],5:['東京','京都','新潟','東京'],6:['東京','阪神','函館','京都'],

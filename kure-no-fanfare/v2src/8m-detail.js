@@ -178,3 +178,77 @@ sndHoofs=function(running,cad,vol){
   addEventListener('message',e=>{const d=e.data||{};if(d.type==='race3d-done')setTimeout(()=>setW('playback'),600);});
   // the commentary switched on or off during a race
   document.addEventListener('click',e=>{if(e.target&&e.target.id==='r3dvc')setTimeout(()=>{if(typeof R3D!=='undefined'&&R3D)setW(VOICE_ON?'ambient':'playback');},0);},true);})();
+/* 本馬場入場のキャッチコピー: a line for each horse (from its record, running style, age, coat and the betting) and one for each rider */
+function horseCatch(f){const h=f.h,P=a=>a[Math.floor(R()*a.length)],c=[];
+  if(h){const a=ageOf(h),fem=h.sex==='牝',st=h.starts||0,w=h.wins||0,gw=h.gw||[];
+    if(h.g1>=3)c.push(`G1${h.g1}勝、時代を背負う王者`,fem?'女王の名は、まだ誰にも渡さない':'この馬が、いまの競馬の中心');
+    else if(h.g1>=1)c.push(fem?'女王の誇りを胸に':'G1馬の誇り、ふたたび頂へ',`${gw[gw.length-1]||'大舞台'}を制した実力、再び`);
+    else if(gw.length)c.push(`${gw[gw.length-1]}の覇者`,'重賞ウイナー、いざ頂点へ');
+    if(st>=3&&w===st)c.push(`${st}戦${w}勝、無敗の挑戦者`,'まだ誰にも負けていない');
+    if((h.fans||0)>=60000)c.push('ファンの夢を背負って');
+    if(a>=6)c.push(`衰え知らずの${a}歳`,'ベテランの意地を見せる');else if(a===3)c.push('世代の主役へ','若き才能が、いま花開く');
+    if(h.coat==='芦毛')c.push('芦毛が、ターフに映える');if(h.coat==='白毛')c.push('純白の馬体が躍る');
+    if(fem&&!h.g1)c.push('乙女の挑戦');
+    if(f.mine)c.push(S.part===2?'受け継がれた勝負服':'親子二代の夢を乗せて','あの日の夢の続きへ');}
+  const sty=f.used||f.style;c.push(...({逃げ:['逃げてこそ真骨頂','ハナは譲らない','自分の形に持ち込めば'],先行:['好位から押し切る優等生','先行力が武器','好位で運べば崩れない'],差し:['鋭く伸びる末脚','直線勝負の切れ者','脚をためて一気に'],追込:['大外一気、最後の一撃','最後方から全頭まとめて','豪脚炸裂なるか']}[sty]||['虎視眈々']).sort(()=>R()-.5));
+  if(f.pop===1)c.push('主役の座は譲らない','堂々の一番人気');else if(f.pop>=10)c.push('一発の気配漂う伏兵','人気はなくとも、侮れない');else if(f.pop<=3)c.push('実力上位、主役を狙う');
+  if(!h)c.push(...['大舞台で輝け','虎視眈々と頂点を狙う','上がり馬の勢い','底を見せていない','静かなる実力者','充実一途','堅実派、今日も上位へ','展開ひとつで逆転も','勝負の仕上げ','渋い脚が武器','条件好転で一変も','叩いて上昇'].sort(()=>R()-.5));
+  return c;}
+const JK_CATCH={washio:['百戦錬磨の名手','気難しい馬も御す剛腕'],sanada:['当代の天才','天才、手綱さばき冴える'],rossi:['秋の名手、来日騎乗','世界を知る腕'],dubois:['雨の剛腕','春の来日名手'],
+  oba:['逃げ先行の職人','先手必勝'],kido:['堅実無比','信頼の手綱'],arai:['砂の名手','パワフルな追い'],kiryu:['差し追込の新鋭','伸び盛りの女性騎手'],kuroiwa:['夏のローカル王','叩き上げの職人'],
+  hinata:['伸び盛りの若武者','若き才能'],komori:['期待の新人','フレッシュな手綱'],stable:['厩舎の若手','無欲の騎乗']};
+function jockeyCatch(f){const P=a=>a[Math.floor(R()*a.length)],k=f.jid||'';if(JK_CATCH[k])return P(JK_CATCH[k]);
+  const s=f.jsk||65;return P(s>=80?['トップジョッキー','勝負強い名手','大舞台に強い']:s>=70?['中堅の実力派','冷静な手綱さばき','手堅い騎乗','追って味がある','仕掛けどころを知る']:['気鋭の若手','思い切りのいい騎乗','重賞初制覇へ','一発を狙う','積極策が持ち味','無欲の騎乗','腕の見せどころ']);}
+function catchFor(RC){const F=RC.field||[];if(F.every(f=>f.cc!==undefined))return;const used=new Set(),ju={};
+  // the horses with a story (record, own horse) choose first, then the rest; no two horses share a line
+  [...F].sort((a,b)=>(b.h?1:0)-(a.h?1:0)||a.pop-b.pop).forEach(f=>{try{const c=horseCatch(f);const top=c.filter(x=>!used.has(x));f.cc=(f.h&&top.length?top[0]:top[Math.floor(R()*Math.min(3,top.length))])||c[0]||'';used.add(f.cc);
+    let jc=jockeyCatch(f),n=0;while(ju[jc]&&n++<12)jc=jockeyCatch(f);ju[jc]=1;f.jc=jc;}catch(e){f.cc='';f.jc='';}});}
+/* the 3D view gets them for its on-screen caption */
+r3dInput=(o=>function(RC){try{catchFor(RC);}catch(e){}const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f){x.cc=f.cc||'';x.jc=f.jc||'';x.pop=f.pop||0;}});}catch(e){}return inp;})(r3dInput);
+/* the course announcer reads them too */
+(function(){const castLine=f=>`<span class="pc-l">場内アナウンス</span><span class="pcn"><b>${f.no}番 ${esc(f.name)}</b>${f.cc?`<i class="pcc">「${esc(f.cc)}」</i>`:''}</span><span class="pcj">${esc(f.jname)}騎手${f.jc?`<small>${esc(f.jc)}</small>`:''}　${f.pop}番人気</span>`;
+  const st=document.createElement('style');st.textContent=`.padcast .pcn{display:inline-flex;flex-direction:column;vertical-align:middle;margin-right:10px}.padcast .pcc{font-style:normal;font-size:12px;color:#ffd166;letter-spacing:.04em}
+  .padcast .pcj{display:inline-flex;flex-direction:column;vertical-align:middle;font-size:13px}.padcast .pcj small{font-size:11px;color:#c9d4cc}`;document.head.appendChild(st);
+  addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-parade')return;const RC=UI.race;if(!RC)return;try{catchFor(RC);}catch(x){}const f=RC.field.find(x=>x.no===d.no),cast=$('#prdcast');if(f&&cast)setTimeout(()=>{cast.innerHTML=castLine(f);},0);});
+  showParade=(o=>function(){try{catchFor(UI.race);}catch(e){}return o.apply(this,arguments);})(showParade);
+  window.__castLine=castLine;})();
+/* 口取り式, dressed for the occasion: a dark winner's-circle card, the race and the winner in large type, the photo as a white-bordered print
+   (the names go under the print as a caption, not squeezed into the picture), and the album thumbnails carry no in-picture text */
+(function(){const st=document.createElement('style');st.textContent=`
+.kwrap{margin:-20px -20px 0;padding:18px 18px 16px;border-radius:12px 12px 0 0;background:radial-gradient(120% 90% at 50% 0%,#2c4a33 0%,#0f1d14 62%,#0a120d 100%);color:#f2efe6;display:grid;gap:12px;position:relative;overflow:hidden}
+.kwrap::before{content:"";position:absolute;inset:-40% -20% auto;height:70%;background:radial-gradient(closest-side,rgba(255,214,120,.22),rgba(255,214,120,0));pointer-events:none}
+.kwrap .khd{display:flex;align-items:center;gap:10px;font:600 11px "Zen Kaku Gothic New",sans-serif;letter-spacing:.32em;color:#d9b45a}
+.kwrap .khd::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(217,180,90,.7),rgba(217,180,90,0))}
+.kwrap .khd span{letter-spacing:.08em;color:#b9c4bb;font-weight:500}
+.kwrap .kttl{display:flex;align-items:center;gap:10px;min-width:0}
+.kwrap .kttl .gb{font:800 13px Oswald,sans-serif;padding:3px 7px;border-radius:4px;background:#1f3a8a;color:#fff;flex:none}
+.kwrap .kttl .gb.g2{background:#b0213a}.kwrap .kttl .gb.g3{background:#2f7a43}.kwrap .kttl .gb.ot{background:#5b6b60}
+.kwrap .kttl b{font:800 clamp(22px,6.4vw,32px)/1.15 "Shippori Mincho B1",serif;letter-spacing:.06em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kwrap .kwin{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px}
+.kwrap .kwin .lb{font:700 11px "Zen Kaku Gothic New",sans-serif;color:#0f1d14;background:linear-gradient(180deg,#ffe39a,#d9a441);padding:2px 8px;border-radius:999px;letter-spacing:.2em}
+.kwrap .kwin .nm{font:800 clamp(18px,5vw,24px)/1.2 "Zen Kaku Gothic New",sans-serif;letter-spacing:.06em;background:linear-gradient(180deg,#fff7dc,#e7c06a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.kwrap .kwin small{font-size:12px;color:#c3cdc6}
+.kprint{margin:2px 0 0;background:#fbfaf6;padding:8px 8px 10px;border-radius:3px;box-shadow:0 14px 30px rgba(0,0,0,.5),0 2px 0 rgba(255,255,255,.4) inset;transform:rotate(-.6deg)}
+.kprint .bc.kuchi{border-radius:1px;overflow:hidden;margin:0}
+.kprint figcaption{color:#2a2a2a;font:600 12px "Zen Kaku Gothic New",sans-serif;padding:7px 2px 0;display:grid;gap:2px}
+.kprint figcaption small{font-weight:500;font-size:10.5px;color:#666;line-height:1.5}
+.kwrap .letter{background:none;border:0;color:#e9e4d6;padding:0;margin:0;font-size:14px;line-height:1.85}
+.kwrap.shot .kprint{animation:kdev 1.6s ease-out}@keyframes kdev{0%{filter:brightness(2.2) saturate(.2)}100%{filter:none}}
+.photo canvas{border-radius:2px}`;document.head.appendChild(st);})();
+ACT.kuchi=()=>{
+  const RC=UI.race,m=RC.order.find(f=>f.mine),h=m.h,tr=h.trainer,r=RC.race;
+  const ppl=[...kuchiPeople(),{label:P(tr).n.split(' ')[0]+'調教師',suit:'#2e3b2f',rosette:true}];
+  const photo={y:Y(S.t),m:M(S.t),race:r.name,grade:r.grade,g1:r.grade==='G1',name:h.name,no:m.no,coat:h.coat,silks:m.silks,jname:m.jname,people:ppl,part:S.part};
+  const gcls=r.grade==='G1'?'':r.grade==='G2'?'g2':r.grade==='G3'?'g3':'ot',gtx=/^G/.test(r.grade||'')?r.grade:(r.grade||'');
+  const k=Math.min(2,Math.floor(ppl.length/2)),L=ppl.slice(0,ppl.length-k),Rr=ppl.slice(ppl.length-k);
+  const names=[...L.map(q=>q.label),`${m.jname}騎手`,'（馬）','厩務員',...Rr.map(q=>q.label)].join('・');
+  openModal(`<div class="kwrap"><div class="khd">WINNER'S CIRCLE<span>${dstr(S.t)}　${esc(r.course)}競馬場</span></div>
+     <div class="kttl">${gtx?`<span class="gb ${gcls}">${esc(gtx)}</span>`:''}<b>${esc(r.name)}</b></div>
+     <div class="kwin"><span class="lb">優勝</span><span class="nm">${esc(h.name)}</span><small>騎手 ${esc(m.jname)}</small></div>
+     <figure class="kprint"><div class="bc kuchi"><canvas id="kcv" aria-label="口取り写真"></canvas><div class="flash" id="kflash"></div></div>
+      <figcaption>${esc(r.name)}${gtx&&/^G/.test(gtx)?`（${esc(gtx)}）`:''}　${esc(h.name)}<small>左から ${esc(names)}</small></figcaption></figure>
+     <p class="letter" id="ktxt">「はい、撮りまーす。目線こちらにお願いしまーす」\nカメラマンの声に、${esc(m.jname)}が馬上で手綱を握り直した。${h.bond>=60?`\n${esc(h.name)}が、あなたの肩に鼻先をすり寄せてくる。`:''}</p></div>
+   <div class="row"><button class="btn gold" data-act="shutter" id="shbtn">撮影する</button></div>`,{lock:true});
+  const cv=$('#kcv'),c=cv.getContext('2d');const W=cv.clientWidth,H=Math.round(W*.66),dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';c.scale(dpr,dpr);drawKuchi(c,W,H,{...photo,nocap:true});
+  UI.kuchi=photo;};
+ACT.shutter=(o=>function(){const w=document.querySelector('.kwrap');const r=o.apply(this,arguments);if(w){w.classList.remove('shot');void w.offsetWidth;w.classList.add('shot');}return r;})(ACT.shutter);
