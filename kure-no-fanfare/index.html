@@ -5105,9 +5105,11 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const mq=`${r.course} ${M(S.t)}-${1+Math.floor(hash(seed)*27)}  R${r.g?11:9}  `;let mx=-((performance.now()/40)%200);while(mx<W){c.fillText(mq,mx,H*.157);mx+=c.measureText(mq).width;}c.shadowBlur=0;
   // horses at the line: nose positions from the margins (sprite nose→buttock is ~80 units)
   const BODY=80;
-  const lineX=W*.8,shown=ord.slice(0,Math.min(3,ord.length));
+  // the photo is about the close finish: centred on the pair the judge had to split (1st-2nd, or 2nd-3rd when the winner was clear)
+  const K=RC.photo?(RC.photoK||0):0,g0=(ord[K]&&ord[K].gapL)||0,rg=f=>Math.max(0,(f.gapL||0)-g0);
+  const lineX=W*.8,shown=ord.slice(K,Math.min(K+3,ord.length));
   const lanes=shown.map((f,i)=>({f,i})).sort((a,b)=>(a.f.lane||0)-(b.f.lane||0));
-  lanes.forEach((o,k)=>{const f=o.f,y=H*(.74+k*.11),sc=H/112*(.84+k*.06),nose=lineX-Math.min(4,(f.gapL||0))*BODY*sc;   // one length = one horse's body at that depth
+  lanes.forEach((o,k)=>{const f=o.f,y=H*(.74+k*.11),sc=H/112*(.84+k*.06),nose=lineX-Math.min(4,rg(f))*BODY*sc;   // one length = one horse's body at that depth
     c.save();c.filter='saturate(.7) contrast(1.08)';drawHorse(c,nose-53*sc,y,sc,.7+o.i*.9,f.coat||(f.h?f.h.coat:'鹿毛'),f.silks,f.no,false,{});c.restore();});
   // the slit: thin vertical lines over everything, and the finish line itself
   c.fillStyle='rgba(120,90,150,.10)';for(let x=0;x<W;x+=3)c.fillRect(x,0,1,H);
@@ -5116,18 +5118,20 @@ function drawPhotoFinish(cv,RC){const W=cv.clientWidth,H=Math.round(W*.42),dpr=w
   const tag=(t,x,y)=>{c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;const tw=c.measureText(t).width+16;c.fillStyle='#fff';c.fillRect(x-tw/2,y-H*.045,tw,H*.065);c.strokeStyle='#333';c.lineWidth=1;c.strokeRect(x-tw/2,y-H*.045,tw,H*.065);c.fillStyle='#111';c.textAlign='center';c.fillText(t,x,y+H*.005);};
   const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
   const yOf=f=>{const k=lanes.findIndex(o=>o.f===f);return H*(.74+k*.11);};
-  const noseOf=f=>{const k=lanes.findIndex(o=>o.f===f);return lineX-Math.min(4,(f.gapL||0))*BODY*H/112*(.84+k*.06);};
-  [0,1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*1.3,W*.17,W*.62),yOf(f)-28*sc);}});
+  const noseOf=f=>{const k=lanes.findIndex(o=>o.f===f);return lineX-Math.min(4,rg(f))*BODY*H/112*(.84+k*.06);};
+  [K,K+1].forEach(i=>{const f=ord[i];if(!f)return;{const k=lanes.findIndex(o=>o.f===f),sc=H/112*(.84+k*.06);tag(`${i+1}着 ${circ[f.no-1]} ${f.name}`,clamp(noseOf(f)-BODY*sc*1.3,W*.17,W*.62),yOf(f)-28*sc);}});
   // course / race tag top-left
   c.fillStyle='#101010';c.fillRect(0,0,W*.14,H*.075);c.fillStyle='#1f5fd1';c.beginPath();c.moveTo(W*.14,0);c.lineTo(W*.17,0);c.lineTo(W*.15,H*.075);c.lineTo(W*.12,H*.075);c.fill();c.fillStyle='#101010';c.fillRect(W*.16,0,W*.09,H*.075);
   c.fillStyle='#fff';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;c.textAlign='left';c.fillText(r.course,W*.015,H*.057);c.fillText(`${r.g?11:9}R`,W*.175,H*.057);
-  if(RC.photo){c.fillStyle='#d9a400';c.fillRect(W-W*.17,4,W*.16,H*.07);c.fillStyle='#000';c.textAlign='center';c.fillText('写真判定',W-W*.09,H*.058);}
+  if(RC.photo){const lb=K?`${K+1}着 写真判定`:'写真判定';c.font=`bold ${H*.05}px "Zen Kaku Gothic New",sans-serif`;const lw=c.measureText(lb).width+16;c.fillStyle='#d9a400';c.fillRect(W-lw-6,4,lw,H*.07);c.fillStyle='#000';c.textAlign='center';c.fillText(lb,W-6-lw/2,H*.058);}
+  if(K>0&&ord[0]){c.fillStyle='rgba(0,0,0,.6)';c.fillRect(W*.27,0,W*.4,H*.075);c.fillStyle='#fff';c.textAlign='left';c.fillText(`1着 ${circ[ord[0].no-1]} ${ord[0].name}（先着）`,W*.28,H*.057);}
 }
-showBoard=(o=>function(){const r=o.apply(this,arguments);const RC=UI.race,pr=$('#sheet .board-pair');if(RC&&pr&&!$('#pfcv')){pr.insertAdjacentHTML('beforebegin','<div style="border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #2b2f33"><canvas id="pfcv" style="display:block;width:100%" aria-label="決勝写真"></canvas></div>');
+showBoard=(o=>function(){const r=o.apply(this,arguments);const RC=UI.race,pr=$('#sheet .board-pair');if(RC&&pr&&!$('#pfcv')){pr.insertAdjacentHTML('beforebegin','<div class="pfwrap '+(RC.photo?'big':'small')+'" style="border-radius:6px;overflow:hidden;box-shadow:0 0 0 2px #2b2f33"><canvas id="pfcv" style="display:block;width:100%" aria-label="決勝写真"></canvas></div>');
   const cv=$('#pfcv');const loop=()=>{if(!document.getElementById('pfcv'))return;drawPhotoFinish(cv,RC);setTimeout(()=>requestAnimationFrame(loop),80);};loop();}return r;})(showBoard);
 /* the result board must fit on one screen: if the sheet would scroll, shrink the pictures (they keep their proportions);
    on a landscape phone the finish photo and the board sit side by side */
-(function(){const st=document.createElement('style');st.textContent=`.bboard canvas,.bview canvas{height:auto!important}.bview::after{white-space:nowrap}
+(function(){const st=document.createElement('style');st.textContent=`.pfwrap.small{width:56%;margin:0 auto;opacity:.92}.pfwrap.big{box-shadow:0 0 0 3px #d9a400!important}
+.bboard canvas,.bview canvas{height:auto!important}.bview::after{white-space:nowrap}
 .bland{display:grid;grid-template-columns:2.4fr 1fr;gap:12px;align-items:center;margin:0 auto 8px}.bland .board-pair{margin:0;grid-template-columns:1fr}.bland .bview{display:none}`;document.head.appendChild(st);})();
 function boardFit(){const sh=$('#sheet'),pr=$('#sheet .board-pair');if(!sh||!pr||$('#modal').hidden)return;
   const pfw=$('#pfcv')?$('#pfcv').parentNode:null,land=innerWidth>innerHeight*1.3;
