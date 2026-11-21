@@ -164,7 +164,7 @@ const R3D_ICON={
 function r3dCams(RC){const box=document.getElementById('r3dcams');if(!box)return;const F=RC.field,me=F.find(f=>f.mine),fav=[...F].filter(f=>!f.mine).sort((a,b)=>(a.pop||99)-(b.pop||99))[0],riv=F.find(f=>f.rival&&!f.mine&&f!==fav);
   const wk=f=>{const w=wakuOf(f.no,F.length);return `<i style="background:${FRAMEC[w-1]};color:${FRAMET[w-1]}">${f.no}</i>`;};
   const opts=[{v:'auto',t:'BROADCAST',s:'中継'},{v:'fixed',name:'front',t:'HEAD-ON CAM',s:'正面カメラ'},{v:'fixed',name:'close',t:'CLOSE CAM',s:'並走カメラ'},{v:'fixed',name:'aerial',t:'AERIAL CAM',s:'空撮カメラ'}];
-  if(me){opts.push({v:'pov',no:me.no,t:'JOCKEY CAM',s:wk(me)+'自分の馬'},{v:'chase',no:me.no,t:'CHASE CAM',s:wk(me)+'自分の馬'});}
+  F.filter(f=>f.mine).sort((x,y)=>x.no-y.no).forEach((me,_,A)=>{const lb=A.length>1?esc(me.name):'自分の馬';opts.push({v:'pov',no:me.no,t:'JOCKEY CAM',s:wk(me)+lb},{v:'chase',no:me.no,t:'CHASE CAM',s:wk(me)+lb});});
   if(fav)opts.push({v:'pov',no:fav.no,t:'JOCKEY CAM',s:wk(fav)+'1番人気'});
   if(riv)opts.push({v:'pov',no:riv.no,t:'JOCKEY CAM',s:wk(riv)+'ライバル'});
   let cur=0;
