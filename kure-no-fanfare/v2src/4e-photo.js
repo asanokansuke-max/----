@@ -166,9 +166,16 @@ function photoJockey(c,x,y,h,p){
   // number cloth held in front
   if(!p.noCloth){
   const bw=30*u,bh=34*u,bx=-bw/2,by=-62*u;
-  const g=c.createLinearGradient(bx,0,bx+bw,0);g.addColorStop(0,'#1f7a46');g.addColorStop(1,'#145a33');c.fillStyle=g;
-  c.beginPath();c.moveTo(bx,by);c.lineTo(bx+bw,by);c.lineTo(bx+bw,by+bh*.74);c.quadraticCurveTo(0,by+bh*1.05,bx,by+bh*.74);c.closePath();c.fill();
-  c.fillStyle='#fff';c.textAlign='center';c.font=`600 ${bh*.5}px Oswald,sans-serif`;c.fillText(p.no,0,by+bh*.52);c.font=`bold ${Math.max(6,bh*.12)}px sans-serif`;c.fillText(p.name.slice(0,9),0,by+bh*.72);
+  // the cloth in the race's colour (G1 deep blue, G2 deep red, G3 deep green, others white), bound with a contrasting edge
+  const CC={G1:['#22356f','#16244f','#fff','#d9dce6'],G2:['#86222f','#5e1620','#fff','#e8d4d6'],G3:['#1f6a3d','#145a33','#fff','#d5e6da']}[p.grade]||['#f7f6f1','#e4e2da','#1a1a1a','#3a3a3a'];
+  const g=c.createLinearGradient(bx,0,bx+bw,0);g.addColorStop(0,CC[0]);g.addColorStop(1,CC[1]);c.fillStyle=g;
+  const shape=()=>{c.beginPath();c.moveTo(bx,by);c.lineTo(bx+bw,by);c.lineTo(bx+bw,by+bh*.74);c.quadraticCurveTo(0,by+bh*1.05,bx,by+bh*.74);c.closePath();};shape();c.fill();
+  c.strokeStyle=CC[3];c.lineWidth=Math.max(.6,.9*u);c.save();c.translate(0,0);shape();c.stroke();c.restore();
+  c.fillStyle=CC[2];c.textAlign='center';c.font=`600 ${bh*.48}px Oswald,sans-serif`;c.fillText(p.no,0,by+bh*.5);
+  // the name always inside the cloth: as large as fits, then narrowed if it is long
+  {const nm=String(p.name||''),maxW=bw*.84,F='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif';let fs=bh*.15;c.font=`800 ${fs}px ${F}`;let tw=c.measureText(nm).width;
+   if(tw>maxW){fs=Math.max(bh*.1,fs*maxW/tw);c.font=`800 ${fs}px ${F}`;tw=c.measureText(nm).width;}
+   c.save();c.translate(0,by+bh*.7);c.scale(Math.min(1,maxW/Math.max(1,tw)),1);c.fillText(nm,0,0);c.restore();}
   c.fillStyle='#efcfae';c.beginPath();c.arc(bx+2*u,by+2*u,2.4*u,0,7);c.arc(bx+bw-2*u,by+2*u,2.4*u,0,7);c.fill();
   }
   c.restore();

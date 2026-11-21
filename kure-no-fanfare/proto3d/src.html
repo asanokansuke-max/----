@@ -219,7 +219,7 @@ var MONG=null;function buildMonument(p,yaw){const g=new THREE.Group();MONG=g;g.p
 }
 /* =================== the racecourse: grandstand, apron, infield screen, signage =================== */
 const STX=20,STZ=-RAD-30,SLEN=LS+80;   // stand runs along the home straight; its front edge sits ~30m outside the outer rail
-function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.13,.1,.85,8);g.scale(1.25,1,.75);return g;})(),new THREE.MeshStandardMaterial({color:'#2a2b30',roughness:.9}),N),
+function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.13,.1,.85,6);g.scale(1.25,1,.75);return g;})(),new THREE.MeshStandardMaterial({color:'#2a2b30',roughness:.9}),N),
    coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshStandardMaterial({roughness:.7}),N),
    hat=new THREE.InstancedMesh(new THREE.CylinderGeometry(.13,.14,.08,8),new THREE.MeshStandardMaterial({roughness:.7}),N);
   const m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3(),c=new THREE.Color();let n=0;
@@ -274,8 +274,9 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
  // spectator rail (grey pipe fence) and people along it
  const pipe=new THREE.MeshStandardMaterial({color:'#8c9196',roughness:.4,metalness:.6});
  const fence=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,SLEN,6),pipe);fence.rotation.z=Math.PI/2;fence.position.set(STX,1.05,-RAD-35.5);scene.add(fence);
- {const full=CROWD>=.95,N=full?26000:Math.round(1800*CROWD),cm=crowdMesh(N);
-  if(full){for(let z=-RAD-36.1;z>-RAD-62&&true;z-=.62)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=.52){if(rnd()<.06)continue;cm.add(x+(rnd()-.5)*.2,0,z+(rnd()-.5)*.2,Math.PI);}}
+ {const full=CROWD>=.95,MOB=matchMedia('(pointer:coarse)').matches&&!QS.get('hq'),dz=MOB?.82:.62,dx=MOB?.74:.52,N=full?(MOB?12500:26000):Math.round(1800*CROWD),cm=crowdMesh(N);
+  // a phone gets the same packed apron with a little more room between people (about half the figures), which keeps the G1 broadcast sharp
+  if(full){for(let z=-RAD-36.1;z>-RAD-62&&true;z-=dz)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=dx){if(rnd()<.06)continue;cm.add(x+(rnd()-.5)*.2,0,z+(rnd()-.5)*.2,Math.PI);}}
   else for(let k=0;k<N;k++){const x=STX-SLEN/2+rnd()*SLEN,z=-RAD-36.2-Math.pow(rnd(),1.6)*26;cm.add(x,0,z,Math.PI);}cm.done();scene.add(cm.grp);}}
 // trackside: advertising boards along the outer rail, a hedge inside the inner rail, light towers
 {
