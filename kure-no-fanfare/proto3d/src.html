@@ -80,7 +80,7 @@ const COURSES={chukyo:{jp:'中京',en:'Chukyo',EN:'CHUKYO',ls:412,rad:105,lh:1,f
   sapporo:{jp:'札幌',en:'Sapporo',EN:'SAPPORO',ls:266,rad:105,lh:0,fin:40,dist:2000,name:'北の大地カップ'},
   fukushima:{jp:'福島',en:'Fukushima',EN:'FUKUSHIMA',ls:292,rad:95,lh:0,fin:45,dist:1800,name:'みちのくステークス'}};
 const CKEY=COURSES[QS.get('course')]?QS.get('course'):'tokyo',CRS=COURSES[CKEY];
-const RACE=QS.get('race')||(QS.get('grade')==='derby'?'derby':(CKEY==='nakayama'&&(QS.get('grade')||'G1')==='G1'?'arima':''));
+const RACE=QS.get('race')||(QS.get('grade')==='derby'?'derby':(!IN&&CKEY==='nakayama'&&(QS.get('grade')||'G1')==='G1'?'arima':''));
 const RACE_TITLE=RACE==='derby'?'日本ダービー':RACE==='arima'?'有馬記念':'';
 const MON=({tokyo:{col:'#2b4f9e',edge:'#ffffff',ink:'#ffffff',band:'#f4f4ef',bandInk:'#c8102e'},kyoto:{col:'#2f8a55',edge:'#f2f2ee',ink:'#2f8a55',band:'#f4f4ef',bandInk:'#2f8a55'},
   nakayama:{col:'#1d6b44',edge:'#f2f2ee',ink:'#ffffff',band:'#f4f4ef',bandInk:'#1d6b44'},hanshin:{col:'#7a2a7d',edge:'#f2f2ee',ink:'#ffffff',band:'#f4f4ef',bandInk:'#7a2a7d'},
