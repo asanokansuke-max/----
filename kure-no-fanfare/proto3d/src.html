@@ -1173,15 +1173,15 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
   /* the finish photo, as the slit camera makes it: from the stand side, a little above, square to the line; the background is the
      line itself smeared sideways (horizontal streaks), the horses keyed over it, all in that lavender-grey with the placings tagged */
   if(IN&&started&&IN.pk&&!MSHOT.pdone){const A=RUN.find(r=>r.no===IN.pk[0]),Bh=RUN.find(r=>r.no===IN.pk[1]);if(A&&Bh&&Math.max(A.d,Bh.d)>=D-.2){MSHOT.pdone=true;try{
-      const lm=(laneOf(A,1)+laneOf(Bh,1))/2,cp=pathAt(START+D,lm+26),tp=pathAt(START+D,lm);const OW=640,OH=500;
-      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=OW/OH;tc.position.set(cp.x,13,cp.z);tc.lookAt(tp.x,.6,tp.z);tc.updateProjectionMatrix();
+      const OW=640,OH=500,pa=A.g.position,pb=Bh.g.position,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const lead=A.d>=Bh.d?pa:pb,tp={x:(pa.x+pb.x)/2*.5+lead.x*.5,z:(pa.z+pb.z)/2*.5+lead.z*.5},cp={x:tp.x+nx*28,z:tp.z+nz*28};
+      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=OW/OH;tc.position.set(cp.x,12,cp.z);tc.lookAt(tp.x,1,tp.z);tc.updateProjectionMatrix();
       const pr0=R3.getPixelRatio();R3.setPixelRatio(1);R3.setSize(OW,OH,false);
       R3.render(scene,tc);const o=document.createElement('canvas');o.width=OW;o.height=OH;const x=o.getContext('2d');const bg=document.createElement('canvas');bg.width=1;bg.height=OH;bg.getContext('2d').drawImage(R3.domElement,OW/2,0,1,OH,0,0,1,OH);
-      x.imageSmoothingEnabled=false;x.drawImage(bg,0,0,1,OH,0,0,OW,OH);                       // the streaked background
+      MSHOT.plain=document.createElement('canvas');MSHOT.plain.width=OW;MSHOT.plain.height=OH;MSHOT.plain.getContext('2d').drawImage(R3.domElement,0,0,OW,OH);x.imageSmoothingEnabled=false;x.drawImage(bg,0,0,1,OH,0,0,OW,OH);                       // the streaked background
       const keep=[],bgc=scene.background,fg=scene.fog;scene.children.forEach(ch=>{if(ch.isLight||RUN.some(r=>r.g===ch))return;keep.push([ch,ch.visible]);ch.visible=false;});scene.background=new THREE.Color('#ff00ff');scene.fog=null;
       R3.render(scene,tc);keep.forEach(([ch,v])=>ch.visible=v);scene.background=bgc;scene.fog=fg;
       const hz=document.createElement('canvas');hz.width=OW;hz.height=OH;const hx=hz.getContext('2d');hx.drawImage(R3.domElement,0,0,OW,OH);const id=hx.getImageData(0,0,OW,OH),dd=id.data;
-      for(let k=0;k<dd.length;k+=4){const r=dd[k],g=dd[k+1],b=dd[k+2];if(r>200&&b>200&&g<80)dd[k+3]=0;else if(r>150&&b>150&&g<120)dd[k+3]=110;}hx.putImageData(id,0,0);x.drawImage(hz,0,0);
+      let solid=0;for(let k=0;k<dd.length;k+=4){const r=dd[k],g=dd[k+1],b=dd[k+2];if(r>200&&b>200&&g<80)dd[k+3]=0;else if(r>150&&b>150&&g<120)dd[k+3]=110;else solid++;}hx.putImageData(id,0,0);if(solid>1500)x.drawImage(hz,0,0);else x.drawImage(MSHOT.plain,0,0);
       // the print: grey with a lavender cast, fine horizontal scan lines, a little grain
       const im=x.getImageData(0,0,OW,OH),q=im.data;for(let k=0;k<q.length;k+=4){const L=q[k]*.3+q[k+1]*.59+q[k+2]*.11,y=((k/4)/OW)|0,ln=(y%3===0?-10:0)+(Math.random()-.5)*10;const v=L*.82+40+ln,c=.42;q[k]=(v*1.0)*(1-c)+(q[k]*.85+30+ln)*c;q[k+1]=(v*.93)*(1-c)+(q[k+1]*.85+26+ln)*c;q[k+2]=(v*1.06)*(1-c)+(q[k+2]*.85+38+ln)*c;}   x.putImageData(im,0,0);
       x.fillStyle='rgba(255,255,255,.5)';x.fillRect(OW/2,0,1,OH);
