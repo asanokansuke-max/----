@@ -84,9 +84,9 @@ function boardAnim(){
   if(RC.inq==null){RC.inq=R()<.08;RC.inqK=Math.floor(R()*3);RC.inqDemote=RC.inq&&R()<.3;}
   const allOn=Math.max(wait+5*per,photoEnd+2*per),inqEnd=allOn+4200,conf=RC.inq?inqEnd+900:allOn+800;let lit=false;
   // ---- the board: a tall panel laid out like the real one (units of 1/100 of its width)
-  const SQ=.82;BSQ=SQ;const CW=cv.clientWidth,BW=CW/SQ,BH=Math.round(BW*1.66),u=BW/100;cv.width=CW*dpr;cv.height=BH*dpr;cv.style.height=BH+'px';c.scale(dpr*SQ,dpr);   // drawn on a wider grid, then squeezed: a slimmer board like the real one
+  const SQ=1,SQY=.76;BSQ=SQ;const CW=cv.clientWidth,BW=CW/SQ,BH=Math.round(BW*1.66),u=BW/100;cv.width=CW*dpr;cv.height=Math.round(BH*SQY)*dpr;cv.style.height=Math.round(BH*SQY)+'px';c.scale(dpr*SQ,dpr*SQY);   // a squatter board than before (it read too tall and thin)   // drawn on a wider grid, then squeezed: a slimmer board like the real one
   // ---- the turf vision next to it: same height, replay of the finish
-  let v=null,VW=0,VH=0;if(vv){v=vv.getContext('2d');VW=vv.clientWidth;VH=Math.min(BH,Math.round(VW*1.25));vv.width=VW*dpr;vv.height=VH*dpr;vv.style.height=VH+'px';v.scale(dpr,dpr);}
+  let v=null,VW=0,VH=0;if(vv){v=vv.getContext('2d');VW=vv.clientWidth;VH=Math.min(Math.round(BH*SQY),Math.round(VW*1.1));vv.width=VW*dpr;vv.height=VH*dpr;vv.style.height=VH+'px';v.scale(dpr,dpr);}
   const OR='#ff9f1c',CELL='#202020',WH='#f6f6f2',BLUE='#2367d8';
   const romans=['Ⅰ','Ⅱ','Ⅲ','Ⅳ','Ⅴ'];
   const going=(r.going||'良'),gShort=going;

@@ -1116,7 +1116,7 @@ function qaStep(raw){if(QA.off||document.hidden)return;QA.t+=raw;if(QA.t<5)retur
   if(fps<24){QA.high=0;if(++QA.low>=2&&QA.lv<3){QA.low=0;QA.lv++;qaApply();}}
   else if(fps>=50){QA.low=0;if(++QA.high>=3&&QA.lv>0){QA.high=0;QA.lv--;qaApply();}}
   else{QA.low=0;QA.high=0;}}
-let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.min(RAW,.5));DTS+=(Math.min(.05,RAW)-DTS)*.25;const dt0=DTS*FFWD;const now=performance.now()/1000;
+let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const RAW=clock.getDelta();qaStep(Math.min(RAW,.5));DTS+=(Math.min(.05,RAW)-DTS)*.25;const dt0=DTS*FFWD;const now=performance.now()/1000;
   if(started){const ld=RUN.reduce((a,r)=>Math.max(a,r.d||0),0),near=D-ld<42&&SIMT/TT<1.0;SLOW+=((near?.3:1)-SLOW)*Math.min(1,dt0*4);SIMT+=dt0*SLOW;}
   const dt=dt0*(started?SLOW:1);TS+=dt;
   const tau=started?Math.max(0,SIMT/TT):0;if(RAINF){const ps=RAINF.geometry.attributes.position;for(let i=0;i<ps.count;i+=2){let y=ps.getY(i)-dt0*28;if(y<0)y+=50;ps.setY(i,y);ps.setY(i+1,y-1.1);}ps.needsUpdate=true;RAINF.position.set(cam.position.x+(curCam?curCam.t.x-cam.position.x:0)*.5,0,cam.position.z+(curCam?curCam.t.z-cam.position.z:0)*.5);}if(started)openGate(SIMT);else shutBackDoors();divots(dt);
@@ -1169,6 +1169,11 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(SPL.on){R3.setScissorTest(true);const hb=Math.round(H*.75);cam.aspect=W/hb;cam.updateProjectionMatrix();R3.setViewport(0,0,W,hb);R3.setScissor(0,0,W,hb);R3.render(scene,cam);
     cam2.aspect=W/(H-hb);cam2.updateProjectionMatrix();R3.setViewport(0,hb,W,H-hb);R3.setScissor(0,hb,W,H-hb);R3.clear();R3.render(scene,cam2);R3.setScissorTest(false);R3.setViewport(0,0,W,H);cam.aspect=W/H;cam.updateProjectionMatrix();}
   else R3.render(scene,cam);
+  /* the result card's picture: your horse at the line (or, if it won, a beat later with the rider's fist in the air), from a close camera beside it */
+  if(IN&&started&&!MSHOT.done){const me=RUN.find(r=>r.mine);if(me&&!me.gone){const ready=me.won?(SIMT-TT>1.45):(me.d>=D+1.5);if(ready){MSHOT.done=true;try{const p=me.g.position,yw=me.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let sx=fz,sz=-fx;if(sz>0){sx=-sx;sz=-sz;}
+      const tc=MSHOT.cam||(MSHOT.cam=new THREE.PerspectiveCamera(26,16/9,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=R3.domElement.width/R3.domElement.height;tc.position.set(p.x+fx*7.5+sx*8.5,2.1,p.z+fz*7.5+sz*8.5);tc.lookAt(p.x+fx*.6,1.55,p.z+fz*.6);tc.updateProjectionMatrix();
+      R3.render(scene,tc);const W=R3.domElement.width,H=R3.domElement.height,cw=Math.min(W,H*16/9),ch=cw*9/16,o=document.createElement('canvas');o.width=640;o.height=360;o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,640,360);
+      parent.postMessage({type:'race3d-mine',img:o.toDataURL('image/jpeg',.82),won:!!me.won},'*');R3.render(scene,cam);}catch(e){}}}}
   /* the finish, recorded small for the replay on the result board's turf vision */
   if(IN&&started&&!SPL.on){const rem0=D-(byDsorted[0]?byDsorted[0].d:0);if(rem0<150&&tau<1.025&&SIMT-(RPF.t||0)>.11&&RPF.list.length<34){RPF.t=SIMT;try{RPF.x.drawImage(R3.domElement,0,0,RPF.c.width,RPF.c.height);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}catch(e){}}}
   if(IN&&!window.__ready&&(started||INGATE||PRE.stage||PAD.on||LOAD)){window.__ready=(window.__ready||0)+1;if(window.__ready===1)setTimeout(()=>{try{parent.postMessage({type:'race3d-ready'},'*');}catch(e){}},350);}
