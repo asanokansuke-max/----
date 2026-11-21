@@ -1022,6 +1022,8 @@ const nm=r=>r.name,lenTxt=m=>{const L=m/LEN;if(L<.15)return 'ハナ差';if(L<.3)
 const jk=r=>r.jn||'鞍上';
 const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};
 function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[2],last=byD[byD.length-1],me=RUN.find(r=>r.mine),pm=byD.indexOf(me)+1,gap=(a,b)=>a.d-b.d;
+  {const lt=RUN.find(r=>IN&&IN.field[r.i]&&IN.field[r.i].late);if(lt)once('s',()=>`${lt.no}番${nm(lt)}、出遅れました！`);}
+  RUN.forEach(r=>{const f0=IN&&IN.field[r.i];if(f0&&f0.stop&&tau>.52)once('stop'+r.no,()=>{r.g.visible=false;r.gone=1;return `${r.no}番${nm(r)}、競走中止！ ${jk(r)}は落馬した模様です`;});});
   once('s',()=>{const slow=[...RUN].sort((a,b)=>b.early-a.early)[0],fast=[...RUN].sort((a,b)=>a.early-b.early)[0],x=Math.random(),P=a=>a[Math.floor(Math.random()*a.length)];
     if(x<.12&&slow.early>22)return P([`${slow.no}番${nm(slow)}は、ややダッシュがつきません`,`${nm(slow)}、出たなりで後方から`]);
     if(x<.32&&slow.early>20)return P([`${nm(slow)}はいつも通り、後方からの競馬`,`${slow.no}番${nm(slow)}、無理をせず最後方に控えます`,`${nm(slow)}は今日も後ろから。じっくり構えます`]);
