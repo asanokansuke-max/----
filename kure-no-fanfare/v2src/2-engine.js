@@ -219,7 +219,10 @@ function buildField(race,ents){
   const jkPop=f=>{const j=f.jsk||65;return (j-70)*.09+(j>=86?2.2:j>=80?.8:0)+(f.jid==='amagi'?1.2:0);};
   fld.forEach(f=>f.mexp=pub(f));
   const ex=fld.map(f=>Math.exp(f.mexp/3.4)),sum=ex.reduce((a,b)=>a+b,0);
-  fld.forEach((f,i)=>f.odds=clamp(Math.round(.8/(ex[i]/sum)*10)/10,1.1,999.9));
+  // the public always keeps some money on the outsiders (the favourite-longshot bias): a share of the pool spread by a much flatter view,
+  // so even beside an odds-on favourite the rest sit at tens to a few hundred, not 999.9
+  const fl=fld.map(f=>Math.exp(f.mexp/9)),fs=fl.reduce((a,b)=>a+b,0),LAM=.16;
+  fld.forEach((f,i)=>{const p=(1-LAM)*ex[i]/sum+LAM*fl[i]/fs;f.odds=clamp(Math.round(.8/p*10)/10,1.1,999.9);});
   [...fld].sort((a,b)=>a.odds-b.odds).forEach((f,i)=>f.pop=i+1);
   return fld;
 }

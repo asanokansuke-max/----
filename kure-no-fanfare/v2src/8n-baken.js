@@ -23,7 +23,7 @@ function bkOddsTxt(o){return o>=1000?Math.round(o).toLocaleString():o.toFixed(1)
 (function(){const st=document.createElement('style');st.textContent=`
 .bk{display:grid;gap:12px}
 .bk .bkt{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-.bk .bkt button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel2,#f3f1ea);font:700 13px "Zen Kaku Gothic New",sans-serif;color:var(--ink)}
+.bk .bkt button{min-height:40px;border-radius:10px;border:1px solid var(--line);background:color-mix(in srgb,var(--ink) 6%,var(--panel));font:700 13px "Zen Kaku Gothic New",sans-serif;color:var(--ink)}
 .bk .bkt button[aria-pressed=true]{background:#1f7a48;color:#fff;border-color:#1f7a48}
 .bk .bkh{font-size:12px;color:var(--muted)}
 .bk .bkl{display:grid;gap:4px}
