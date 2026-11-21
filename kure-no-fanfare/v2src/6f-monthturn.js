@@ -25,7 +25,7 @@
 `;document.head.appendChild(st);})();
 const SEASON={1:'新春',2:'厳冬',3:'早春',4:'春',5:'初夏',6:'梅雨',7:'盛夏',8:'晩夏',9:'初秋',10:'秋',11:'晩秋',12:'師走'};
 function mtLines(){const t=S.t,m=M(t),L=[];
-  const big=GR.filter(g=>g[0]===m&&g[2]==='G1').map(g=>g[1]);if(big.length)L.push(['r','G1',big.join('・')]);
+  const big=GR.filter(g=>g.m===m&&g.gr==='G1'&&!g.abroad&&!g.local).map(g=>g.n);if(big.length)L.push(['r','G1',big.join('・')]);
   const run=(typeof racing==='function'?racing():[]).filter(h=>h.status==='現役');
   run.slice(0,3).forEach(h=>L.push(['g','愛馬',`${h.name}　${['絶不調','不調','普通','好調','絶好調'][clamp((h.cond||3)-1,0,4)]}${h.fat>50?'・疲れ気味':''}`]));
   if(S.sale&&!S.sale.blocked)L.push(['','セリ',`${S.sale.kind||'セリ'}が開かれる`]);

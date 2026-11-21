@@ -63,7 +63,7 @@ addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-pho
   if(d.type==='race3d-mine'){RC.mineShot=d.img;RC.mineWon=d.won;if(UI.race===RC)rcPlaceShot(RC);}
   if(d.type==='race3d-photo'){RC.photoShot=d.img;RC.photoBaked=!!d.baked;const cv=document.getElementById('pfcv');if(cv&&UI.race===RC)pfPlace(RC);}
   if(d.type==='race3d-shotdone'){const f=document.getElementById('shotif');if(f)setTimeout(()=>f.remove(),300);UI.shotRC=null;}});
-showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
+showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&!window.__noShot&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
     RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
     const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
     setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
@@ -77,7 +77,7 @@ showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if
 
 /* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
    a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
-function shotRun(RC){if(typeof R3D_HTML!=='string')return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+function shotRun(RC){if(typeof R3D_HTML!=='string'||window.__noShot)return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
   const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
   setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
 showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';

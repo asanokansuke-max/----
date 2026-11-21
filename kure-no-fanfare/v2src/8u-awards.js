@@ -53,3 +53,6 @@ beginMonth=(o=>function(first){const W=S&&S.win5;const r=o.apply(this,arguments)
   const pay=Math.round(win.reduce((a,x)=>a*x.odds,1)*.7*100/10)*10;const yenPay=hit?pay:0;if(hit){S.money+=yenPay/10000;}
   S.rep&&S.rep.lines.push(`WIN5（${W.bought}点）　${hit?`的中！ 払戻 ${yenPay.toLocaleString()}円`:'はずれ'}　勝ち馬：${win.map(x=>x.no).join('-')}`);if(hit)news(`WIN5的中！ 配当${yenPay.toLocaleString()}円`);}}catch(e){console.error('win5',e);}return r;})(beginMonth);
 vSched=(o=>function(){const h=o.apply(this,arguments);return `<section class="sec"><button class="btn bkbtn" data-act="win5">今月のWIN5を買う${S.win5&&S.win5.t===S.t&&S.win5.bought?'（購入済み）':''}</button></section>`+h;})(vSched);
+
+/* a retired rider can no longer be booked: an order made before he retired goes to the stable's own rider */
+buildField=(o=>function(race,ents){(ents||[]).forEach(e=>{const j=e.j&&JK(e.j);if(j&&j.retired){RC_SUB.push(`${JNAME(e.j)}騎手は引退したため、${e.h.name}は厩舎所属の騎手が騎乗。`);e.j='stable';}});return o.apply(this,arguments);})(buildField);

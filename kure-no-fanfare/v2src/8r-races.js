@@ -62,3 +62,6 @@ runSim=(o=>function(RC){const r=o.apply(this,arguments);try{if(RC.race.jump&&!RC
 Object.assign(R3D_CRS,{大井:'ooi',川崎:'kawasaki',メイダン:'meydan',ロンシャン:'longchamp',シャティン:'shatin'});
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{if(RC.race.jump)inp.jump=1;if(RC.race.abroad)inp.abroad=RC.race.abroad;inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.kg)x.kg=f.kg;});}catch(e){}return inp;})(r3dInput);
 gradeBadge=(o=>function(g){if(/^J・/.test(g||''))return `<span class="gr jg">${g}</span>`;return o.apply(this,arguments);})(gradeBadge);
+
+/* a jump race doesn't change the horse's flat class */
+applyRace=(o=>function(RC){const keep=(RC&&RC.race&&RC.race.jump)?(RC.order||[]).filter(f=>f.mine&&f.h).map(f=>[f.h,f.h.cls]):[];const r=o.apply(this,arguments);keep.forEach(([h,c])=>{h.cls=c;});return r;})(applyRace);

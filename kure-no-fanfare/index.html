@@ -6122,7 +6122,7 @@ beginMonth=(o=>function(){const r=o.apply(this,arguments);try{if(S&&S.phone){phA
 `;document.head.appendChild(st);})();
 const SEASON={1:'新春',2:'厳冬',3:'早春',4:'春',5:'初夏',6:'梅雨',7:'盛夏',8:'晩夏',9:'初秋',10:'秋',11:'晩秋',12:'師走'};
 function mtLines(){const t=S.t,m=M(t),L=[];
-  const big=GR.filter(g=>g[0]===m&&g[2]==='G1').map(g=>g[1]);if(big.length)L.push(['r','G1',big.join('・')]);
+  const big=GR.filter(g=>g.m===m&&g.gr==='G1'&&!g.abroad&&!g.local).map(g=>g.n);if(big.length)L.push(['r','G1',big.join('・')]);
   const run=(typeof racing==='function'?racing():[]).filter(h=>h.status==='現役');
   run.slice(0,3).forEach(h=>L.push(['g','愛馬',`${h.name}　${['絶不調','不調','普通','好調','絶好調'][clamp((h.cond||3)-1,0,4)]}${h.fat>50?'・疲れ気味':''}`]));
   if(S.sale&&!S.sale.blocked)L.push(['','セリ',`${S.sale.kind||'セリ'}が開かれる`]);
@@ -8569,6 +8569,9 @@ runSim=(o=>function(RC){const r=o.apply(this,arguments);try{if(RC.race.jump&&!RC
 Object.assign(R3D_CRS,{大井:'ooi',川崎:'kawasaki',メイダン:'meydan',ロンシャン:'longchamp',シャティン:'shatin'});
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{if(RC.race.jump)inp.jump=1;if(RC.race.abroad)inp.abroad=RC.race.abroad;inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.kg)x.kg=f.kg;});}catch(e){}return inp;})(r3dInput);
 gradeBadge=(o=>function(g){if(/^J・/.test(g||''))return `<span class="gr jg">${g}</span>`;return o.apply(this,arguments);})(gradeBadge);
+
+/* a jump race doesn't change the horse's flat class */
+applyRace=(o=>function(RC){const keep=(RC&&RC.race&&RC.race.jump)?(RC.order||[]).filter(f=>f.mine&&f.h).map(f=>[f.h,f.h.cls]):[];const r=o.apply(this,arguments);keep.forEach(([h,c])=>{h.cls=c;});return r;})(applyRace);
 /* =========================================================
    馬の扱い: 去勢 (セン馬), 馬具 (ブリンカー・メンコ・シャドーロール), 転厩, 外厩, and the everyday illnesses (熱発・疝痛).
    One "手入れ・調整" button in the horse's menu opens them.
@@ -8706,6 +8709,9 @@ beginMonth=(o=>function(first){const W=S&&S.win5;const r=o.apply(this,arguments)
   const pay=Math.round(win.reduce((a,x)=>a*x.odds,1)*.7*100/10)*10;const yenPay=hit?pay:0;if(hit){S.money+=yenPay/10000;}
   S.rep&&S.rep.lines.push(`WIN5（${W.bought}点）　${hit?`的中！ 払戻 ${yenPay.toLocaleString()}円`:'はずれ'}　勝ち馬：${win.map(x=>x.no).join('-')}`);if(hit)news(`WIN5的中！ 配当${yenPay.toLocaleString()}円`);}}catch(e){console.error('win5',e);}return r;})(beginMonth);
 vSched=(o=>function(){const h=o.apply(this,arguments);return `<section class="sec"><button class="btn bkbtn" data-act="win5">今月のWIN5を買う${S.win5&&S.win5.t===S.t&&S.win5.bought?'（購入済み）':''}</button></section>`+h;})(vSched);
+
+/* a retired rider can no longer be booked: an order made before he retired goes to the stable's own rider */
+buildField=(o=>function(race,ents){(ents||[]).forEach(e=>{const j=e.j&&JK(e.j);if(j&&j.retired){RC_SUB.push(`${JNAME(e.j)}騎手は引退したため、${e.h.name}は厩舎所属の騎手が騎乗。`);e.j='stable';}});return o.apply(this,arguments);})(buildField);
 /* =========================================================
    結果カード: the result as a broadcast-style card — on the left your horse at the line (from the 3D view;
    if it won, the rider's fist in the air), on the right the race, your horse's place in huge figures,
@@ -8771,7 +8777,7 @@ addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-pho
   if(d.type==='race3d-mine'){RC.mineShot=d.img;RC.mineWon=d.won;if(UI.race===RC)rcPlaceShot(RC);}
   if(d.type==='race3d-photo'){RC.photoShot=d.img;RC.photoBaked=!!d.baked;const cv=document.getElementById('pfcv');if(cv&&UI.race===RC)pfPlace(RC);}
   if(d.type==='race3d-shotdone'){const f=document.getElementById('shotif');if(f)setTimeout(()=>f.remove(),300);UI.shotRC=null;}});
-showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
+showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&!window.__noShot&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
     RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
     const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
     setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
@@ -8785,7 +8791,7 @@ showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if
 
 /* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
    a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
-function shotRun(RC){if(typeof R3D_HTML!=='string')return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+function shotRun(RC){if(typeof R3D_HTML!=='string'||window.__noShot)return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
   const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
   setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
 showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';
