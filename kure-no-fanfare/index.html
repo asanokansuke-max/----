@@ -8099,7 +8099,9 @@ ACT.stgTest=()=>{const ss=window.speechSynthesis,log=[];const show=()=>{try{toas
 r3dSound=(o=>function(d){try{const R=R3D;if(R&&SND.on&&d.phase==='race'&&!R.fresh){R.fresh=1;const wake=()=>{try{if(SND.ac&&SND.ac.state!=='running'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}};wake();
     if(SND.nodes){const old=SND.nodes;SND.nodes=null;try{old.master.gain.setTargetAtTime(0,SND.ac.currentTime,.15);setTimeout(()=>{try{old.cs.stop();old.master.disconnect();}catch(e){}},1500);}catch(e){}}
     sndStart();}}catch(e){}return o.apply(this,arguments);})(r3dSound);
-(function(){let last=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>800){last=n;try{if(SND.on&&SND.ac&&SND.ac.state!=='running'&&SND.ac.state!=='closed'){const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}catch(e){}}return o.apply(this,arguments);})(r3dState);
+(function(){let last=0,off=0;r3dState=(o=>function(d){const n=performance.now();if(n-last>800){last=n;
+    // bring the sound back only when it has stayed off for a while and the caller is not speaking (waking it while the voice holds the audio made it flicker on and off)
+    try{const sp=window.speechSynthesis&&(speechSynthesis.speaking||speechSynthesis.pending);if(SND.on&&SND.ac&&SND.ac.state!=='running'&&SND.ac.state!=='closed'&&!sp){if(++off>=3){off=0;const p=SND.ac.resume();p&&p.catch&&p.catch(()=>{});}}else off=0;}catch(e){}}return o.apply(this,arguments);})(r3dState);
   document.addEventListener('touchend',()=>{try{if(typeof R3D!=='undefined'&&R3D&&SND.ac&&SND.ac.state!=='running')SND.ac.resume();}catch(e){}},{passive:true,capture:true});})();
 /* hoofbeats booked further ahead, so a busy moment (fast-forward, a heavy frame) never leaves a gap; after a long stall they restart from now instead of piling up */
 sndHoofs=function(running,cad,vol){
