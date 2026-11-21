@@ -1172,9 +1172,11 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
   /* the result card's picture: your horse at the line (or, if it won, a beat later with the rider's fist in the air), from a close camera beside it */
   /* the finish photo, as the slit camera makes it: from the stand side, a little above, square to the line; the background is the
      line itself smeared sideways (horizontal streaks), the horses keyed over it, all in that lavender-grey with the placings tagged */
-  if(IN&&started&&IN.pk&&!MSHOT.pdone){const A=RUN.find(r=>r.no===IN.pk[0]),Bh=RUN.find(r=>r.no===IN.pk[1]);if(A&&Bh&&Math.max(A.d,Bh.d)>=D-.2){MSHOT.pdone=true;try{
-      const OW=640,OH=500,pa=A.g.position,pb=Bh.g.position,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const lead=A.d>=Bh.d?pa:pb,tp={x:(pa.x+pb.x)/2*.5+lead.x*.5,z:(pa.z+pb.z)/2*.5+lead.z*.5},cp={x:tp.x+nx*28,z:tp.z+nz*28};
-      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=OW/OH;tc.position.set(cp.x,12,cp.z);tc.lookAt(tp.x,1,tp.z);tc.updateProjectionMatrix();
+  if(IN&&started&&IN.pk&&!MSHOT.pdone){const A=RUN.find(r=>r.no===IN.pk[0]),Bh=RUN.find(r=>r.no===IN.pk[1]);  const noseW=r=>{r.g.updateMatrixWorld(true);return r.g.localToWorld(morphedVertex(r,r.muzzle,new THREE.Vector3()));};
+  let NZ=null;if(A&&Bh){NZ=noseW(A);const lp=pathAt(START+D,laneOf(A,1)),yw0=A.g.rotation.y;if((NZ.x-lp.x)*Math.sin(yw0)+(NZ.z-lp.z)*Math.cos(yw0)<-.05)NZ=null;}
+  if(A&&Bh&&NZ){MSHOT.pdone=true;try{
+      const OW=640,OH=500,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const tp={x:NZ.x,z:NZ.z},cp={x:tp.x+nx*28,z:tp.z+nz*28};
+      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=OW/OH;tc.position.set(cp.x,12,cp.z);tc.lookAt(tp.x,1,tp.z);tc.position.x+=0;tc.updateProjectionMatrix();
       const pr0=R3.getPixelRatio();R3.setPixelRatio(1);R3.setSize(OW,OH,false);
       R3.render(scene,tc);const o=document.createElement('canvas');o.width=OW;o.height=OH;const x=o.getContext('2d');const bg=document.createElement('canvas');bg.width=1;bg.height=OH;bg.getContext('2d').drawImage(R3.domElement,OW/2,0,1,OH,0,0,1,OH);
       MSHOT.plain=document.createElement('canvas');MSHOT.plain.width=OW;MSHOT.plain.height=OH;MSHOT.plain.getContext('2d').drawImage(R3.domElement,0,0,OW,OH);x.imageSmoothingEnabled=false;x.drawImage(bg,0,0,1,OH,0,0,OW,OH);                       // the streaked background
