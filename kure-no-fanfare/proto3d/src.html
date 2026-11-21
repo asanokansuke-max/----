@@ -632,9 +632,9 @@ function laneOf(r,tau){const a=sm(0,.12,tau),rem=D*(1-tau),w=sm(520,300,rem);ret
 let camName='',curCam=null;const lerp=(a,b,t)=>a+(b-a)*t;
 function camFor(lead,mid,tau){const sL=((START+mid)%P+P)%P;   // leader's spot on the lap
   if(window.__closeW&&LOAD&&!started)return LOAD.t>=LOAD.end-3?'gatedoor':'walkclose';
-  if(PAD.on)return 'paddock';if(MODE==='box')return 'box';if(PRE.stage==='canter')return 'canter';if(PRE.stage==='starter')return 'starter';
+  if(PAD.on)return 'paddock';if(MODE==='box')return 'box';if(PRE.stage==='canter')return 'canter';if(PRE.stage==='starter')return BIG&&PRE.played&&PRE.t>2.6&&PRE.t<2.6+Math.min(7,(PRE.len||8)-.8)?'crowd':'starter';
   if(LOAD&&!started){const t=LOAD.t;return t<7?'gateback':t<LOAD.end-6?(Math.floor(t/6)%2?'gate':'gateback'):'startpan';}
-  if(tau<=0&&IN&&!BIG&&!PRE.stage&&MODE==='race')return 'startpan';if(tau<=0){const w=performance.now()/1000-(window.__t0w||(window.__t0w=performance.now()/1000));return w<6?'stand':w<11?'vision':'gate';}if(IN&&tau>=1)return SIMT-TT<.9?'finish':'after';if(tau>=1.06){return ((SIMT-TT*1.06)%12)<6?'after':'vision';}if(tau>=1)return 'finish';
+  if(tau<=0&&IN&&!BIG&&!PRE.stage&&MODE==='race')return 'startpan';if(tau<=0){const w=performance.now()/1000-(window.__t0w||(window.__t0w=performance.now()/1000));return w<6?'stand':w<11?'vision':'gate';}if(tau>=1&&BIG&&started){const a=SIMT-TT*(IN?1:1.0);if(a>4.2&&a<10.5)return 'standwin';}if(IN&&tau>=1)return SIMT-TT<.9?'finish':'after';if(tau>=1.06){return ((SIMT-TT*1.06)%12)<6?'after':'vision';}if(tau>=1)return 'finish';
   if(INGATE)return 'startpan';if(started&&SIMT<6.2&&tau<1)return 'startpan';if(started&&SIMT<8&&tau<1)return 'startrun';
   const rem=D-lead;if(rem<Math.max(300,FIN+40))return 'side';   // the home straight is shown side-on from the main-stand camera
   if(sL<LS)return 'side';if(sL<LS+Math.PI*RAD)return 'turn12';if(sL<2*LS+Math.PI*RAD)return 'back';return 'turn34';}
@@ -680,6 +680,10 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   if(name==='stand'){const w=performance.now()/1000-window.__t0w;cpos.set(STX-90+w*9,7,-RAD+40);tgt.set(STX-60+w*9,15,STZ-45);fov=40;}
   else if(name==='vision'){const w=Math.min(5,Math.max(0,performance.now()/1000-window.__t0w-6));cpos.set(VX+12-w*2,8,-RAD-30);tgt.set(VX,13,-RAD+42);fov=44;}
   else if(name==='goal'){const f=pathAt(FIN+3,-13);cpos.set(f.x,2.4,f.z);const lp=pathAt(START+lead.d-1.5,3);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,13);}
+  // G1: during the fanfare, a slow pan along the packed stand from the infield — the apron crowd in front, the tiers rising behind
+  else if(name==='crowd'){const t=Math.max(0,PRE.t-2.6);cpos.set(STX-62+t*5.5,6.5,-RAD+10);tgt.set(STX-50+t*5.5,5.5,STZ-28);fov=38;}
+  // G1: after the line, the winner pulls up in front of the full stand, seen from the inside of the course
+  else if(name==='standwin'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),cp=pathAt(START+w.d+11,-3);cpos.set(cp.x,1.8,cp.z);tgt.set(wp.x*.85+cp.x*.15,2.9,wp.z-5);fov=40;}
   else if(name==='after'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),ah=pathAt(START+w.d+9,26);cpos.set(ah.x,3.6,ah.z);tgt.set(wp.x,1.6,wp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7.5/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.6;}}
   else if(name==='paddock'){const w=performance.now()/1000,cyc=Math.floor(w/6)%3,f=RUN[Math.floor(w/6)%RUN.length],fp=f.g.position;
     /* like the paddock feed: mostly one horse at a time, walked past the camera; now and then a few together from the terrace */
@@ -725,7 +729,7 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   if(name==='back'){if(!SPL.t0)SPL.t0=performance.now()/1000;const k=Math.floor((performance.now()/1000-SPL.t0)/1.15);SPL.on=k<RUN.length+1;window.__spl=SPL.on;
     if(SPL.on){const ord=[...RUN].sort((a,b)=>b.d-a.d),h=ord[Math.min(k,ord.length-1)],hp=pathAt(START+h.d+1.5,laneOf(h,tau));cpos.set(hp.x,4.2,RAD-13);tgt.set(hp.x,1.6,hp.z);fov=frame(cpos.x,cpos.y,cpos.z,9);
       cam2.position.set(fx,7,RAD-75);cam2.lookAt(fx,2.2,fz);const d2=Math.hypot(fx-cam2.position.x,fz-cam2.position.z,5),wv=spread*.95+3;cam2.aspect=innerWidth/(innerHeight*.25);cam2.fov=Math.max(1.2,2*Math.atan(wv/2/d2)*180/Math.PI/cam2.aspect);cam2.updateProjectionMatrix();}}else SPL.on=false;
-  if(name!==camName){camName=name;cpos&&cam.position.copy(cpos);curCam={t:tgt.clone()};cam.fov=fov;document.getElementById('cam').textContent={stand:'スタンド',vision:'ターフビジョン',after:'ゴール後',goal:'ゴール前',front:'正面',gate:'スタート',startrun:'スタート直後',startpan:'スタート',gateback:'ゲート裏',canter:'返し馬',box:'馬主席',starter:'スターター',paddock:'パドック',side:'ホームストレッチ',finish:'ゴール',head:'4コーナー（正面）',turn12:'1〜2コーナー',back:'向こう正面',turn34:'3〜4コーナー'}[name];}
+  if(name!==camName){camName=name;cpos&&cam.position.copy(cpos);curCam={t:tgt.clone()};cam.fov=fov;document.getElementById('cam').textContent={crowd:'スタンド',standwin:'ゴール後（スタンド前）',stand:'スタンド',vision:'ターフビジョン',after:'ゴール後',goal:'ゴール前',front:'正面',gate:'スタート',startrun:'スタート直後',startpan:'スタート',gateback:'ゲート裏',canter:'返し馬',box:'馬主席',starter:'スターター',paddock:'パドック',side:'ホームストレッチ',finish:'ゴール',head:'4コーナー（正面）',turn12:'1〜2コーナー',back:'向こう正面',turn34:'3〜4コーナー'}[name];}
   cam.position.lerp(cpos,Math.min(1,dt*6));curCam.t.lerp(tgt,Math.min(1,dt*9));cam.lookAt(curCam.t);cam.fov=lerp(cam.fov,fov,Math.min(1,dt*2.5));cam.updateProjectionMatrix();
   {const SD=EVE?[.62,.27,-.74]:[.62,.5,-.6];sun.position.set(curCam.t.x+SD[0]*400,SD[1]*400,curCam.t.z+SD[2]*400);sun.target.position.copy(curCam.t);sunGlare();}}
 
