@@ -57,7 +57,7 @@ showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{c
 /* 結果画面の絵も3Dで: the stills come from the 3D course — during a watched broadcast they are taken live;
    when you only hear the result, a hidden 3D view runs the last few seconds of the race just to take them */
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{if(RC.photo&&RC.order){const K=RC.photoK||0;if(RC.order[K]&&RC.order[K+1]){inp.pk=[RC.order[K].no,RC.order[K+1].no];inp.pkPos=[K+1,K+2];}}if(RC.__shot){inp.shot=1;inp.warmed=true;}}catch(e){}return inp;})(r3dInput);
-function rcPlaceShot(RC){try{const pic=document.querySelector('#sheet .rcard .pic');if(pic&&RC.mineShot&&!pic.querySelector('img')){const c=pic.querySelector('canvas');const im=new Image();im.alt='';im.src=RC.mineShot;im.style.opacity=0;im.style.transition='opacity .6s';if(c)c.replaceWith(im);else pic.prepend(im);requestAnimationFrame(()=>im.style.opacity=1);
+function rcPlaceShot(RC){try{const pic=document.querySelector('#sheet .rcard .pic');if(pic&&RC.mineShot&&!pic.querySelector('img')){pic.querySelectorAll('#shotif,.shotcap').forEach(x=>x.remove());const c=pic.querySelector('canvas');const im=new Image();im.alt='';im.src=RC.mineShot;im.style.opacity=0;im.style.transition='opacity .6s';if(c)c.replaceWith(im);else pic.prepend(im);requestAnimationFrame(()=>im.style.opacity=1);
     const cap=pic.querySelector('.cap');const me=RC.order.filter(f=>f.mine).sort((a,b)=>a.pos-b.pos)[0];if(cap&&me&&me.pos===1)cap.textContent='ゴールの瞬間（1着・ガッツポーズ）';}}catch(e){}}
 addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-photo','race3d-shotdone','race3d-photoerr'].includes(d.type))return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(!RC)return;
   if(d.type==='race3d-mine'){RC.mineShot=d.img;RC.mineWon=d.won;if(UI.race===RC)rcPlaceShot(RC);}
@@ -65,9 +65,7 @@ addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-pho
   if(d.type==='race3d-photoerr'){console.error('photo 3D failed:',d.msg);}
   if(d.type==='race3d-shotdone'){const f=document.getElementById('shotif');if(f)setTimeout(()=>f.remove(),300);UI.shotRC=null;}});
 showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&!window.__noShot&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
-    if(UI.shotRC===RC&&document.getElementById('shotif'))return r;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
-    const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:0;top:0;width:640px;height:360px;border:0;pointer-events:none;opacity:.01;z-index:-1';document.body.appendChild(f);f.srcdoc=doc;
-    setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+    const pic=document.querySelector('#sheet .rcard .pic');if(pic&&!pic.querySelector('.shotcap'))pic.insertAdjacentHTML('beforeend','<div class="shotcap">3Dでゴールの瞬間を再生中…</div>');mountShot(RC,pic);}
   else if(RC&&RC.mineShot)rcPlaceShot(RC);}catch(e){console.error('shot',e);}return r;})(showResult);
 /* the finish photo on the board: the 3D still, with the judge's tags laid over it */
 function pfPlace(RC){const cv=document.getElementById('pfcv');if(!cv||!RC.photoShot)return;const wrap=cv.parentNode;const K=RC.photoK||0,ord=RC.order,circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
@@ -78,13 +76,11 @@ showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if
 
 /* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
    a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
-function shotRun(RC){if(typeof R3D_HTML!=='string'||window.__noShot)return;if(UI.shotRC===RC&&document.getElementById('shotif'))return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
-  const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:0;top:0;width:640px;height:360px;border:0;pointer-events:none;opacity:.01;z-index:-1';document.body.appendChild(f);f.srcdoc=doc;
-  setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+function shotRun(RC){const w=document.getElementById('pfcv');mountShot(RC,w?w.parentNode:null);}
 showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';
     if(!w.querySelector('.pfwait'))w.insertAdjacentHTML('beforeend','<div class="pfwait">写真判定中…</div>');}
     if(!RC.photoAsked){RC.photoAsked=1;shotRun(RC);}setTimeout(()=>{const x=document.querySelector('.pfwait');if(x&&!RC.photoShot)x.remove();},50000);}}catch(e){}return r;})(showBoard);
-(function(){const st=document.createElement('style');st.textContent=`.pfwait{position:absolute;inset:0;display:grid;place-items:center;background:#6d6878;color:#fff;font:800 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em}`;document.head.appendChild(st);})();
+(function(){const st=document.createElement('style');st.textContent=`.pfwait{position:absolute;inset:0;z-index:2;display:grid;place-items:start center;padding-top:12px;pointer-events:none;background:linear-gradient(rgba(40,36,50,.55),rgba(40,36,50,0) 40%);color:#fff;font:800 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em}`;document.head.appendChild(st);})();
 /* readability: the gold button and the phone's orange tag were too pale for white text; the draw board's empty numbers too faint */
 (function(){const st=document.createElement('style');st.textContent=`.btn.gold{background:#b06a24}.badge{background:#b8641a}
 .prow .tag{background:#c96a00}.drw .slot b[style*="#bbb"]{color:#8f897d!important}
@@ -100,3 +96,10 @@ function pkOf(RC){if(!RC||!RC.photo||!RC.order)return null;const K=RC.photoK||0;
 r3dRegap=(o=>function(RC,extra){try{reorder(RC);photoCall(RC);}catch(e){}const pk=pkOf(RC);return o.call(this,RC,Object.assign({},extra||{},{pk,pkPos:pk?[(RC.photoK||0)+1,(RC.photoK||0)+2]:null}));})(r3dRegap);
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-photo')return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(RC)RC.photoPk=d.pk||null;});
 showBoard=(o=>function(){const RC=UI.race;try{const want=pkOf(RC);if(RC&&RC.photoShot&&(!want||!RC.photoPk||RC.photoPk.join()!==want.join())){RC.photoShot=null;RC.photoAsked=0;}}catch(e){}return o.apply(this,arguments);})(showBoard);
+
+function mountShot(RC,host){if(typeof R3D_HTML!=='string'||window.__noShot)return;const old=document.getElementById('shotif');if(old){if(UI.shotRC===RC&&old.isConnected)return;old.remove();}
+  RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;UI.shotRC=RC;const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;
+  if(host){host.style.position=host.style.position||'relative';f.style.cssText='position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;z-index:1;background:#0b120e';host.appendChild(f);}
+  else{f.style.cssText='position:fixed;right:0;bottom:0;width:320px;height:180px;border:0;pointer-events:none;opacity:.02;z-index:5';document.body.appendChild(f);}
+  f.srcdoc=doc;setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+(function(){const st=document.createElement('style');st.textContent='.rcard .pic .shotcap{position:absolute;right:10px;top:12px;z-index:2;font:700 10px "Zen Kaku Gothic New",sans-serif;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:999px}.rcard .pic .tw,.rcard .pic .cap{z-index:2}';document.head.appendChild(st);})();
