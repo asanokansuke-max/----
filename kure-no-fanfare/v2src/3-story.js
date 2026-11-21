@@ -125,7 +125,7 @@ const EV={
    f:(d,i)=>{if(i===0){trust('rei',6);return '「それでこそ」怜はうなずいた。';}S.flags.arimaSkipY=Y(S.t);trust('rei',12);return 'あなたの馬は、今年の有馬記念を見送ることになった。';}},
  /* generic */
  mainAsk:{r:d=>{const h=HZ(d.hid);if(!h||h.mainJ===d.jid)return null;return{p:d.jid,from:who(d.jid),title:`${h.name}に、また乗せてください`,body:V(d.jid,'mainAsk',{h:h.name}),ch:['主戦をお願いする','今は決めない']};},
-   f:(d,i)=>{const h=HZ(d.hid);if(i===0){const prev=h.mainJ;h.mainJ=d.jid;trust(d.jid,10);if(prev==='hinata'&&d.jid!=='hinata'){trust('hinata',-15);S.br.hinataSwitch++;if(S.br.hinataSwitch>=2&&!S.br.hinataLeft)S.flags.hinataLeavePending=1;}return `${who(d.jid)}が${h.name}の主戦になった。主戦騎手は基本的に依頼を断らない。`;}trust(d.jid,-2);return '「…わかりました」';}},
+   f:(d,i)=>{const h=HZ(d.hid);if(i===0){const prev=h.mainJ;h.mainJ=d.jid;trust(d.jid,10);if(prev==='hinata'&&d.jid!=='hinata'){trust('hinata',-15);S.br.hinataSwitch++;if(S.br.hinataSwitch>=2&&!S.br.hinataLeft)S.flags.hinataLeavePending=1;}return `${who(d.jid)}が${h.name}の主戦になった。主戦騎手は基本的に依頼を断らない。`;}trust(d.jid,-2);if(h){h.askNo=h.askNo||{};h.askNo[d.jid]=S.t;}return '「…わかりました」';}},
  hinataLeave:{r:()=>({p:'hinata',from:'日向 翔',title:'お世話になりました',body:`大事なレースで降ろされるのは、二度目です。\n\nわかってます。勝つためには、上手い騎手を乗せたほうがいい。僕でもそうする。\n\n…別の厩舎から、主戦の話をもらいました。お世話になりました。`,ch:['引き留めない','「待ってくれ」']}),
    f:(d,i)=>{S.br.hinataLeft=true;racing().forEach(h=>{if(h.mainJ==='hinata')h.mainJ=null;});log('日向 翔が離れていった');return i===0?'日向は深く頭を下げて、去っていった。':'「…もう、決めたんです」日向は振り返らなかった。';}},
  g1consult:{r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役')return null;const race=racesFor(h).find(r=>r.key===d.key);if(!race)return null;

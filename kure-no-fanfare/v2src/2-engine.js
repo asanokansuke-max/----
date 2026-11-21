@@ -315,7 +315,10 @@ function applyRace(RC){
     if(race.grade==='G1'&&h.mainJ==='hinata'){if(jid==='hinata')S.br.hinataKept++;else{S.br.hinataSwitch++;trust('hinata',-12);if(S.br.hinataSwitch>=2&&!S.br.hinataLeft)S.flags.hinataLeavePending=1;}}
     f.comment=jockeyComment(f,race);f.prize=prize;
     const inj=injuryRoll(h);if(inj){notes.push(`${h.name}に${inj}`);pushEv('injury',{hid:h.id,kind:inj});}
-    if(pos<=3&&jid&&jid!=='stable'&&h.mainJ!==jid&&R()<.5&&!S.inbox.some(e=>e.type==='mainAsk'&&e.data.hid===h.id))pushEv('mainAsk',{hid:h.id,jid});
+    // a rider asks to keep the ride only now and then: after a win (rarely after a place), not when the horse already has a regular rider unless it was a big win,
+    // at most once every 8 months per horse, and a rider who was told "not now" waits a year before asking about that horse again
+    {const ak=h.askT||-99,no=(h.askNo||{})[jid];const p0=pos===1?(h.mainJ?(race.g?.3:.08):.35):pos===2&&!h.mainJ?.1:0;
+     if(p0&&jid&&jid!=='stable'&&h.mainJ!==jid&&S.t-ak>=8&&!(no!=null&&S.t-no<12)&&R()<p0&&!S.inbox.some(e=>e.type==='mainAsk'&&e.data.hid===h.id)){h.askT=S.t;pushEv('mainAsk',{hid:h.id,jid});}}
     if(pos===1&&race.g&&R()<.35)pushEv('tv',{hid:h.id});
     if(race.g)news(`【${race.grade}】${race.name}　${h.name}は${pos}着（${f.pop}番人気・${JNAME(jid)}）`);
     else S.rep.lines.push(`${h.name}　${race.name}（${race.course}${race.surf}${race.dist}m・${race.going}）　${pos}着／${ord.length}頭　${JNAME(jid)}${prize?`　賞金${yen(prize)}`:''}`);
