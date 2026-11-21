@@ -1954,7 +1954,7 @@ const hearts=b=>'<span class="hearts" aria-label="なつき '+Math.round(b)+'">'
 
 const nb=t=>String(t).split('　').map(x=>`<span class="nw">${esc(x)}</span>`).join('　');
 let MLOCK=false;
-function openModal(html,o={}){const sh=$('#sheet');sh.className='sheet'+(o.wide?' wide':'');sh.innerHTML=html;$('#modal').hidden=false;MLOCK=!!o.lock;$('#modal').scrollTop=0;}
+function openModal(html,o={}){const sh=$('#sheet');sh.className='sheet'+(o.wide?' wide':'');sh.innerHTML=html;$('#modal').hidden=false;MLOCK=!!o.lock;$('#modal').scrollTop=0;sh.scrollTop=0;requestAnimationFrame(()=>{if(!o.keepScroll){sh.scrollTop=0;$('#modal').scrollTop=0;}});}
 function closeModal(){$('#modal').hidden=true;$('#sheet').innerHTML='';MLOCK=false;}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal'&&!MLOCK){if(UI.bid&&!UI.bid.done){ACT.pass();return;}closeModal();render();}});
 
