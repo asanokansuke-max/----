@@ -1067,7 +1067,7 @@ function loadingPoseIdle(r,dt){if(!r.idle){const c=pathAt(START-20-(r.i%3)*9,-1+
 function beginLoading(){const odd=RUN.filter(r=>r.no%2),even=RUN.filter(r=>!(r.no%2));const order=[...odd,...even];LOAD={t:0,done:false};
   // 輪乗り: each horse walks small circles behind the gate (a few rings side by side), led by a gate handler
   RUN.forEach((r,i)=>{const c=pathAt(START-20-(i%3)*9,-1+(i%5)*5.2);r.ring=r.idle?{x:r.idle.x,z:r.idle.z,R:r.idle.R,th:r.idle.th,dir:1}:{x:c.x,z:c.z,R:3+rnd()*1.2,th:rnd()*7,dir:rnd()<.5?1:-1};r.loadAt=99;r.leg=null;if(!r.handler)addHandler(r);r.handler.visible=true;});
-  order.forEach((r,k)=>{r.loadAt=3+k*1.7;});LOAD.end=3+(order.length-1)*1.7+6.5+2.2;
+  order.forEach((r,k)=>{r.loadAt=3+k*1.7;});LOAD.last=order[order.length-1];LOAD.inT=3+(order.length-1)*1.7+6.5;LOAD.end=LOAD.inT+6.2;
   if(GATE.root)GATE.root.visible=true;}
 function loadingPose(r,dt){const t=LOAD.t,W=1.35;let x,z,moving=true;
   if(t<r.loadAt){// walking the circle
@@ -1114,7 +1114,11 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
   if(IN&&!DONE&&started&&SIMT-TT>3.4){DONE=true;const b=document.getElementById('emb_done');if(b)b.textContent='結果へ ▶';setTimeout(()=>{try{if(!RPF.list.length){RPF.x.drawImage(R3.domElement,0,0,384,216);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}parent.postMessage({type:'race3d-replay',frames:RPF.list},'*');parent.postMessage({type:'race3d-done'},'*');}catch(e){}},600);}
   if(PAD.on){PAD.t+=dt0;}
   if(PRE.stage)preStep(dt0);
-  if(LOAD&&!started){LOAD.t+=dt0;if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
+  if(LOAD&&!started){LOAD.t+=dt0;
+    // the last one in — a breath — the handlers step away from the gate — a breath — and they're off
+    if(LOAD.inT!=null){if(LOAD.t>=LOAD.inT&&!LOAD.sIn){LOAD.sIn=1;say(`最後に${LOAD.last.no}番${LOAD.last.name}が収まって、ゲートイン完了`);}
+      if(LOAD.t>=LOAD.inT+2.6&&!LOAD.sAway){LOAD.sAway=1;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});say('係員、ゲートから離れます');}}
+    if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
   (window.__flags||[]).forEach((f,i)=>{f.rotation.y=Math.sin(now*2.2+i)*.35;});
   if(started&&!PAD.on)sepStep(Math.min(tau,1),dt0);
   RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
