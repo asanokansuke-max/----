@@ -8210,6 +8210,10 @@ renderStart=(o=>function(){const w=document.querySelector('#app .setupwrap'),top
     const key=old&&!document.querySelector('#modal.phonemode #pbody')?(document.querySelector('#modal.phonemode .plist')?'list':'other'):null;if(key)keep[key]=old.scrollTop;
     const r=o.apply(this,arguments);const nb=document.querySelector('#modal.phonemode .pbody');
     if(nb&&!document.querySelector('#modal.phonemode #pbody')){const k=document.querySelector('#modal.phonemode .plist')?'list':'other';if(keep[k]){nb.scrollTop=keep[k];requestAnimationFrame(()=>{nb.scrollTop=keep[k];});}}return r;})(drawPhone);})();
+/* while the owner is in hospital (療養中), the horses cannot be visited either: the buttons say so and do nothing */
+ACT.touch=(o=>function(){if(S&&S.restPenalty>0){toast(`療養中のため、馬に会いに行けない（あと${S.restPenalty}か月）`);return;}return o.apply(this,arguments);})(ACT.touch);
+render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&S.restPenalty>0)document.querySelectorAll('#app .cardfoot [data-act=touch]').forEach(b=>{b.disabled=true;b.classList.add('sickoff');b.innerHTML='療養中';});}catch(e){}return r;})(render);
+(function(){const st=document.createElement('style');st.textContent='#app .cardfoot .btn.sickoff{opacity:.45;filter:grayscale(1)}';document.head.appendChild(st);})();
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
