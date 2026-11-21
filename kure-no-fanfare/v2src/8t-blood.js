@@ -21,11 +21,11 @@ function mkMareOffer(){const sire=pick(STALLIONS0),pot=Math.round(58+R()*26),age
   return {sid:sire.id,pot,age,rec,price:Math.round((pot-50)*(pot-50)*1.1/10)*10+200,name:makeName(),dist:sire.dist,surf:sire.surf};}
 EV.mareSale={r:d=>({p:'mikuni',from:'三國 透',title:'繁殖牝馬セール',body:`年末の繁殖牝馬セールのカタログです。気になる馬を三頭、選んでおきました。\n\n${d.list.map((m,i)=>`${['一','二','三'][i]}、${m.name}（${m.age}歳・父 ${ST(m.sid).n}・${m.rec}）\n　見立て ${m.pot>=78?'◎':m.pot>=68?'○':'△'}　予想価格 ${yen(m.price)}`).join('\n\n')}\n\n牝馬を買って繁殖に上げれば、来年から種付けができます。`,ch:[...d.list.map(m=>`${m.name}を買う（${yen(m.price)}）`),'今年は見送る']}),
   f:(d,i)=>{const m=d.list[i];if(!m)return '今年は見送った。';if(S.money<m.price)return '資金が足りなかった。';S.money-=m.price;if(S.rep)S.rep.cost+=m.price;
-    const h=genHorse({by:Y(S.t)-m.age,sire:m.sid,pot:m.pot,dist:m.dist,surf:m.surf,status:'繁殖',owner:'me',coat:null});h.id=S.nid++;h.sex='牝';h.name=m.name;h.silks=S.silks;h.starts=0;S.horses.push(h);log(`繁殖牝馬セールで${m.name}を${yen(m.price)}で購入`);
+    const h=genHorse({by:Y(S.t)-m.age,sire:m.sid,pot:m.pot,dist:m.dist,surf:m.surf,status:'繁殖',owner:'me',coat:null});h.id=S.nid++;h.sex='牝';h.name=m.name;h.needName=0;h.silks=S.silks;h.starts=0;S.horses.push(h);log(`繁殖牝馬セールで${m.name}を${yen(m.price)}で購入`);
     return `${m.name}を落札した。中原牧場で繁殖牝馬として迎える。\n\n中原「いい顔をしとる。来年の春、相手を考えよう」`;}};
 EV.niwasaki={r:d=>({p:'nakahara',from:'中原 修造',title:'知り合いの牧場から',body:`日高の知り合いの牧場が、1歳馬を一頭、庭先で譲ってもいいと言っとる。セリに出す前の話だ。\n\n${d.sex}・父 ${ST(d.sid).n}・${d.coat}。\nわしの見立ては「${d.pot>=78?'走る':d.pot>=68?'悪くない':'並'}」。値段は${yen(d.price)}。\n\nセリより安いが、見られる時間は短い。どうする。`,ch:[`買う（${yen(d.price)}）`,'見送る']}),
   f:(d,i)=>{if(i!==0)return '「そうか。また何かあったら声をかける」';if(S.money<d.price)return '資金が足りなかった。';S.money-=d.price;if(S.rep)S.rep.cost+=d.price;
-    const h=genHorse({by:Y(S.t)-1,sire:d.sid,pot:d.pot,dist:ST(d.sid).dist,surf:ST(d.sid).surf,status:'1歳',owner:'me',coat:d.coat});h.id=S.nid++;h.sex=d.sex==='牡馬'?'牡':'牝';h.name=`${d.coat}の1歳`;h.unnamed=true;h.silks=S.silks;S.horses.push(h);log(`庭先取引で1歳馬を${yen(d.price)}で購入`);
+    const h=genHorse({by:Y(S.t)-1,sire:d.sid,pot:d.pot,dist:ST(d.sid).dist,surf:ST(d.sid).surf,status:'1歳',owner:'me',coat:d.coat});h.id=S.nid++;h.sex=d.sex==='牡馬'?'牡':'牝';h.name=`${d.coat}の1歳`;h.needName=1;h.nameHint=makeName(S.kanmei);h.silks=S.silks;S.horses.push(h);log(`庭先取引で1歳馬を${yen(d.price)}で購入`);
     return '話はまとまった。来年、育成に入る。\n\n中原「いい買い物だったと思うぞ」';}};
 beginMonth=(o=>function(first){const r=o.apply(this,arguments);try{if(!S||first)return r;const m=M(S.t),yr=S.t-S.startT;
   if(m===12&&yr>=11&&!S.inbox.some(e=>e.type==='mareSale'))pushEv('mareSale',{list:[mkMareOffer(),mkMareOffer(),mkMareOffer()]});
