@@ -520,7 +520,10 @@ function makeRunner(i){const g=new THREE.Group();
       c.fillStyle=light?'rgba(0,0,0,.18)':'rgba(0,0,0,.35)';c.fillText(num,3,5);           // flock-print thickness shadow
       c.fillStyle=CL.fg;c.fillText(num,0,0);
       c.globalCompositeOperation='source-atop';c.fillStyle='rgba(255,255,255,.10)';c.fillRect(-200,-130,400,90);c.globalCompositeOperation='source-over';c.restore();
-      c.font='800 46px "Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif';c.fillStyle=light?'rgba(0,0,0,.15)':'rgba(0,0,0,.3)';c.fillText(NAMES[i],nx*.75+2,108,w*.6);c.fillStyle=CL.fg;c.fillText(NAMES[i],nx*.75,106,w*.6);
+      // the name, centred under the number and always inside the cloth (between the binding and the over-girth): big when it fits, smaller and then condensed when it is long
+      {const nm=String(NAMES[i]||''),FF='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif',MAXW=330,sg=flipX?-1:1,cx=sg*Math.max(-200+MAXW/2,Math.min(150-MAXW/2,sg*nx));let fs=62;c.font=`800 ${fs}px ${FF}`;let tw=c.measureText(nm).width;
+       if(tw>MAXW){fs=Math.max(46,fs*MAXW/tw);c.font=`800 ${fs}px ${FF}`;tw=c.measureText(nm).width;}const sx=Math.min(1,MAXW/Math.max(1,tw));
+       c.save();c.translate(cx,102);c.scale(sx,1);c.fillStyle=light?'rgba(0,0,0,.15)':'rgba(0,0,0,.3)';c.fillText(nm,2,2);c.fillStyle=CL.fg;c.fillText(nm,0,0);c.restore();}
       c.restore();};
     side(false,true,h*.18);side(true,false,h*.82);
     // white over-girth (上腹帯) crossing the cloth in front of the rider's knee
@@ -1081,11 +1084,17 @@ function divots(dt){if(started&&SLOW>0)RUN.forEach(r=>{if(r.spd<.5)return;const 
 const RAINF=(()=>{if(!RAIN)return null;const n=3500,geo=new THREE.BufferGeometry(),pos=new Float32Array(n*6);for(let i=0;i<n;i++){const x=(rnd()-.5)*120,y=rnd()*50,z=(rnd()-.5)*120;pos.set([x,y,z,x+.05,y-1.1,z+.05],i*6);}
   geo.setAttribute('position',new THREE.BufferAttribute(pos,3));const l=new THREE.LineSegments(geo,new THREE.LineBasicMaterial({color:'#cfd8de',transparent:true,opacity:.35}));l.frustumCulled=false;scene.add(l);return l;})();
 /* adaptive quality for phones: if the frame rate stays low, drop resolution, then shadows, then the crowd */
-const QA={n:0,acc:0,lv:0,t:0,off:!!QS.get('hq')};function qaStep(raw){if(QA.off||document.hidden)return;QA.t+=raw;if(QA.t<4)return;QA.n++;QA.acc+=raw;if(QA.acc<2.5)return;const fps=QA.n/QA.acc;QA.n=0;QA.acc=0;
-  if(fps>=26||QA.lv>=3)return;QA.lv++;window.__qa=QA.lv;
-  if(QA.lv===1)R3.setPixelRatio(Math.min(1,R3.getPixelRatio()*.75));
-  else if(QA.lv===2){R3.shadowMap.enabled=false;scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>m.needsUpdate=true);});}
-  else{R3.setPixelRatio(.7);scene.traverse(o=>{if(o.isInstancedMesh&&o.layers.mask===2)o.visible=false;});}}
+/* adaptive quality for phones. It judges by the typical frame (the median of a few seconds), so one heavy moment — the gates opening, the fanfare —
+   no longer counts as a slow phone; it steps down only after two slow spells in a row, steps down gently, and steps back up when the phone keeps up again */
+const QA={ft:[],lv:0,t:0,low:0,high:0,base:R3.getPixelRatio(),off:!!QS.get('hq')};
+function qaApply(){const b=QA.base,lv=QA.lv;R3.setPixelRatio(lv===0?b:lv===1?Math.max(1,b*.85):lv===2?Math.max(1,b*.85):Math.max(.85,Math.min(1,b*.7)));
+  const sh=lv<2;if(R3.shadowMap.enabled!==sh){R3.shadowMap.enabled=sh;scene.traverse(o=>{if(o.material)[].concat(o.material).forEach(m=>m.needsUpdate=true);});}
+  scene.traverse(o=>{if(o.isInstancedMesh&&o.layers.mask===2)o.visible=lv<3;});window.__qa=lv;}
+function qaStep(raw){if(QA.off||document.hidden)return;QA.t+=raw;if(QA.t<5)return;QA.ft.push(raw);if(QA.ft.length<120)return;
+  const a=QA.ft.sort((x,y)=>x-y),med=a[a.length>>1];QA.ft=[];const fps=1/Math.max(1e-3,med);
+  if(fps<24){QA.high=0;if(++QA.low>=2&&QA.lv<3){QA.low=0;QA.lv++;qaApply();}}
+  else if(fps>=50){QA.low=0;if(++QA.high>=3&&QA.lv>0){QA.high=0;QA.lv--;qaApply();}}
+  else{QA.low=0;QA.high=0;}}
 let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.min(RAW,.5));DTS+=(Math.min(.05,RAW)-DTS)*.25;const dt0=DTS*FFWD;const now=performance.now()/1000;
   if(started){const ld=RUN.reduce((a,r)=>Math.max(a,r.d||0),0),near=D-ld<42&&SIMT/TT<1.0;SLOW+=((near?.3:1)-SLOW)*Math.min(1,dt0*4);SIMT+=dt0*SLOW;}
   const dt=dt0*(started?SLOW:1);TS+=dt;
