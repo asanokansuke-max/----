@@ -103,3 +103,6 @@ function mountShot(RC,host){if(typeof R3D_HTML!=='string'||window.__noShot)retur
   else{f.style.cssText='position:fixed;right:0;bottom:0;width:320px;height:180px;border:0;pointer-events:none;opacity:.02;z-index:5';document.body.appendChild(f);}
   f.srcdoc=doc;setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
 (function(){const st=document.createElement('style');st.textContent='.rcard .pic .shotcap{position:absolute;right:10px;top:12px;z-index:2;font:700 10px "Zen Kaku Gothic New",sans-serif;color:#fff;background:rgba(0,0,0,.55);padding:3px 8px;border-radius:999px}.rcard .pic .tw,.rcard .pic .cap{z-index:2}';document.head.appendChild(st);})();
+
+/* the photo's race number matches the result board (重賞 11R, otherwise 9R) */
+r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.rno=RC.race&&RC.race.g?11:9;}catch(e){}return inp;})(r3dInput);
