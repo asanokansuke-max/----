@@ -216,7 +216,7 @@ function buildField(race,ents){
   const pub=f=>{const h=f.h,st=h?(h.starts||0):3+Math.floor(R()*8),w=st===0?.62:st<3?.7:st<8?.78:.84;
     const form=h&&st?clamp((h.wins||0)/st*7-1.2,-2,4):0;return f.exp*w+(race.mean+form)*(1-w)+jkPop(f)+randn()*(st===0?1.6:1.1);};
   // the rider: fans back a top jockey beyond the horse's merit ("騎手人気"), and shy away from an unknown name
-  const jkPop=f=>{const j=f.jsk||65;return (j-70)*.09+(j>=86?2.2:j>=80?.8:0);};
+  const jkPop=f=>{const j=f.jsk||65;return (j-70)*.09+(j>=86?2.2:j>=80?.8:0)+(f.jid==='amagi'?1.2:0);};
   fld.forEach(f=>f.mexp=pub(f));
   const ex=fld.map(f=>Math.exp(f.mexp/3.4)),sum=ex.reduce((a,b)=>a+b,0);
   fld.forEach((f,i)=>f.odds=clamp(Math.round(.8/(ex[i]/sum)*10)/10,1.1,999.9));
@@ -483,7 +483,7 @@ function newYear(){
     const sold=S.stallions.find(s=>s.fromSold);
     if(o==='九条'&&sold&&R()<.6){sire=sold;fromSold=true;}
     const h=genHorse({by:y-2,tier:1,pot:83+R()*8,sire,owner:o,silks:OWN[o].silks});
-    h.id=S.nid++;h.name=makeName(OWN[o].pre);h.cls=5;h.j=o==='九条'?pick(['washio','rossi','sanada']):pick(['kido','oba','dubois','sanada','arai',null]);h.fromSold=fromSold;S.rivals.push(h);
+    h.id=S.nid++;h.name=makeName(OWN[o].pre);h.cls=5;h.j=o==='九条'?pick(['washio','rossi','sanada','amagi']):pick(['kido','oba','dubois','sanada','arai',null]);h.fromSold=fromSold;S.rivals.push(h);
   }
   S.rivals.forEach(r=>{if(r.status==='育成'&&ageOf(r)>=2)r.status='現役';});
   mine().forEach(h=>{

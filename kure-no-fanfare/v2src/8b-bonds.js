@@ -269,7 +269,7 @@ storyTriggers=(o=>function(first){const r=o.apply(this,arguments);if(!first){try
 
 /* ---------- 相関図 ---------- */
 function corrSVG(){
-  const ORD=['mikuni','togawa','koyanagi','hayase','kiryu','hinata','washio','sanada','kujo','rei','nakahara','mio','kuroiwa','arai','oba','kido','komori','rossi','dubois'];
+  const ORD=['mikuni','togawa','koyanagi','hayase','kiryu','hinata','washio','sanada','amagi','kujo','rei','nakahara','mio','kuroiwa','arai','oba','kido','komori','rossi','dubois'];
   const ids=peopleList().filter(id=>P(id)).sort((a,b)=>(ORD.indexOf(a)+99)%118-(ORD.indexOf(b)+99)%118);const met=ids.filter(id=>P(id).met);
   const W=360,H=360,cx=W/2,cy=H/2,Rr=138;const pos={};
   ids.forEach((id,i)=>{const a=-Math.PI/2+i/ids.length*Math.PI*2;pos[id]=[cx+Math.cos(a)*Rr,cy+Math.sin(a)*Rr];});
