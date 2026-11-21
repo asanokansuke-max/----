@@ -54,3 +54,23 @@ showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{c
     const cv=$('#rcpc');if(cv){const me=RC.order.filter(f=>f.mine).sort((a,b)=>a.pos-b.pos)[0],c=cv.getContext('2d'),W=cv.clientWidth||320,H=cv.clientHeight||180,dpr=window.devicePixelRatio||1;cv.width=W*dpr;cv.height=H*dpr;c.scale(dpr,dpr);
       const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#9fb7c9');g.addColorStop(.42,'#dfe6e3');g.addColorStop(.43,'#6f9b62');g.addColorStop(1,'#3f6d39');c.fillStyle=g;c.fillRect(0,0,W,H);c.fillStyle='#f4f4f0';c.fillRect(0,H*.47,W,2);
       drawHorse(c,W*.5,H*.86,H/150,1.1,me.coat||(me.h&&me.h.coat)||'鹿毛',me.silks,me.no,true,{});}}}}catch(e){console.error('rcard',e);}return r;})(showResult);
+/* 結果画面の絵も3Dで: the stills come from the 3D course — during a watched broadcast they are taken live;
+   when you only hear the result, a hidden 3D view runs the last few seconds of the race just to take them */
+r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{if(RC.photo&&RC.order){const K=RC.photoK||0;if(RC.order[K]&&RC.order[K+1])inp.pk=[RC.order[K].no,RC.order[K+1].no];}if(RC.__shot){inp.shot=1;inp.warmed=true;}}catch(e){}return inp;})(r3dInput);
+function rcPlaceShot(RC){try{const pic=document.querySelector('#sheet .rcard .pic');if(pic&&RC.mineShot&&!pic.querySelector('img')){const c=pic.querySelector('canvas');const im=new Image();im.alt='';im.src=RC.mineShot;im.style.opacity=0;im.style.transition='opacity .6s';if(c)c.replaceWith(im);else pic.prepend(im);requestAnimationFrame(()=>im.style.opacity=1);
+    const cap=pic.querySelector('.cap');const me=RC.order.filter(f=>f.mine).sort((a,b)=>a.pos-b.pos)[0];if(cap&&me&&me.pos===1)cap.textContent='ゴールの瞬間（1着・ガッツポーズ）';}}catch(e){}}
+addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-photo','race3d-shotdone'].includes(d.type))return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(!RC)return;
+  if(d.type==='race3d-mine'){RC.mineShot=d.img;RC.mineWon=d.won;if(UI.race===RC)rcPlaceShot(RC);}
+  if(d.type==='race3d-photo'){RC.photoShot=d.img;const cv=document.getElementById('pfcv');if(cv&&UI.race===RC)pfPlace(RC);}
+  if(d.type==='race3d-shotdone'){const f=document.getElementById('shotif');if(f)setTimeout(()=>f.remove(),300);UI.shotRC=null;}});
+showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
+    RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+    const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
+    setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
+  else if(RC&&RC.mineShot)rcPlaceShot(RC);}catch(e){console.error('shot',e);}return r;})(showResult);
+/* the finish photo on the board: the 3D still, with the judge's tags laid over it */
+function pfPlace(RC){const cv=document.getElementById('pfcv');if(!cv||!RC.photoShot)return;const wrap=cv.parentNode;const K=RC.photoK||0,ord=RC.order,circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
+  wrap.style.position='relative';wrap.innerHTML=`<img src="${RC.photoShot}" alt="決勝写真" style="display:block;width:100%;filter:saturate(.75) contrast(1.08)"><div class="pft">${RC.photo?`<b>${K?K+1+'着 ':''}写真判定</b>`:''}${[K,K+1].map(i=>ord[i]?`<span>${i+1}着 ${circ[ord[i].no-1]} ${esc(ord[i].name)}</span>`:'').join('')}</div><i class="pfline"></i>`;}
+(function(){const st=document.createElement('style');st.textContent=`.pft{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}.pft b{background:#d9a400;color:#000;font:800 11px "Zen Kaku Gothic New",sans-serif;padding:2px 7px;border-radius:3px}
+.pft span{background:#fff;color:#111;border:1px solid #333;font:700 11px "Zen Kaku Gothic New",sans-serif;padding:1px 7px}.pfline{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,.75)}`;document.head.appendChild(st);})();
+showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&RC.photoShot)setTimeout(()=>pfPlace(RC),50);}catch(e){}return r;})(showBoard);
