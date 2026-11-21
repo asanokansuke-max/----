@@ -99,7 +99,9 @@ const REALC={tokyo:{t:{lap:2083,st:526},d:{lap:1899,st:502}},
 const TRK=(()=>{const rc=REALC[CKEY],dirt=QS.get('surf')==='ダ',dist=+(QS.get('dist')||CRS.dist);if(!rc)return {ls:CRS.ls,rad:CRS.rad,fin:CRS.fin,side:''};
   let t=dirt?rc.d:rc.t,side='';if(!dirt&&t.out){if(t.o.includes(dist)){t=t.out;side='外回り';}else side='内回り';}
   const fin=CRS.fin,ls=t.st+fin,rad=Math.max(60,(t.lap-2*ls)/(2*Math.PI));return {ls,rad,fin,side,lap:t.lap,st:t.st};})();
-const LS=TRK.ls,RAD=TRK.rad,P=2*LS+2*Math.PI*RAD;   // straight length, turn radius, lap
+const LS=TRK.ls,RAD=TRK.rad,P=2*LS+2*Math.PI*RAD;
+/* a dirt race is run on the dirt course, which at every JRA track lies INSIDE the turf course: the turf course then runs outside it, and the stand sits beyond both */
+const DIRTR=QS.get('surf')==='ダ',XO=DIRTR?27:0;   // straight length, turn radius, lap
 let CHUTE=null;
 function pathAt(s,lane){if(CHUTE&&CHUTE.on&&s>=CHUTE.a&&s<CHUTE.b){const q=pathAt(CHUTE.b,lane),k=CHUTE.b-s;return {x:q.x-q.hx*k,z:q.z-q.hz*k,hx:q.hx,hz:q.hz};}const q=pathAt0(s,lane);if(CRS.lh){q.x=-q.x;q.hx=-q.hx;}return q;}
 function pathAt0(s,lane){s=((s%P)+P)%P;const r=RAD+lane;
@@ -139,7 +141,8 @@ const ground=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),new THREE.MeshSta
 // puddles on a heavy track: dark glossy patches, mostly along the inside where the ground is lowest
 if(WET>=.7){const pm=new THREE.MeshStandardMaterial({color:'#4a5a52',roughness:.05,metalness:.6,transparent:true,opacity:.55});
   for(let k=0;k<160;k++){const pp=pathAt(rnd()*P,rnd()*rnd()*24);const pu=new THREE.Mesh(new THREE.CircleGeometry(.6+rnd()*1.8,14),pm);pu.rotation.x=-Math.PI/2;pu.scale.set(1,.4+rnd()*.5,1);pu.rotation.z=rnd()*3;pu.position.set(pp.x,.04,pp.z);scene.add(pu);}}              // turf course
-scene.add(ribbon(-27,-6,dirtTex,10,6,.03));               // dirt course inside
+scene.add(ribbon(-27,-6,DIRTR?grassTex:dirtTex,10,6,.03));               // dirt course inside (the infield, when the race itself is on the dirt)
+if(DIRTR){const tf=ribbon(31,30+XO,turfTex,24,3.2,.02);scene.add(tf);rail(31,1.05,'#ffffff',3);rail(30+XO,1.05,'#f4f6f2',3);}   // the turf course outside the dirt
 // rails: tube along the course + posts
 function rail(lane,h,col,step){const pts=[];for(let i=0;i<=600;i++){const p=pathAt(i/600*P,lane);pts.push(new THREE.Vector3(p.x,h,p.z));}
   const curve=new THREE.CatmullRomCurve3(pts,true);const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,1200,.07,6,true),new THREE.MeshStandardMaterial({color:col,roughness:.4}));tube.castShadow=true;scene.add(tube);
@@ -218,7 +221,7 @@ var MONG=null;function buildMonument(p,yaw){const g=new THREE.Group();MONG=g;g.p
     disc.rotation.x=Math.PI/2;disc.rotation.y=Math.PI;disc.position.set(0,6.75,.5);disc.scale.set(1.05,1,.85);g.add(disc);}
 }
 /* =================== the racecourse: grandstand, apron, infield screen, signage =================== */
-const STX=20,STZ=-RAD-30,SLEN=LS+80;   // stand runs along the home straight; its front edge sits ~30m outside the outer rail
+const STX=20,STZ=-RAD-30-XO,SLEN=LS+80;   // stand runs along the home straight; its front edge sits ~30m outside the outer rail
 function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.13,.1,.85,6);g.scale(1.25,1,.75);return g;})(),new THREE.MeshStandardMaterial({color:'#2a2b30',roughness:.9}),N),
    coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshStandardMaterial({roughness:.7}),N),
    hat=new THREE.InstancedMesh(new THREE.CylinderGeometry(.13,.14,.08,8),new THREE.MeshStandardMaterial({roughness:.7}),N);
@@ -266,18 +269,18 @@ const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.Bo
 // apron: paving between the stand and the track, people standing at the rail, umbrellas when it rains
 {const pave=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,34),new THREE.MeshStandardMaterial({map:canvasTex(256,256,(g,w,h)=>{g.fillStyle='#77756e';g.fillRect(0,0,w,h);for(let y=0;y<h;y+=16)for(let x=(y/16%2)*16;x<w;x+=32){g.fillStyle=`rgba(255,255,255,${.04+rnd()*.05})`;g.fillRect(x,y,30,14);}},[40,6]),roughness:.95}));
  pave.rotation.x=-Math.PI/2+(CROWD>=.95?Math.atan(.1):0);pave.position.set(STX,CROWD>=.95?1.4:.03,STZ-17);pave.receiveShadow=true;scene.add(pave);
- {const lawn=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,15),new THREE.MeshStandardMaterial({map:grassTex,roughness:1}));lawn.rotation.x=-Math.PI/2;lawn.position.set(STX,.05,-RAD-38.5);lawn.receiveShadow=true;scene.add(lawn);}
+ {const lawn=new THREE.Mesh(new THREE.PlaneGeometry(SLEN,15),new THREE.MeshStandardMaterial({map:grassTex,roughness:1}));lawn.rotation.x=-Math.PI/2;lawn.position.set(STX,.05,-RAD-XO-38.5);lawn.receiveShadow=true;scene.add(lawn);}
  // flower beds and a hedge just outside the outer rail (as at the real courses)
- const bed=new THREE.Mesh(new THREE.BoxGeometry(SLEN,.5,2.2),new THREE.MeshStandardMaterial({color:'#3f6a33',roughness:1}));bed.position.set(STX,.25,-RAD-33.5);scene.add(bed);
+ const bed=new THREE.Mesh(new THREE.BoxGeometry(SLEN,.5,2.2),new THREE.MeshStandardMaterial({color:'#3f6a33',roughness:1}));bed.position.set(STX,.25,-RAD-XO-33.5);scene.add(bed);
  const fl=new THREE.InstancedMesh(new THREE.SphereGeometry(.22,5,4),new THREE.MeshStandardMaterial({roughness:.8}),1800),fm=new THREE.Matrix4(),fc=new THREE.Color();
- for(let k=0;k<1800;k++){fm.makeTranslation(STX-SLEN/2+rnd()*SLEN,.6,-RAD-33.5+(rnd()-.5)*1.8);fl.setMatrixAt(k,fm);fl.setColorAt(k,fc.set(['#d6334b','#e86a7a','#f2f0e6','#e8b23a'][k%4]));}scene.add(fl);
+ for(let k=0;k<1800;k++){fm.makeTranslation(STX-SLEN/2+rnd()*SLEN,.6,-RAD-XO-33.5+(rnd()-.5)*1.8);fl.setMatrixAt(k,fm);fl.setColorAt(k,fc.set(['#d6334b','#e86a7a','#f2f0e6','#e8b23a'][k%4]));}scene.add(fl);
  // spectator rail (grey pipe fence) and people along it
  const pipe=new THREE.MeshStandardMaterial({color:'#8c9196',roughness:.4,metalness:.6});
- const fence=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,SLEN,6),pipe);fence.rotation.z=Math.PI/2;fence.position.set(STX,1.05,-RAD-35.5);scene.add(fence);
+ const fence=new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,SLEN,6),pipe);fence.rotation.z=Math.PI/2;fence.position.set(STX,1.05,-RAD-XO-35.5);scene.add(fence);
  {const full=CROWD>=.95,MOB=matchMedia('(pointer:coarse)').matches&&!QS.get('hq'),dz=MOB?.82:.62,dx=MOB?.74:.52,N=full?(MOB?12500:26000):Math.round(1800*CROWD),cm=crowdMesh(N);
   // a phone gets the same packed apron with a little more room between people (about half the figures), which keeps the G1 broadcast sharp
-  if(full){for(let z=-RAD-36.1;z>-RAD-62&&true;z-=dz)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=dx){if(rnd()<.06)continue;{const zz=z+(rnd()-.5)*.2;cm.add(x+(rnd()-.5)*.2,Math.max(0,(-RAD-33-zz)*.1),zz,Math.PI);}}}
-  else for(let k=0;k<N;k++){const x=STX-SLEN/2+rnd()*SLEN,z=-RAD-36.2-Math.pow(rnd(),1.6)*26;cm.add(x,0,z,Math.PI);}cm.done();scene.add(cm.grp);}}
+  if(full){for(let z=-RAD-XO-36.1;z>-RAD-XO-62&&true;z-=dz)for(let x=STX-SLEN/2+.5;x<STX+SLEN/2;x+=dx){if(rnd()<.06)continue;{const zz=z+(rnd()-.5)*.2;cm.add(x+(rnd()-.5)*.2,Math.max(0,(-RAD-XO-33-zz)*.1),zz,Math.PI);}}}
+  else for(let k=0;k<N;k++){const x=STX-SLEN/2+rnd()*SLEN,z=-RAD-XO-36.2-Math.pow(rnd(),1.6)*26;cm.add(x,0,z,Math.PI);}cm.done();scene.add(cm.grp);}}
 // trackside: advertising boards along the outer rail, a hedge inside the inner rail, light towers
 {
  const hedge=ribbon(-3.2,-1.6,canvasTex(64,64,(g,w,h)=>{g.fillStyle='#355f33';g.fillRect(0,0,w,h);for(let k=0;k<400;k++){g.fillStyle=`rgba(${rnd()<.5?'20,40,20':'120,170,90'},.3)`;g.fillRect(rnd()*w,rnd()*h,3,3);}}),4,1.6,.55);scene.add(hedge);
@@ -324,16 +327,16 @@ drawVisionBoard(null,false);
  // clipped hedges: a thick continuous wall a little outside the outer rail, a lower one behind it, and topiary rounds
  {const hm=new THREE.MeshStandardMaterial({map:canvasTex(128,128,(q,w,h)=>{q.fillStyle='#3d6235';q.fillRect(0,0,w,h);for(let k=0;k<1800;k++){q.fillStyle=`rgba(${rnd()<.5?'25,45,22':'110,150,85'},.35)`;q.fillRect(rnd()*w,rnd()*h,3,3);}},[1,1]),roughness:1});
   const wall=(lane,h,w,skip)=>{const n=Math.ceil(P/4);const im=new THREE.InstancedMesh(new THREE.BoxGeometry(4.3,h,w),hm,n);const mm=new THREE.Matrix4(),qq=new THREE.Quaternion(),vv=new THREE.Vector3(),ss=new THREE.Vector3(1,1,1);let j=0;
-    for(let s0=0;s0<P;s0+=4){const p=pathAt(s0,lane);if(skip&&p.z<-RAD-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;qq.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.atan2(p.hx,p.hz)+Math.PI/2);vv.set(p.x,h/2,p.z);mm.compose(vv,qq,ss);im.setMatrixAt(j++,mm);}
+    for(let s0=0;s0<P;s0+=4){const p=pathAt(s0,lane);if(skip&&p.z<-RAD-XO-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;qq.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.atan2(p.hx,p.hz)+Math.PI/2);vv.set(p.x,h/2,p.z);mm.compose(vv,qq,ss);im.setMatrixAt(j++,mm);}
     im.count=j;im.castShadow=true;im.receiveShadow=true;scene.add(im);};
-  wall(40,4.2,3.2,true);wall(46,7.5,4.6,true);
+  wall(40+XO,4.2,3.2,true);wall(46+XO,7.5,4.6,true);
   // a tall dark mesh fence on posts behind the hedges, all the way round
   {const n=Math.ceil(P/5),fm=new THREE.MeshStandardMaterial({color:'#2d3a33',roughness:.6,metalness:.3,transparent:true,opacity:.85,map:canvasTex(64,64,(q,w,h)=>{q.fillStyle='#000';q.fillRect(0,0,w,h);q.strokeStyle='#cfd8d0';q.lineWidth=2;for(let x=0;x<w;x+=8){q.beginPath();q.moveTo(x,0);q.lineTo(x+h,h);q.stroke();q.beginPath();q.moveTo(x+h,0);q.lineTo(x,h);q.stroke();}}),alphaTest:.3}),
      pan=new THREE.InstancedMesh(new THREE.PlaneGeometry(5.05,3.2),fm,n),post=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.07,3.6,6),new THREE.MeshStandardMaterial({color:'#4a544e'}),n),mm=new THREE.Matrix4(),qq=new THREE.Quaternion(),vv=new THREE.Vector3(),ss=new THREE.Vector3(1,1,1);let j=0;
    fm.map.repeat.set(8,5);fm.side=THREE.DoubleSide;
-   for(let s0=0;s0<P;s0+=5){const p=pathAt(s0,51.5);if(p.z<-RAD-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;qq.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.atan2(p.hx,p.hz)+Math.PI/2);vv.set(p.x,1.6,p.z);mm.compose(vv,qq,ss);pan.setMatrixAt(j,mm);vv.set(p.x,1.8,p.z);mm.compose(vv,qq,ss);post.setMatrixAt(j,mm);j++;}
+   for(let s0=0;s0<P;s0+=5){const p=pathAt(s0,51.5+XO);if(p.z<-RAD-XO-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;qq.setFromAxisAngle(new THREE.Vector3(0,1,0),Math.atan2(p.hx,p.hz)+Math.PI/2);vv.set(p.x,1.6,p.z);mm.compose(vv,qq,ss);pan.setMatrixAt(j,mm);vv.set(p.x,1.8,p.z);mm.compose(vv,qq,ss);post.setMatrixAt(j,mm);j++;}
    pan.count=post.count=j;scene.add(pan,post);}
-  const rnd2=new THREE.InstancedMesh(new THREE.SphereGeometry(1.6,10,8),hm,200);const mm=new THREE.Matrix4();let j=0;for(let s0=10;s0<P&&j<200;s0+=P/180){const p=pathAt(s0,43);if(p.z<-RAD-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;mm.makeScale(1.4,1.6,1.4);mm.setPosition(p.x,4.6,p.z);rnd2.setMatrixAt(j++,mm);}rnd2.count=j;scene.add(rnd2);}
+  const rnd2=new THREE.InstancedMesh(new THREE.SphereGeometry(1.6,10,8),hm,200);const mm=new THREE.Matrix4();let j=0;for(let s0=10;s0<P&&j<200;s0+=P/180){const p=pathAt(s0,43+XO);if(p.z<-RAD-XO-20&&Math.abs(p.x-STX)<SLEN/2+8)continue;mm.makeScale(1.4,1.6,1.4);mm.setPosition(p.x,4.6,p.z);rnd2.setMatrixAt(j++,mm);}rnd2.count=j;scene.add(rnd2);}
  for(let i=0;i<220;i++){const p={x:(rnd()-.5)*(LS-220),z:(rnd()-.5)*(RAD*1.0)};if(Math.abs(p.x)<80&&p.z<-10)continue;const h=1.4+rnd()*1.2;pv.set(p.x,-3,p.z);sc.set(.01,.01,.01);m.compose(pv,q,sc);
    if(k<n){trunk.setMatrixAt(k,m);pv.set(p.x,h*.42,p.z);sc.set(h*.6,h*.5,h*.6);m.compose(pv,q,sc);crown.setMatrixAt(k,m);crown.setColorAt(k,c.set('#4f7a45'));k++;}}
  trunk.count=crown.count=k;crown.castShadow=true;scene.add(trunk,crown);
@@ -678,11 +681,11 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   const frame=(px,py,pz,w)=>{const d=Math.hypot(px-fx,pz-fz,py);return 2*Math.atan(w/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.0;};
   let fov=14;
   if(name==='stand'){const w=performance.now()/1000-window.__t0w;cpos.set(STX-90+w*9,7,-RAD+40);tgt.set(STX-60+w*9,15,STZ-45);fov=40;}
-  else if(name==='vision'){const w=Math.min(5,Math.max(0,performance.now()/1000-window.__t0w-6));cpos.set(VX+12-w*2,8,-RAD-30);tgt.set(VX,13,-RAD+42);fov=44;}
+  else if(name==='vision'){const w=Math.min(5,Math.max(0,performance.now()/1000-window.__t0w-6));cpos.set(VX+12-w*2,8,-RAD-XO-30);tgt.set(VX,13,-RAD+42);fov=44;}
   else if(name==='goal'){const f=pathAt(FIN+3,-13);cpos.set(f.x,2.4,f.z);const lp=pathAt(START+lead.d-1.5,3);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,13);}
   // G1: during the fanfare, a slow pan along the packed stand from the infield — the apron crowd in front, the tiers rising behind
   else if(name==='crowd'){const t=Math.max(0,PRE.t-2.6);if(t<3.4){cpos.set(STX-62+t*5.5,6.5,-RAD+10);tgt.set(STX-50+t*5.5,5.5,STZ-28);fov=38;}
-    else{const u=t-3.4;cpos.set(STX-22+u*1.4,4.2,-RAD-26);tgt.set(STX+10+u*1.4,2.6,-RAD-50);fov=52;}}   // then from the outside rail, along the sea of faces
+    else{const u=t-3.4;cpos.set(STX-22+u*1.4,4.2,-RAD-XO-26);tgt.set(STX+10+u*1.4,2.6,-RAD-XO-50);fov=52;}}   // then from the outside rail, along the sea of faces
   // G1: after the line, the winner pulls up in front of the full stand, seen from the inside of the course
   else if(name==='standwin'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),cp=pathAt(START+w.d+11,-3);cpos.set(cp.x,1.8,cp.z);tgt.set(wp.x*.85+cp.x*.15,2.9,wp.z-5);fov=40;}
   else if(name==='after'){const w=RUN.find(r=>r.won)||byDsorted[0],wp=pathAt(START+w.d+1,laneOf(w,1)),ah=pathAt(START+w.d+9,26);cpos.set(ah.x,3.6,ah.z);tgt.set(wp.x,1.6,wp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7.5/2/d)*180/Math.PI/Math.max(.6,cam.aspect)*1.6;}}
@@ -702,7 +705,7 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
 
   else if(name==='canter'){const act=RUN.filter(r=>r.g.visible&&PRE.t-r.cs>0);const me=MODE==='warmup'&&RUN.find(r=>r.mine&&r.g.visible&&PRE.t-r.cs>0&&PRE.t-r.cs<15);const f=me||(act.length?act[act.length-1]:(PONIES[0]?{g:PONIES[0].g}:RUN[0])),fp=f.g.position,yw=f.g.rotation.y;if(MODE==='warmup'||MODE==='parade'){/* the warm-up as TV shows it: a low long lens from the apron, tracking the horse side-on, close enough to see the rider */
       const par=MODE==='parade',fw=par?(f.called?5.6:7):5.2;if(par)cpos.set(fp.x+Math.sin(yw)*8,1.75,fp.z-24);else cpos.set(fp.x-Math.sin(yw)*4,3.3,fp.z-38);tgt.set(fp.x+Math.sin(yw)*(par?.2:1.4),par?1.55:1.35,fp.z);const d=cpos.distanceTo(tgt);fov=2*Math.atan(fw/2/d)*180/Math.PI/Math.max(.6,cam.aspect);}
-    else{cpos.set(fp.x-Math.sin(yw)*6,7,-RAD-46);tgt.set(fp.x+Math.sin(yw)*1.2,1.4,fp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(9/2/d)*180/Math.PI/Math.max(.6,cam.aspect);}}}
+    else{cpos.set(fp.x-Math.sin(yw)*6,7,-RAD-XO-46);tgt.set(fp.x+Math.sin(yw)*1.2,1.4,fp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(9/2/d)*180/Math.PI/Math.max(.6,cam.aspect);}}}
   else if(name==='starter'){const inCh=CHUTE&&START>=CHUTE.a&&START<=CHUTE.b,sl=inCh?-1.8:-7;{const c0=pathAt(START+(inCh?6:3),sl);STARTER.g.position.set(c0.x,0,c0.z);STARTER.g.rotation.y=Math.atan2(c0.hx,c0.hz)+Math.PI/2;}const sp=STARTER.g.position,c=pathAt(START+(inCh?26:20),inCh?-1.6:sl-.5);cpos.set(c.x,2.6,c.z);tgt.set(sp.x,3.8,sp.z);{const d=cpos.distanceTo(tgt);fov=2*Math.atan(7/2/d)*180/Math.PI;}}
   else if(name==='gateback'){const g=pathAt(START-58,24),c=pathAt(START-16,8);cpos.set(g.x,9,g.z);tgt.set(c.x,1,c.z);fov=frame(cpos.x,cpos.y,cpos.z,44);}
   else if(name==='startrun'){const ld=byDsorted[0],tl=byDsorted[byDsorted.length-1],c0=pathAt(START+(ld.d+tl.d)/2,4),o=pathAt(START+(ld.d+tl.d)/2,46),nx=o.x-c0.x,nz=o.z-c0.z,nl=Math.hypot(nx,nz)||1,hx=c0.hx,hz=c0.hz;
@@ -715,14 +718,14 @@ let byDsorted=[];function updateCam(mid,lead,tau,dt,tail){byDsorted=[...RUN].sor
   else if(name==='gate'){const g=pathAt(START,6),f=pathAt(START+16,22);cpos.set(f.x,3.2,f.z);tgt.set(g.x,1.6,g.z);fov=frame(cpos.x,cpos.y,cpos.z,15);}
   else if(name==='side'||name==='finish'){const rem=D-lead.d;let w=Math.min(spread,85),cx=fx,cz=fz;
     if(rem<300&&tau<1.02){const top=byDsorted.slice(0,5),tp=pathAt(START+lead.d+4,4),tq=pathAt(START+top[top.length-1].d-3,4),tw=Math.max(14,Math.hypot(tp.x-tq.x,tp.z-tq.z)+4),k=Math.min(1,(300-rem)/200);w=w*(1-k)+tw*k;cx=fx*(1-k)+(tp.x+tq.x)/2*k;cz=fz*(1-k)+(tp.z+tq.z)/2*k;}
-    if(rem<160||name==='finish'){const lp=pathAt(START+lead.d+1,4),k2=name==='finish'?1:Math.min(1,(160-rem)/90);cx=cx*(1-k2)+lp.x*k2;cz=cz*(1-k2)+lp.z*k2;}if(name==='finish')w=24;cpos.set(cx-4,16,-RAD-56);tgt.set(cx,1.3,cz);fov=frame(cpos.x,cpos.y,cpos.z,w);}
+    if(rem<160||name==='finish'){const lp=pathAt(START+lead.d+1,4),k2=name==='finish'?1:Math.min(1,(160-rem)/90);cx=cx*(1-k2)+lp.x*k2;cz=cz*(1-k2)+lp.z*k2;}if(name==='finish')w=24;cpos.set(cx-4,16,-RAD-XO-56);tgt.set(cx,1.3,cz);fov=frame(cpos.x,cpos.y,cpos.z,w);}
   else if(name==='close'){/* low and close from the outside rail, alongside the leaders */const tl=Math.min(Math.max(tau,0),1),c=pathAt(START+lead.d-3,laneOf(lead,tl)+10),t=pathAt(START+lead.d-2.5,laneOf(lead,tl));cpos.set(c.x,1.9,c.z);tgt.set(t.x,1.35,t.z);fov=frame(cpos.x,cpos.y,cpos.z,11);}
   else if(name==='aerial'){/* the drone: high behind the field, looking down the course */const c=pathAt(START+tail.d-28,4);cpos.set(c.x,42,c.z);tgt.set(fx,0,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.max(30,spread*1.25));}
   else if(name==='front'){const c=pathAt(START+lead.d+110,5);cpos.set(c.x,4.5,c.z);const lp=pathAt(START+lead.d-6,4);tgt.set(lp.x,1.3,lp.z);fov=frame(cpos.x,cpos.y,cpos.z,22);}
   else if(name==='head'){const c=pathAt(FIN-120,-5);cpos.set(c.x,12,c.z-4);const l1=pathAt(START+lead.d-4,4);tgt.set(l1.x,1.4,l1.z);{const d=cpos.distanceTo(tgt);fov=Math.max(1.2,2*Math.atan(13/2/d)*180/Math.PI/Math.max(.6,cam.aspect));}}
-  else if(name==='turn12'){/* from the stand side: a high camera in front of the stand at that end, panning with the field round the bend */const ex=(CRS.lh?-1:1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-48);tgt.set(fx,1.2,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9+4,60));}
+  else if(name==='turn12'){/* from the stand side: a high camera in front of the stand at that end, panning with the field round the bend */const ex=(CRS.lh?-1:1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-XO-48);tgt.set(fx,1.2,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9+4,60));}
   else if(name==='back'){cpos.set(fx,10,RAD-14);tgt.set(fx,1.4,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread,85));}
-  else if(name==='turn34'){const ex=(CRS.lh?1:-1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-48);tgt.set(fx,1,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9,60));}
+  else if(name==='turn34'){const ex=(CRS.lh?1:-1)*(LS/2+RAD*.35);cpos.set(ex,15,-RAD-XO-48);tgt.set(fx,1,fz);fov=frame(cpos.x,cpos.y,cpos.z,Math.min(spread*.9,60));}
   fov=Math.max(1.2,Math.min(name==='box'?56:40,fov));
   if(started&&tau<1&&!['goal','gateback','gate','paddock','canter','starter'].includes(name)&&!SPL.on){const lp=pathAt(START+lead.d+1.2,laneOf(lead,Math.min(tau,1)));const L=new THREE.Vector3(lp.x,1.4,lp.z);
     const tc=KEEP.cam;tc.fov=fov;tc.aspect=cam.aspect;tc.position.copy(cpos);tc.updateProjectionMatrix();
