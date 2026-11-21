@@ -78,7 +78,10 @@ const COURSES={chukyo:{jp:'中京',en:'Chukyo',EN:'CHUKYO',ls:412,rad:105,lh:1,f
   kyoto:{jp:'京都',en:'Kyoto',EN:'KYOTO',ls:404,rad:115,lh:0,fin:70,dist:2200,name:'淀の秋天特別'},
   hanshin:{jp:'阪神',en:'Hanshin',EN:'HANSHIN',ls:474,rad:115,lh:0,fin:80,dist:2200,name:'仁川ステークス'},
   sapporo:{jp:'札幌',en:'Sapporo',EN:'SAPPORO',ls:266,rad:105,lh:0,fin:40,dist:2000,name:'北の大地カップ'},
-  fukushima:{jp:'福島',en:'Fukushima',EN:'FUKUSHIMA',ls:292,rad:95,lh:0,fin:45,dist:1800,name:'みちのくステークス'}};
+  fukushima:{jp:'福島',en:'Fukushima',EN:'FUKUSHIMA',ls:292,rad:95,lh:0,fin:45,dist:1800,name:'みちのくステークス'},
+  ooi:{jp:'大井',en:'Ohi',EN:'OHI',ls:386,rad:132,lh:0,fin:60,dist:2000,name:'東京大賞典'},kawasaki:{jp:'川崎',en:'Kawasaki',EN:'KAWASAKI',ls:300,rad:95,lh:1,fin:45,dist:2100,name:'川崎記念'},
+  meydan:{jp:'メイダン',en:'Meydan',EN:'MEYDAN',ls:450,rad:230,lh:1,fin:80,dist:2410,name:'ドバイシーマクラシック'},longchamp:{jp:'ロンシャン',en:'ParisLongchamp',EN:'PARISLONGCHAMP',ls:533,rad:200,lh:0,fin:80,dist:2400,name:'凱旋門賞'},
+  shatin:{jp:'シャティン',en:'Sha Tin',EN:'SHA TIN',ls:430,rad:165,lh:0,fin:70,dist:2000,name:'香港カップ'}};
 const CKEY=COURSES[QS.get('course')]?QS.get('course'):'tokyo',CRS=COURSES[CKEY];
 const RACE=QS.get('race')||(QS.get('grade')==='derby'?'derby':(!IN&&CKEY==='nakayama'&&(QS.get('grade')||'G1')==='G1'?'arima':''));
 const RACE_TITLE=RACE==='derby'?'日本ダービー':RACE==='arima'?'有馬記念':'';
@@ -577,7 +580,14 @@ function morphedVertex(r,k,out){const geo=r.mesh.geometry,pa=geo.attributes.posi
   return out.set(x*r.S,y*r.S,z*r.S);}
 
 /* ---------- race model (same idea as the 2D game): formation early, decided late ---------- */
-const D=+(QS.get('dist')||CRS.dist),START=FIN-D,TT=IN&&+IN.time>D/20&&+IN.time<D/14?+IN.time:D/16.4;   // seconds
+const JUMP=QS.get('jump')==='1';const D=+(QS.get('dist')||CRS.dist),START=FIN-D,TT=IN&&+IN.time>D/20&&+IN.time<D/14?+IN.time:D/16.4;   // seconds
+/* 障害: brush hurdles across the course every ~380 m (not in the run-in); the horses clear them in an arc */
+const HURD=[];if(JUMP){for(let d=220;d<D-200;d+=380)HURD.push(d);
+  const hm=new THREE.MeshStandardMaterial({color:'#3f6b36',roughness:1}),rm=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.5});
+  HURD.forEach(d=>{const a=pathAt(START+d,-.5),b=pathAt(START+d,24.5),cx=(a.x+b.x)/2,cz=(a.z+b.z)/2,w=Math.hypot(a.x-b.x,a.z-b.z),yaw=Math.atan2(b.x-a.x,b.z-a.z);
+    const hb=new THREE.Mesh(new THREE.BoxGeometry(.9,1.05,w),hm);hb.position.set(cx,.52,cz);hb.rotation.y=yaw;hb.castShadow=true;scene.add(hb);
+    const rl=new THREE.Mesh(new THREE.BoxGeometry(.18,.12,w),rm);rl.position.set(cx+(a.hx||0)*.6,.75,cz+(a.hz||0)*.6);rl.rotation.y=yaw;scene.add(rl);});}
+function jumpY(d){let y=0;for(const h of HURD){const u=(d-h)/4.4;if(u>-1&&u<1)y=Math.max(y,1.3*(1-u*u));}return y;}
 /* ポケット: when the start would fall on a bend, the real course has a chute — a straight spur that runs on from the next
    straight — so the gate stands on that spur and the field joins the course where the straight begins */
 {const sn=((START%P)+P)%P,c1=[LS,LS+Math.PI*RAD],c2=[2*LS+Math.PI*RAD,P];const inC=c=>sn>=c[0]&&sn<c[1];const c=inC(c1)?c1:inC(c2)?c2:null;
@@ -1123,7 +1133,7 @@ let DTS=1/60,DONE=false;function frame(){const RAW=clock.getDelta();qaStep(Math.
     if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
   (window.__flags||[]).forEach((f,i)=>{f.rotation.y=Math.sin(now*2.2+i)*.35;});
   if(started&&!PAD.on)sepStep(Math.min(tau,1),dt0);
-  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,0,p.z);
+  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,JUMP&&started&&!r.gone?jumpY(r.d):0,p.z);
     const yaw=Math.atan2(p.hx,p.hz);r.g.rotation.y=yaw;
     const sp=INGATE?0:started?(tau<=1?1:Math.max(.42,Math.exp(-(tau-1)*5))):0;r.spd=sp;r.act.timeScale=sp*3.35;r.mixer.update(dt);   // ~2.2 strides a second, like a real gallop
     {const m=morphedVertex(r,r.muzzle,_mv);const h0=r.arms[0].hd.position,h1=r.arms[1].hd.position;
