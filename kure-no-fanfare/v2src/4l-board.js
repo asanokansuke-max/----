@@ -92,14 +92,14 @@ function boardAnim(){
   const going=(r.going||'良'),gShort=going;
   const t=RC.time,timeS=`${Math.floor(t/60)}.${(t%60).toFixed(1).padStart(4,'0')}`;
   const f3=(r.surf==='ダ'?36.4:34.6)+(70-(r.mean||70))*.03+(hash(r.name+S.t)-.5)*1.2,f4=f3+(r.surf==='ダ'?12.4:11.8)+(hash(r.name+'4f')-.5)*.6;
-  const cn=r.course.split('');
+  const cn=(({ロンシャン:'パリ',シャティン:'香港',メイダン:'ドバイ'})[r.course]||r.course).split('');
   const jp=(txt,x,y,sz,col,al='center',w=700)=>{c.fillStyle=col;c.font=`${w} ${sz}px "Zen Kaku Gothic New",sans-serif`;c.textAlign=al;c.fillText(txt,x,y);};
   const glowText=(txt,x,y,h,al,rows=13)=>{c.save();c.shadowColor=OR;c.shadowBlur=h*.25;ledText(c,txt,x,y,h,OR,al,rows,false);c.restore();};
   const loop=now=>{if(!document.getElementById('board'))return;const a=now-t0;
     // frame + black face
     c.fillStyle='#a2a2a2';c.fillRect(0,0,BW,BH);c.fillStyle='#000';c.fillRect(u*3,u*3,BW-u*6,BH-u*6);
     // header: 東/京 stacked, [11] R, 確定
-    jp(cn[0]||'',u*12,u*14,u*10,WH,'center',500);jp(cn[1]||'',u*12,u*25,u*10,WH,'center',500);
+    {const k=Math.ceil(cn.length/2),l1=cn.slice(0,k).join(''),l2=cn.slice(k).join(''),fs=u*10*Math.min(1,2/Math.max(l1.length,l2.length,1));jp(l1,u*12,u*14,fs,WH,'center',500);jp(l2,u*12,u*25,fs,WH,'center',500);}
     {const h=u*15,d=slotDims(h);c.fillStyle=CELL;c.fillRect(u*21,u*6.5,d.W,u*18);numSlot(c,r.g?11:9,u*21,u*8,h,OR);var hdrEnd=u*21+d.W;}
     c.fillStyle=WH;c.font=`600 ${u*9}px Oswald,sans-serif`;c.textAlign='left';c.fillText('R',hdrEnd+u*1.5,u*24);
     const confirmed=a>=conf;

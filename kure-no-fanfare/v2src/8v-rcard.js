@@ -59,13 +59,14 @@ showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{c
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{if(RC.photo&&RC.order){const K=RC.photoK||0;if(RC.order[K]&&RC.order[K+1]){inp.pk=[RC.order[K].no,RC.order[K+1].no];inp.pkPos=[K+1,K+2];}}if(RC.__shot){inp.shot=1;inp.warmed=true;}}catch(e){}return inp;})(r3dInput);
 function rcPlaceShot(RC){try{const pic=document.querySelector('#sheet .rcard .pic');if(pic&&RC.mineShot&&!pic.querySelector('img')){const c=pic.querySelector('canvas');const im=new Image();im.alt='';im.src=RC.mineShot;im.style.opacity=0;im.style.transition='opacity .6s';if(c)c.replaceWith(im);else pic.prepend(im);requestAnimationFrame(()=>im.style.opacity=1);
     const cap=pic.querySelector('.cap');const me=RC.order.filter(f=>f.mine).sort((a,b)=>a.pos-b.pos)[0];if(cap&&me&&me.pos===1)cap.textContent='ゴールの瞬間（1着・ガッツポーズ）';}}catch(e){}}
-addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-photo','race3d-shotdone'].includes(d.type))return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(!RC)return;
+addEventListener('message',e=>{const d=e.data||{};if(!['race3d-mine','race3d-photo','race3d-shotdone','race3d-photoerr'].includes(d.type))return;const RC=(typeof R3D!=='undefined'&&R3D&&R3D.RC)||UI.shotRC||UI.race;if(!RC)return;
   if(d.type==='race3d-mine'){RC.mineShot=d.img;RC.mineWon=d.won;if(UI.race===RC)rcPlaceShot(RC);}
   if(d.type==='race3d-photo'){RC.photoShot=d.img;RC.photoBaked=!!d.baked;const cv=document.getElementById('pfcv');if(cv&&UI.race===RC)pfPlace(RC);}
+  if(d.type==='race3d-photoerr'){console.error('photo 3D failed:',d.msg);}
   if(d.type==='race3d-shotdone'){const f=document.getElementById('shotif');if(f)setTimeout(()=>f.remove(),300);UI.shotRC=null;}});
 showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.order&&!RC.mineShot&&!RC.shotAsked&&!window.__noShot&&typeof R3D_HTML==='string'&&RC.order.some(f=>f.mine)){RC.shotAsked=1;
-    RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
-    const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
+    if(UI.shotRC===RC&&document.getElementById('shotif'))return r;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+    const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:0;top:0;width:640px;height:360px;border:0;pointer-events:none;opacity:.01;z-index:-1';document.body.appendChild(f);f.srcdoc=doc;
     setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
   else if(RC&&RC.mineShot)rcPlaceShot(RC);}catch(e){console.error('shot',e);}return r;})(showResult);
 /* the finish photo on the board: the 3D still, with the judge's tags laid over it */
@@ -77,10 +78,18 @@ showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if
 
 /* a photo finish on the board always comes from the 3D course: if the live broadcast didn't take it (skipped, cut short),
    a hidden 3D run takes it now; the board waits a few seconds with "写真判定中" instead of showing a drawing */
-function shotRun(RC){if(typeof R3D_HTML!=='string'||window.__noShot)return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
-  const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:-2000px;top:0;width:640px;height:360px;border:0;pointer-events:none';document.body.appendChild(f);f.srcdoc=doc;
+function shotRun(RC){if(typeof R3D_HTML!=='string'||window.__noShot)return;if(UI.shotRC===RC&&document.getElementById('shotif'))return;RC.__shot=1;const doc=r3dDoc(RC,'race');delete RC.__shot;const old=document.getElementById('shotif');if(old)old.remove();UI.shotRC=RC;
+  const f=document.createElement('iframe');f.id='shotif';f.setAttribute('aria-hidden','true');f.tabIndex=-1;f.style.cssText='position:fixed;left:0;top:0;width:640px;height:360px;border:0;pointer-events:none;opacity:.01;z-index:-1';document.body.appendChild(f);f.srcdoc=doc;
   setTimeout(()=>{const x=document.getElementById('shotif');if(x)x.remove();},120000);}
 showBoard=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{if(RC&&RC.photo&&!RC.photoShot){const cv=document.getElementById('pfcv');if(cv){const w=cv.parentNode;w.style.position='relative';
     if(!w.querySelector('.pfwait'))w.insertAdjacentHTML('beforeend','<div class="pfwait">写真判定中…</div>');}
-    if(!RC.photoAsked){RC.photoAsked=1;shotRun(RC);}setTimeout(()=>{const x=document.querySelector('.pfwait');if(x&&!RC.photoShot)x.remove();},30000);}}catch(e){}return r;})(showBoard);
+    if(!RC.photoAsked){RC.photoAsked=1;shotRun(RC);}setTimeout(()=>{const x=document.querySelector('.pfwait');if(x&&!RC.photoShot)x.remove();},50000);}}catch(e){}return r;})(showBoard);
 (function(){const st=document.createElement('style');st.textContent=`.pfwait{position:absolute;inset:0;display:grid;place-items:center;background:#6d6878;color:#fff;font:800 16px "Zen Kaku Gothic New",sans-serif;letter-spacing:.2em}`;document.head.appendChild(st);})();
+/* readability: the gold button and the phone's orange tag were too pale for white text; the draw board's empty numbers too faint */
+(function(){const st=document.createElement('style');st.textContent=`.btn.gold{background:#b06a24}.badge{background:#b8641a}
+.prow .tag{background:#c96a00}.drw .slot b[style*="#bbb"]{color:#8f897d!important}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.gold{background:#b06a24;color:#fff}}`;document.head.appendChild(st);})();
+/* tickets are held until the race is settled: if the game is closed in between, the stake comes back next time */
+ACT.bkBuy=(o=>function(){const m0=S.money;const r=o.apply(this,arguments);const spent=m0-S.money;if(spent>0){S.betHold=(S.betHold||0)+spent;save();}return r;})(ACT.bkBuy);
+showResult=(o=>function(){const r=o.apply(this,arguments);try{if(S.betHold){S.betHold=0;save();}}catch(e){}return r;})(showResult);
+(function(){try{if(S&&S.betHold>0&&!UI.race){S.money+=S.betHold;const v=S.betHold;S.betHold=0;save();setTimeout(()=>{try{toast(`前回、レース前に中断したため、馬券代 ${yen(v)} を払い戻しました`);}catch(e){}},1500);}}catch(e){}})();
