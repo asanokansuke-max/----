@@ -208,6 +208,8 @@ function buildField(race,ents){
     let jid=null;if(pool.length&&R()<(race.grade==='G1'?.6:.2))jid=pool.splice(Math.floor(R()*pool.length),1)[0];
     fld.push(mkRunner({npc:true,name:makeName(),base:race.mean+randn()*race.sd,style:pick(['逃げ','先行','先行','先行','先行','差し','差し','差し','差し','追込','追込']),jid},race,going));
   }
+  // one rider, one horse: an NPC jockey name never appears twice in the same race
+  {const used=new Set(fld.filter(f=>f.jid).map(f=>f.jname)),free=NPCJ.filter(n=>!used.has(n));fld.forEach(f=>{if(f.jid)return;if(used.has(f.jname)){const n=free.length?free.splice(Math.floor(R()*free.length),1)[0]:f.jname;f.jname=n;}used.add(f.jname);const ix=free.indexOf(f.jname);if(ix>=0)free.splice(ix,1);});}
   for(let i=fld.length-1;i>0;i--){const k=Math.floor(R()*(i+1));[fld[i],fld[k]]=[fld[k],fld[i]];}
   fld.forEach((f,i)=>f.no=i+1);
   // the betting public does not see true ability: it reads past form, the jockey and the stable talk, and guesses (more so about horses with few runs)
