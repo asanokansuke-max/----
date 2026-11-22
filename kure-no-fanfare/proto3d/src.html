@@ -1205,7 +1205,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
       /* a slit camera sees each horse at the moment it crosses the line, so on the print every horse stands where the result puts it:
          the photo's first horse on the line, the others ahead or behind by their official margins. The print has two bands like the
          real one: below, the horses seen from the stand; above, the same moment in the mirror on the far rail (their other side). */
-      const OW=640,OH=500,MB=150,GP=8,DB=OH-MB-GP,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const tp={x:NZ.x,z:NZ.z};
+      const OW=640,OH=380,MB=112,GP=6,DB=OH-MB-GP,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const tp={x:NZ.x,z:NZ.z};
       const gx=r=>{const v=r.gapT!=null?r.gapT:r.gap;return v||0;},MPL=4.1;
       RUN.forEach(r=>{if(!r.g.visible)return;const w=noseW(r),cur=(w.x-tp.x)*fx+(w.z-tp.z)*fz,want=-(gx(r)-gx(A))*MPL;if(r!==A&&r!==Bh&&(r.gone||Math.abs(want)>16)){r.g.visible=false;return;}const sh=want-cur;r.g.position.x+=fx*sh;r.g.position.z+=fz*sh;r.g.updateMatrixWorld(true);});
       const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));
@@ -1237,7 +1237,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
       const pl=IN.pkPos||[1,2];tag(A,pl[0]);tag(Bh,pl[1]);
       x.fillStyle='#0d0d0d';x.fillRect(0,0,190,58);x.fillStyle='#1d7a3d';x.fillRect(0,0,6,58);x.fillStyle='#fff';x.font='bold 24px "Hiragino Sans","Noto Sans JP",sans-serif';x.textAlign='left';x.fillText(CRS.jp,14,27);x.fillText((IN.rno||(IN.grade&&IN.grade!=='cond'?'11':'9'))+'R',118,27);
       x.font='bold 13px "Hiragino Sans","Noto Sans JP",sans-serif';x.fillText(String(IN.title||'').slice(0,13),14,49);
-      x.fillStyle='rgba(255,255,255,.75)';x.font='bold 12px "Hiragino Sans","Noto Sans JP",sans-serif';x.textAlign='right';x.fillText('決勝写真',OW-10,MB-8);
+      x.fillStyle='rgba(255,255,255,.75)';x.font='bold 12px "Hiragino Sans","Noto Sans JP",sans-serif';x.textAlign='right';x.fillText('決勝写真',OW-10,MB-7);
       saved.forEach(([r,p,v])=>{r.g.position.copy(p);r.g.visible=v;r.g.updateMatrixWorld(true);});
       R3.render(scene,cam);parent.postMessage({type:'race3d-photo',img:o.toDataURL('image/jpeg',.86),baked:1,pk:IN.pk.slice()},'*');}catch(e){saved.forEach(([r,p,v])=>{r.g.position.copy(p);r.g.visible=v;});console.error('photo',e&&e.message);try{parent.postMessage({type:'race3d-photoerr',msg:String(e&&e.message)},'*');}catch(x){}MSHOT.pdone=false;MSHOT.perr=(MSHOT.perr||0)+1;if(MSHOT.perr>3)MSHOT.pdone=true;}}}
   /* the goal picture for the result board (races without a photo): the winner crossing the line, from the stand side a little ahead of the post, in colour */
