@@ -9110,7 +9110,7 @@ ACT.fhDo=d=>{if(FH.done)return;const k=d.k;FH.turn++;let t='';
   if(!FH.done&&FH.turn>=7){FH.d=0;fhWin(true);return;}
   fhRender(t);};
 function fhWin(late){FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=late?10:Math.max(8,22-FH.miss*5-(FH.call>2?2:0));
-  fhRender((late?'日が傾いてきた。\nあきらめかけたとき、芦毛が自分から柵のところまで来た。\n':'')+'差し出した手のひらに、芦毛が鼻を押しつけてきた。温かい息。\n\n中原は、しばらく黙っていた。\n<b>「…そいつが人に寄っていくのは、初めて見た」</b>\n「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');}
+  fhRender((late?'日が傾いてきた。\nあきらめかけたとき、芦毛が自分から柵のところまで来た。\n':'')+'芦毛が、ふいに駆け出した。\nまっすぐこちらへ。柵の前で止まると、鼻先を押しつけてきた。温かい息。\n\n中原は、しばらく黙っていた。\n<b>「…そいつが人に寄っていくのは、初めて見た」</b>\n「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');}
 ACT.fhStable=d=>{if(FH.stable)return;FH.stable=1;S.flags.fh=2;S.flags.fhPrice=600;S.flags.fh2T=-1;S.flags.fhScene=0;let out='';
   try{out=EV.firstHorse2.f({},+d.i);const h=S.horses.find(x=>x.first);if(h)h.bond=FH.bond||12;}catch(e){console.error('fh',e);}
   FH.stop=1;save();render();openModal(`<div class="letter">${esc(out)}</div><div class="row"><span class="sp"></span><button class="btn pri" data-act="evnext">${S.inbox.length?'次へ':'閉じる'}</button></div>`,{lock:true});};
@@ -9131,9 +9131,11 @@ function fhDraw(cv,T,dt){const c=cv.getContext('2d'),W=cv.width,H=cv.height,HZ=H
   // horses: x 0..1 across, z 0 (far) .. 1 (at the fence)
   const yOf=z=>HZ+14+z*(H*.5),sOf=z=>.55+z*1.65;
   FH.chX+=FH.chDir*dt*.05;if(FH.chX>.5||FH.chX<.1)FH.chDir*=-1;FH.chZ+=(.35-FH.chZ)*dt*.15;
-  const gz=.12+(1-FH.d)*.8;FH.gz=FH.gz==null?gz:FH.gz+(gz-FH.gz)*Math.min(1,dt*1.2);const moving=Math.abs(gz-FH.gz)>.01;FH.ph+=dt*(moving?5:.6);
-  const gx=.66-(1-FH.d)*.1;FH.gxx=FH.gxx==null?gx:FH.gxx+(gx-FH.gxx)*Math.min(1,dt*1.2);
-  const list=[{x:FH.bayX+Math.sin(T*.1)*.02,z:.22,coat:'鹿毛',ph:T*.8,walk:true,flip:false},{x:FH.chX,z:FH.chZ,coat:'栗毛',ph:T*4.5,walk:true,flip:FH.chDir<0},{x:FH.gxx,z:FH.gz,coat:'芦毛',ph:FH.ph,walk:true,flip:true}];
+  /* the grey: walks a little closer each time you wait; when it chooses you it breaks into a canter and runs up to the fence; startled, it turns and trots off */
+  const gz=FH.done?.97:.12+(1-FH.d)*.68;if(FH.gz==null)FH.gz=gz;const diff=gz-FH.gz,moving=Math.abs(diff)>.008,run=moving&&(FH.done||diff<-.05);
+  FH.gz+=Math.sign(diff)*Math.min(Math.abs(diff),dt*(run?(FH.done?.42:.35):.14));FH.gflip=moving?diff>0:(FH.gflip??true);FH.grun=run;FH.ph+=dt*(run?10:moving?5:.6);
+  FH.gxx=.8-FH.gz*.36;
+  const list=[{x:FH.bayX+Math.sin(T*.1)*.02,z:.22,coat:'鹿毛',ph:T*.8,walk:true,flip:false},{x:FH.chX,z:FH.chZ,coat:'栗毛',ph:T*4.5,walk:true,flip:FH.chDir<0},{x:FH.gxx,z:FH.gz,coat:'芦毛',ph:FH.ph,walk:!FH.grun,flip:FH.gflip}];
   list.sort((a,b)=>a.z-b.z).forEach(h=>{try{drawHorse(c,h.x*W,yOf(h.z),sOf(h.z),h.ph,h.coat,null,0,false,{nj:true,bare:true,walk:h.walk,flip:h.flip});}catch(e){}});
   // the near fence (we lean on it)
   const fy=H*.86;c.fillStyle='#7a5a3a';c.fillRect(0,fy,W,10);c.fillRect(0,fy+26,W,10);c.fillStyle='rgba(0,0,0,.18)';c.fillRect(0,fy+8,W,3);c.fillRect(0,fy+34,W,3);
