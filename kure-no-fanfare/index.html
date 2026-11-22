@@ -9466,7 +9466,10 @@ function retireCardOpen(d){const c=retireCardCanvas(d),url=c.toDataURL('image/pn
   openModal(`<div class="from-line">引退記念カード</div><img class="rcdimg" src="${url}" alt="${esc(d.name)} 引退記念カード">
    <div class="muted" style="font-size:12px;text-align:center;margin-top:6px">保存できないときは、画像を長押しして「写真に保存」</div>
    <div class="row"><button class="btn" data-act="close">閉じる</button><span class="sp"></span><button class="btn pri" data-act="rcdSave">画像を保存</button></div>`,{wide:true});}
-ACT.rcdSave=async()=>{const R=UI.rcd;if(!R)return;const fn=`${R.d.name}_引退記念.png`;try{const blob=await (await fetch(R.url)).blob();const file=new File([blob],fn,{type:'image/png'});
+ACT.rcdSave=async()=>{const R=UI.rcd;if(!R)return;const fn=`${R.d.name}_引退記念.png`;
+  /* inside claude.ai the page offers the file through the viewer's save prompt */
+  try{if(window.claude&&typeof window.claude.use==='function'){const dl=await window.claude.use('downloads');if(dl){const blob=await (await fetch(R.url)).blob();try{await dl.save({filename:fn,data:blob});return;}catch(e){if(e&&e.code==='declined')return;}}}}catch(e){}
+  try{const blob=await (await fetch(R.url)).blob();const file=new File([blob],fn,{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:`${R.d.name} 引退記念`});return;}}catch(e){if(e&&e.name==='AbortError')return;}
   try{const a=document.createElement('a');a.href=R.url;a.download=fn;document.body.appendChild(a);a.click();a.remove();toast('画像を保存しました');}catch(e){toast('画像を長押しして保存してください');}};
 (function(){const st=document.createElement('style');st.textContent=`.rcdimg{display:block;width:100%;max-width:440px;margin:0 auto;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.35);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto}`;document.head.appendChild(st);})();
