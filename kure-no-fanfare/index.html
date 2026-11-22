@@ -9139,7 +9139,8 @@ function fhDraw(cv,T,dt){const c=cv.getContext('2d'),W=cv.width,H=cv.height,HZ=H
   const fy=H*.86;c.fillStyle='#7a5a3a';c.fillRect(0,fy,W,10);c.fillRect(0,fy+26,W,10);c.fillStyle='rgba(0,0,0,.18)';c.fillRect(0,fy+8,W,3);c.fillRect(0,fy+34,W,3);
   c.fillStyle='#6a4c30';for(let x=30;x<W;x+=150)c.fillRect(x,fy-14,14,H-fy+14);
   // the hand reaching out
-  if(FH.done||performance.now()-(FH.handT||0)<900){const sc=sOf(FH.gz||.5),hx=Math.max(W*.12,FH.gxx*W-44*sc),hy=Math.min(fy-4,yOf(FH.gz||.5)-40*sc);c.fillStyle='#2f3a52';c.beginPath();c.moveTo(W*.55,H);c.lineTo(hx+10,hy+6);c.lineTo(hx+22,hy+20);c.lineTo(W*.66,H);c.fill();c.fillStyle='#e2b48c';c.strokeStyle='#b98a63';c.lineWidth=2;c.beginPath();c.ellipse(hx,hy+4,24,11,-.5,0,7);c.fill();c.stroke();}
+  /* no hand drawn: on success, only the grey's breath puffs at the fence */
+  if(FH.done){const sc=sOf(FH.gz||.5),mx=FH.gxx*W-46*sc,my=yOf(FH.gz||.5)-34*sc,k=((performance.now()-FH.nuzzle)/1000)%1.6;if(k<1){c.fillStyle=`rgba(255,255,255,${.35*(1-k)})`;c.beginPath();c.arc(mx-k*18,my-k*6,4+k*10,0,7);c.fill();}}
   if(FH.done){const a=Math.min(1,(performance.now()-FH.nuzzle)/1500);c.fillStyle=`rgba(255,220,160,${.18*a})`;c.fillRect(0,0,W,H);}}
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
