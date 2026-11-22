@@ -9100,6 +9100,7 @@ EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭'
 const FH={};
 function fhOpen(){if(!S||S.horses.some(h=>h.first)){if(S)S.flags.fhScene=0;return;}
   Object.assign(FH,{ready:0,d:1,turn:0,miss:0,call:0,done:false,stable:0,ph:0,gz:null,gxx:null,chX:.25,chZ:.35,chDir:1,bayX:.42,handT:0,nuzzle:0});
+  if(FH.seen){FH.done=true;FH.ready=1;FH.d=0;FH.gz=.97;FH.bond=15;FH.nuzzle=performance.now();fhRender('芦毛は、柵の前であなたを待っていた。\n\n中原「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');fhLoop();return;}FH.seen=1;
   fhRender('柵にもたれると、草の匂いがした。\n\n鹿毛は草を食んでいる。栗毛は落ち着きなく歩き回っている。\n奥の芦毛だけが、じっとこちらを見ていた。');fhLoop();
   /* no waiting game: after a moment the grey runs up to the fence by itself */
   const run=FH.run=(FH.run||0)+1;setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=15;
@@ -9150,6 +9151,26 @@ function fhDraw(cv,T,dt){const c=cv.getContext('2d'),W=cv.width,H=cv.height,HZ=H
   /* no hand drawn: on success, only the grey's breath puffs at the fence */
   if(FH.done){const sc=sOf(FH.gz||.5),mx=FH.gxx*W-46*sc,my=yOf(FH.gz||.5)-34*sc,k=((performance.now()-FH.nuzzle)/1000)%1.6;if(k<1){c.fillStyle=`rgba(255,255,255,${.35*(1-k)})`;c.beginPath();c.arc(mx-k*18,my-k*6,4+k*10,0,7);c.fill();}}
   if(FH.done){const a=Math.min(1,(performance.now()-FH.nuzzle)/1500);c.fillStyle=`rgba(255,220,160,${.18*a})`;c.fillRect(0,0,W,H);}}
+/* =========================================================
+   テンポを詰める:
+   ・月末の報告 — レース結果（もう結果画面で見た）と帰厩だけの月は画面を出さず、賞金と収支を一行で表示して次の月へ（成長の一言も添える）。ケガやそのほかの知らせがある月だけ報告画面を出す
+   ・出来事を選んだあとの短い返事（一行）— 別画面にせず画面下に表示して、そのまま次の出来事へ
+   ・「蹄鉄」の小話は一度きり、「牧場から」の近況は半年に一度まで
+   ========================================================= */
+function toastLong(s,ms){toast(s);clearTimeout(toast.t);toast.t=setTimeout(()=>{const el=$('#toast');if(el)el.hidden=true;},ms||3400);}
+showReport=(o=>function(rep){try{const L=rep&&(rep.lines||[]),other=L?L.filter(l=>!/着／\d+頭/.test(l)&&!/厩舎に戻ってきた/.test(l)):[];
+  if(rep&&!other.length&&!(rep.inj||[]).length&&!S.over){
+  const net=rep.prize+rep.income-rep.cost,back=L.filter(l=>/厩舎に戻ってきた/.test(l));toastLong(`${dstr(rep.t)}　${rep.prize?'賞金 '+yen(rep.prize)+'・':L.length?'':'レースなし・'}収支 ${net>=0?'+':'−'}${yen(Math.abs(net))}${back.length?'　'+back.join('、'):''}${(rep.grow||[]).length?'　'+rep.grow[0]:''}`,3200);try{se('turn');}catch(e){}
+  setTimeout(()=>{try{ACT.repOk();}catch(e){console.error(e);}},0);return;}}catch(e){}return o.apply(this,arguments);})(showReport);
+ACT.evc=(o=>function(d){const om=openModal;let caught=null;
+  openModal=function(html){const m=/^<div class="letter">([\s\S]*?)<\/div><div class="row"><span class="sp"><\/span><button class="btn pri" data-act="evnext">/.exec(html||'');
+    if(m&&caught==null){const t=document.createElement('div');t.innerHTML=m[1];const txt=t.textContent||'';if(txt.length<=60&&!/\n/.test(txt)){caught=txt;return;}}return om.apply(this,arguments);};
+  try{return o.apply(this,arguments);}finally{openModal=om;if(caught!=null){toastLong(caught);openNextEvent();}}})(ACT.evc);
+if(EV.horseshoe){const h=EV.horseshoe;EV.horseshoe={...h,r:d=>S.flags.shoeDone?null:h.r(d),f:(d,i)=>{S.flags.shoeDone=1;return h.f(d,i);}};}
+if(EV.farmNews){const h=EV.farmNews;EV.farmNews={...h,r:d=>S.flags.fnT!=null&&S.t-S.flags.fnT<6?null:h.r(d),f:(d,i)=>{S.flags.fnT=S.t;return h.f(d,i);}};}
+/* how often the routine letters may come: 厩舎だより every 4 months at most, a stable's flu once a year */
+const capEv=(k,gap,key)=>{if(!EV[k])return;const h=EV[k];EV[k]={...h,r:d=>S.flags[key]!=null&&S.t-S.flags[key]<gap?null:h.r(d),f:(d,i)=>{S.flags[key]=S.t;return h.f(d,i);}};};
+capEv('stableNews',4,'snT');capEv('flu',12,'fluT');
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */

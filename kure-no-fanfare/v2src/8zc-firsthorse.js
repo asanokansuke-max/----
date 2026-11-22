@@ -20,6 +20,7 @@ EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭'
 const FH={};
 function fhOpen(){if(!S||S.horses.some(h=>h.first)){if(S)S.flags.fhScene=0;return;}
   Object.assign(FH,{ready:0,d:1,turn:0,miss:0,call:0,done:false,stable:0,ph:0,gz:null,gxx:null,chX:.25,chZ:.35,chDir:1,bayX:.42,handT:0,nuzzle:0});
+  if(FH.seen){FH.done=true;FH.ready=1;FH.d=0;FH.gz=.97;FH.bond=15;FH.nuzzle=performance.now();fhRender('芦毛は、柵の前であなたを待っていた。\n\n中原「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');fhLoop();return;}FH.seen=1;
   fhRender('柵にもたれると、草の匂いがした。\n\n鹿毛は草を食んでいる。栗毛は落ち着きなく歩き回っている。\n奥の芦毛だけが、じっとこちらを見ていた。');fhLoop();
   /* no waiting game: after a moment the grey runs up to the fence by itself */
   const run=FH.run=(FH.run||0)+1;setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=15;
