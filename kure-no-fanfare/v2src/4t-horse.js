@@ -61,9 +61,9 @@ function drawHorse(c,x,y,sc,ph,coat,silks,num,mine,opt={}){
   // near legs over the body
   leg(legs[1],co.c,'#1d1814');leg(legs[2],co.c,'#1d1814');
   // saddle cloth
-  c.fillStyle='#f6f3ea';c.beginPath();c.moveTo(-10,-44);c.lineTo(5,-44.5);c.lineTo(4,-35);c.quadraticCurveTo(-3,-34,-9,-35.5);c.closePath();c.fill();c.fillStyle='rgba(0,0,0,.12)';c.fillRect(-10,-36.5,14,1.2);
+  if(!opt.bare){c.fillStyle='#f6f3ea';c.beginPath();c.moveTo(-10,-44);c.lineTo(5,-44.5);c.lineTo(4,-35);c.quadraticCurveTo(-3,-34,-9,-35.5);c.closePath();c.fill();c.fillStyle='rgba(0,0,0,.12)';c.fillRect(-10,-36.5,14,1.2);
   c.fillStyle='#2a2018';c.beginPath();c.ellipse(-2,-45,7,1.8,0,0,7);c.fill();c.strokeStyle='#2a2018';c.lineWidth=.8;c.beginPath();c.moveTo(-1,-44);c.lineTo(0,-30);c.stroke();
-  c.fillStyle='#222';c.font='bold 6.5px sans-serif';c.textAlign='center';if(!!opt.flip!==!!opt.mir){c.save();c.translate(-3,-37.5);c.scale(-1,1);c.fillText(num,0,0);c.restore();}else c.fillText(num,-3,-37.5);
+  c.fillStyle='#222';c.font='bold 6.5px sans-serif';c.textAlign='center';if(!!opt.flip!==!!opt.mir){c.save();c.translate(-3,-37.5);c.scale(-1,1);c.fillText(num,0,0);c.restore();}else c.fillText(num,-3,-37.5);}
   if(opt.rug){c.fillStyle='#22324f';c.beginPath();c.moveTo(-24,-41);c.quadraticCurveTo(-4,-46,13,-41);c.lineTo(15,-27);c.quadraticCurveTo(-4,-23,-26,-27);c.closePath();c.fill();
     c.strokeStyle=silks.b;c.lineWidth=1.4;c.stroke();c.fillStyle='#f6f3ea';c.fillRect(-9,-38,14,9);c.fillStyle='#222';c.font='bold 8px sans-serif';c.textAlign='center';
     if(!!opt.flip!==!!opt.mir){c.save();c.translate(-2,-31);c.scale(-1,1);c.fillText(num,0,0);c.restore();}else c.fillText(num,-2,-31);}
