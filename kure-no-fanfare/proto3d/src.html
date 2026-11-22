@@ -593,7 +593,8 @@ function jumpY(d){let y=0;for(const h of HURD){const u=(d-h)/4.4;if(u>-1&&u<1)y=
 /* ポケット: when the start would fall on a bend, the real course has a chute — a straight spur that runs on from the next
    straight — so the gate stands on that spur and the field joins the course where the straight begins */
 {const sn=((START%P)+P)%P,c1=[LS,LS+Math.PI*RAD],c2=[2*LS+Math.PI*RAD,P];const inC=c=>sn>=c[0]&&sn<c[1];const c=inC(c1)?c1:inC(c2)?c2:null;
- if(c){const gap=c[1]-sn;if(gap>0&&gap<=260)CHUTE={a:START-70,b:START+gap,on:false};}}
+ if(c){const gap=c[1]-sn;if(gap>0&&gap<=260)CHUTE={a:START-70,b:START+gap,on:false};else if(gap>260)CHUTE={a:START-70,b:START+150,on:false};}}
+ /* (a start early in a long bend: the real pocket sits outside the turn — the spur meets the bend part-way round) */
 const sm=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t);};
 let RUN=[],t0=null,started=false;
 function setupRace(){if(IN)return setupFromGame();const n=14;const styles=['逃げ','先行','先行','先行','差し','差し','差し','差し','追込','追込','先行','差し','追込','先行'];
@@ -1258,10 +1259,11 @@ function carveChute(){const B=pathAt(CHUTE.b,11.5),L=CHUTE.b-CHUTE.a+12,ux=B.hx,
     if(!any)return;let ix=o.geometry.index;if(!ix){o.geometry=o.geometry.index?o.geometry:(()=>{const g=o.geometry;const a=new Uint32Array(pa.count);for(let k=0;k<pa.count;k++)a[k]=k;g.setIndex(new THREE.BufferAttribute(a,1));return g;})();ix=o.geometry.index;}
     const arr=ix.array;for(let t=0;t+2<arr.length;t+=3){if(ins[arr[t]]||ins[arr[t+1]]||ins[arr[t+2]]){arr[t+1]=arr[t];arr[t+2]=arr[t];}}ix.needsUpdate=true;});}
 window.__pick=(x,y)=>{const rc=new THREE.Raycaster();rc.layers.enableAll();rc.setFromCamera(new THREE.Vector2(x,y),cam);const h=rc.intersectObjects(scene.children,true).slice(0,4);return h.map(i=>{const o=i.object,b=new THREE.Box3().setFromObject(o);return [o.type,o.geometry&&o.geometry.type,o.geometry&&o.geometry.attributes.position.count,o.isInstancedMesh?o.count:0,i.distance.toFixed(1),b.max.x-b.min.x|0,b.max.z-b.min.z|0,b.max.y|0,o.visible,i.instanceId];});};
+/* a dirt race that starts in a pocket starts on turf (芝スタート), as at the real tracks */
 function buildChute(){if(!CHUTE)return;CHUTE.on=true;carveChute();const dirt=QS.get('surf')==='ダ',pos=[],uv=[],idx=[];let n=0;
   for(let s=CHUTE.a;s<=CHUTE.b+2;s+=3){[-1.5,24].forEach((ln,k)=>{const q=pathAt(Math.min(s,CHUTE.b-.01),ln);pos.push(q.x,.035,q.z);uv.push(k,(s-CHUTE.a)/8);});if(n){const b=(n-1)*2;idx.push(b,b+1,b+2,b+1,b+3,b+2);}n++;}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();
-  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:dirt?dirtTex:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;m.userData.keep=1;scene.add(m);
+  const m=new THREE.Mesh(g,new THREE.MeshStandardMaterial({map:turfTex,roughness:.95,side:THREE.DoubleSide}));m.receiveShadow=true;m.userData.keep=1;scene.add(m);
   /* side rails only where the spur is clear of the course: a post that would stand on the track (inside the outer rail of the bend) is left out */
   const rail=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.4});const sm=((CHUTE.b%P)+P)%P,cx0=(sm<LS+Math.PI*RAD+1&&sm>LS)?LS/2:-LS/2,cX=CRS.lh?-cx0:cx0;
   const onTrack=q=>Math.hypot(q.x-cX,q.z)<RAD+27.5;

@@ -4,4 +4,15 @@
    ・騎乗停止の知らせは1年に1回まで
    ========================================================= */
 racesFor=(o=>function(h){const L=o.apply(this,arguments);try{L.forEach(r=>{if(!r.g&&r.grp==='2'&&r.dist>2000){r.dist=1800;r.key=r.key.replace(/\d+$/,'1800');}});}catch(e){}return L;})(racesFor);
+/* 騎乗停止の理由を実際の制裁に近く: 斜行だけでなく、落馬を誘発した斜行、追うのを止めた、鞭の使いすぎ、調整ルームへの遅刻、
+   調整ルームでのスマホ使用（重い）。理由で停止の長さが変わる */
+const BANK=[['shako',.35,1,'先週のレースの最後の直線で内に斜行し、他の馬の進路をカットしたとして、1か月の騎乗停止処分を受けました。'],
+  ['rakuba',.15,2,'先週のレースの4コーナーで外に膨れて隣の馬と接触し、相手の騎手が落馬しました。2か月の騎乗停止処分です。幸い、落ちた騎手と馬に大きなケガはなかったそうです。'],
+  ['oiyame',.15,1,'先週のレースで、ゴール前で追うのを止めてしまい、2着から3着に落ちたとして、1か月の騎乗停止になりました。本人は「勝ち馬に届かないと思って…」と。'],
+  ['muchi',.12,1,'鞭の使いすぎで注意を受けるのが続き、とうとう1か月の騎乗停止処分になりました。'],
+  ['chikoku',.1,1,'レース前日の調整ルームの入室時刻に遅れたとして、1か月の騎乗停止処分です。渋滞に巻き込まれたと言っていますが…'],
+  ['sumaho',.08,3,'レース前に入る調整ルームで、スマートフォンを使っていたことが発覚しました。外部との連絡は固く禁じられています。3か月の騎乗停止という重い処分です。']];
+if(EV.ban){const b0=EV.ban;EV.ban={...b0,r:d=>{if(!d.kind){let x=R()*BANK.reduce((a,k)=>a+k[1],0);for(const k of BANK){x-=k[1];if(x<=0){d.kind=k[0];break;}}d.kind=d.kind||'shako';}
+    const k=BANK.find(z=>z[0]===d.kind)||BANK[0];d.mo=k[2];const v=b0.r(d);if(!v)return v;return {...v,body:v.body.replace(/先週のレースで斜行して、2か月の騎乗停止処分を受けました。/,k[3])};},
+  f:(d,i)=>{const out=b0.f(d,i);try{const mo=d.mo||2;JK(d.jid).ban=S.t+mo;const h=d.hid&&HZ(d.hid);if(h&&h.subJ&&h.subJ.back===d.jid)h.subJ.until=S.t+mo;}catch(e){}return out;}};}
 capEv('ban',12,'banT');
