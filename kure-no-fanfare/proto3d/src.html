@@ -982,6 +982,62 @@ function enterPaddock(){PAD.on=true;PAD.stage='walk';PAD.t=0;RUN.forEach(r=>{if(
   const pb=document.getElementById('padbar');pb.hidden=false;pb.style.display='flex';say('パドック周回中。各馬の気配をご覧ください');}
 function leavePaddock(){PAD.on=false;RUN.forEach(r=>{r.handler.visible=false;r.J.visible=true;});document.getElementById('tv').style.display='';document.getElementById('padbar').hidden=true;document.getElementById('padbar').style.display='none';window.__t0w=performance.now()/1000;say('');}
 
+/* ---------- 放牧地 (the first horse): three young horses loose on grass beyond a wooden fence, evening; on the word the grey runs up to the fence ---------- */
+let FARM=null;
+function farmScene(){RUN.forEach(r=>{r.g.children.forEach(c=>{if(c!==r.mesh)c.visible=false;});r.mesh.children.forEach(c=>{c.visible=false;});/* no hood on a loose young horse */r.J.visible=false;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
+  /* the spot: the infield, looking away from the stand */
+  const s=FIN-170,b0=pathAt(s,-34),b1=pathAt(s+1,-34),ux=b1.x-b0.x,uz=b1.z-b0.z,ul=Math.hypot(ux,uz)||1,u={x:ux/ul,z:uz/ul};let n={x:u.z,z:-u.x};const pin=pathAt(s,-60);if((pin.x-b0.x)*n.x+(pin.z-b0.z)*n.z<0)n={x:-n.x,z:-n.z};
+  const at=(f,w)=>({x:b0.x+n.x*f+u.x*w,z:b0.z+n.z*f+u.z*w});
+  /* the fence in front of us */
+  const wood=new THREE.MeshStandardMaterial({color:'#7a5a3a',roughness:.9}),fg=new THREE.Group();scene.add(fg);const fy=Math.atan2(u.x,u.z);
+  for(let w=-14;w<=14;w+=2.6){const q=at(3.1,w);const post=new THREE.Mesh(new THREE.BoxGeometry(.14,1.25,.14),wood);post.position.set(q.x,.62,q.z);post.castShadow=true;fg.add(post);}
+  [.5,.98].forEach(y=>{const q=at(3.1,0);const rail=new THREE.Mesh(new THREE.BoxGeometry(.08,.12,30),wood);rail.position.set(q.x,y,q.z);rail.rotation.y=fy;rail.castShadow=true;fg.add(rail);});
+  const L=RUN.slice(0,3),grey=L.find(r=>r.coat==='芦毛')||L[L.length-1],oth=L.filter(r=>r!==grey);
+  oth.forEach((r,i)=>{r.farm={home:at(9+i*3.5,-4.5+i*7.5),phase:i*2.1,walk:i===1};});grey.farm={home:at(17,3),far:at(17,3),near:at(4.6,.6),grey:true};
+  RUN.forEach(r=>{if(!r.farm)r.g.visible=false;});
+  FARM={at,u,n,t:0,run:false,grey,cam:at(-1.6,0),look:at(12,1.2)};
+  setTimeout(()=>{try{parent.postMessage({type:'race3d-farmready'},'*');}catch(e){}},900);}
+addEventListener('message',e=>{const d=e.data||{};if(d.type==='farm'&&FARM&&d.cmd==='run'){FARM.run=true;FARM.rt=0;}});
+const _fq=new THREE.Vector3();
+function farmStand(r,a){const inf=r.mesh.morphTargetInfluences;r.mixer.setTime(0);if(inf){const k=inf.length;for(let i=0;i<k;i++)inf[i]=a/k;}}
+function farmPose(r,dt){const f=r.farm;if(!f){r.g.visible=false;return;}r.g.visible=true;
+  if(f.grey){const tgt=FARM.run?f.near:f.far;const p=r.g.position;if(!f.pos){f.pos={x:f.far.x,z:f.far.z};}
+    const dx=tgt.x-f.pos.x,dz=tgt.z-f.pos.z,dd=Math.hypot(dx,dz);if(FARM.run&&dd>.15){const v=Math.min(dd,dt*(dd>3?9:dd*3));f.pos.x+=dx/dd*v;f.pos.z+=dz/dd*v;r.g.rotation.y=Math.atan2(dx,dz);r.act.timeScale=dd>3?1:.6;r.mixer.update(dt);if(dd<3)walkify(r,.5+dd*.15);}
+    else{if(!FARM.run)r.g.rotation.y=Math.atan2(FARM.cam.x-f.pos.x,FARM.cam.z-f.pos.z)+.9;else r.g.rotation.y=Math.atan2(FARM.cam.x-f.pos.x,FARM.cam.z-f.pos.z)+.5;farmStand(r,.78);}
+    r.g.position.set(f.pos.x,0,f.pos.z);return;}
+  f.phase+=dt;if(f.walk){const a=f.phase*.18,R=3.2,x=f.home.x+Math.cos(a)*R,z=f.home.z+Math.sin(a)*R;r.g.position.set(x,0,z);r.g.rotation.y=Math.atan2(-Math.sin(a),Math.cos(a));r.act.timeScale=.9;r.mixer.update(dt);walkify(r,.5);}
+  else{r.g.position.set(f.home.x,0,f.home.z);r.g.rotation.y=Math.atan2(FARM.u.x,FARM.u.z)+.4;farmStand(r,.78);}}
+function farmCam(dt){FARM.t+=dt;const c=FARM.cam,l=FARM.look;cam.position.set(c.x,1.62+Math.sin(FARM.t*.6)*.02,c.z);cam.lookAt(l.x,1.05,l.z);cam.fov=42;cam.updateProjectionMatrix();sun.position.set(l.x+FARM.u.x*60,22,l.z+FARM.u.z*60);sun.target.position.set(l.x,0,l.z);}
+/* ---------- 口取り式: the winner standing in front of the stand, the rider up, the groom at its head, the connections in a row; one picture ---------- */
+let KUCHI=null;
+function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMaterial({color:o.suit||'#2b2f36',roughness:.75}),skin=new THREE.MeshStandardMaterial({color:o.skin||'#e3b994',roughness:.7}),
+   hair=new THREE.MeshStandardMaterial({color:o.hair||'#1b1612',roughness:.9}),shoe=new THREE.MeshStandardMaterial({color:'#111',roughness:.5}),shirt=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.8});
+  const hip=new THREE.Group();hip.position.y=.92;g.add(hip);
+  [-1,1].forEach(sd=>{const th=new THREE.Mesh(new THREE.CapsuleGeometry(.075,o.dress?.0:.36,4,8),o.dress?skin:suit);th.position.set(sd*.1,-.22,0);hip.add(th);const sh=new THREE.Mesh(new THREE.CapsuleGeometry(.06,.36,4,8),o.dress?skin:suit);sh.position.set(sd*.1,-.64,0);hip.add(sh);
+    const ft=new THREE.Mesh(new THREE.BoxGeometry(.1,.07,.24),shoe);ft.position.set(sd*.1,-.88,.06);hip.add(ft);});
+  if(o.dress){const sk=new THREE.Mesh(new THREE.ConeGeometry(.3,.55,12),suit);sk.position.y=-.12;hip.add(sk);}
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.5,4,8),suit);body.position.y=.38;body.scale.z=.75;hip.add(body);
+  const sf=new THREE.Mesh(new THREE.ConeGeometry(.08,.2,3),shirt);sf.rotation.z=Math.PI;sf.position.set(0,.6,.145);sf.scale.z=.15;hip.add(sf);
+  if(!o.dress){const tie=new THREE.Mesh(new THREE.BoxGeometry(.025,.13,.015),new THREE.MeshStandardMaterial({color:o.tie||'#7a1f24'}));tie.position.set(0,.58,.158);hip.add(tie);}
+  [-1,1].forEach(sd=>{const a=new THREE.Mesh(new THREE.CapsuleGeometry(.055,.44,4,6),suit);a.position.set(sd*.26,.34,0);a.rotation.z=sd*.08;hip.add(a);const hd=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),skin);hd.position.set(sd*.28,.06,.02);hip.add(hd);});
+  const head=new THREE.Mesh(new THREE.SphereGeometry(.12,12,10),skin);head.position.y=.86;hip.add(head);
+  const hr=new THREE.Mesh(new THREE.SphereGeometry(.128,12,8,0,Math.PI*2,0,Math.PI*.55),hair);hr.position.set(0,.875,-.012);hip.add(hr);
+  if(o.rosette){const rs=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.02,14),new THREE.MeshStandardMaterial({color:'#d62828',roughness:.6}));rs.rotation.x=Math.PI/2;rs.position.set(-.11,.56,.16);hip.add(rs);}
+  if(o.child)g.scale.setScalar(.72);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
+function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN.find(r=>r.mine)||RUN[0];
+  RUN.forEach(r=>{r.g.visible=r===w;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
+  const s=FIN-4,p=pathAt(s,10),q=pathAt(s+1,10);w.g.position.set(p.x,0,p.z);w.g.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);
+  if(!w.handler)addHandler(w);w.handler.visible=true;w.fist.visible=false;
+  /* the infield side: from there the stand and the crowd are the background */
+  const hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
+  const ppl=(K.people||[]).slice(0,7),n=ppl.length,grp=new THREE.Group();scene.add(grp);
+  ppl.forEach((o,i)=>{const f=personFig(o);const along=-1.45-(n-1-i)*.58,side=.55;f.position.set(p.x+ux*along+nx*side,0,p.z+uz*along+nz*side);f.rotation.y=Math.atan2(nx,nz);grp.add(f);});
+  KUCHI={n,w,p,nx,nz,ux,uz,t:0,shot:false,pt:0,pw:1,avg:.78};/* the horse only knows how to gallop: the average of the whole stride stands it square */}
+function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime(KUCHI.pt??.18);walkify(r,KUCHI.pw??1);if(KUCHI.avg!=null){const inf=r.mesh.morphTargetInfluences;if(inf){const n=inf.length;for(let k=0;k<n;k++)inf[k]=KUCHI.avg/n;}}r.J.rotation.x=-.42;r.J.position.y=.04;r.J.position.z=-.08;r.spd=0;if(r.whipArm)r.whipArm.visible=false;handlerWalk(r,dt,0);}
+function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=7.8,c0=-.25-(KUCHI&&KUCHI.n||4)*.3;cam.position.set(p.x+K.nx*d+K.ux*c0,1.45,p.z+K.nz*d+K.uz*c0);cam.lookAt(p.x+K.ux*c0+K.nx*.5,1.15,p.z+K.uz*c0+K.nz*.5);cam.fov=33;cam.updateProjectionMatrix();
+  sun.position.set(p.x+K.nx*40+30,60,p.z+K.nz*40);sun.target.position.set(p.x,0,p.z);
+  if(!K.shot&&K.t>1.2){K.shot=true;try{R3.render(scene,cam);const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=422,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
+    o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.86);if(url.length<4000){K.shot=false;K.t=.8;return;}parent.postMessage({type:'race3d-kuchi',img:url},'*');}catch(e){console.error('kuchi',e&&e.message);K.shot=false;K.t=.6;}}}
 function walkify(r,a){const inf=r.mesh.morphTargetInfluences;if(!inf)return;for(let k=0;k<inf.length;k++)inf[k]*=a;}
 /* ---------- before the race: 返し馬 (warm-up canter), then for the big races the starter climbs his stand and the fanfare plays ---------- */
 const BIG=['G1','classic','derby'].includes(GRADE);
@@ -1157,7 +1213,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
     if(LOAD.t>=LOAD.end&&!LOAD.done){LOAD.done=true;started=true;RUN.forEach(r=>{if(r.handler)r.handler.visible=false;});t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');}}
   (window.__flags||[]).forEach((f,i)=>{f.rotation.y=Math.sin(now*2.2+i)*.35;});
   if(started&&!PAD.on)sepStep(Math.min(tau,1),dt0);
-  RUN.forEach(r=>{if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;if(r.late&&tau<1)r.d=Math.max(0,r.d-9*Math.min(1,SIMT/1.2)*(1-sm(.04,.3,tau)));const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,JUMP&&started&&!r.gone?jumpY(r.d):0,p.z);
+  RUN.forEach(r=>{if(FARM){farmPose(r,dt0);return;}if(KUCHI){kuchiPose(r,dt0);return;}if(PAD.on){padPose(r,dt0);r.d=0;return;}if(PRE.stage==='canter'){r.d=0;return;}if(PRE.stage==='starter'){if(!r.ring){r.d=0;loadingPoseIdle(r,dt0);}return;}if(LOAD&&!started){loadingPose(r,dt0);r.d=0;return;}if(r.gapT!=null)r.gap+=(r.gapT-r.gap)*Math.min(1,dt*.7);if(r.wideT!=null)r.wide+=(r.wideT-r.wide)*Math.min(1,dt*.8);r.d=tau<=1?posOf(r,tau):posOf(r,1)+D*(1-Math.exp(-(tau-1)*5))/5;if(r.late&&tau<1)r.d=Math.max(0,r.d-9*Math.min(1,SIMT/1.2)*(1-sm(.04,.3,tau)));const ln=laneOf(r,Math.min(tau,1))+(r.sep||0);const p=pathAt(START+r.d,ln);r.g.position.set(p.x,JUMP&&started&&!r.gone?jumpY(r.d):0,p.z);
     const yaw=Math.atan2(p.hx,p.hz);r.g.rotation.y=yaw;
     const sp=INGATE?0:started?(tau<=1?1:Math.max(.42,Math.exp(-(tau-1)*5))):0;r.spd=sp;r.act.timeScale=sp*3.35;r.mixer.update(dt);   // ~2.2 strides a second, like a real gallop
     {const m=morphedVertex(r,r.muzzle,_mv);const h0=r.arms[0].hd.position,h1=r.arms[1].hd.position;
@@ -1176,7 +1232,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
     r.cloths.forEach(cl=>{const pa=cl.geo.attributes.position,b=cl.base;for(let k=0;k<pa.count;k++){const w=cl.hang[k];if(!w)continue;const x=b[k*3],z=b[k*3+2],sw=w*w*(.045*sp*Math.sin(TS*9+r.ph+z*5)+.012*Math.sin(TS*3.1+z*9));pa.setX(k,x+Math.sign(x)*Math.abs(sw)*.8);pa.setZ(k,z-sw*.6);}pa.needsUpdate=true;});});
   RUN.forEach(tackFollow);breathStep(DTS*FFWD);
   const byD=[...RUN].sort((a,b)=>b.d-a.d),lead=byD[0],mid=byD[Math.floor(byD.length/2)];
-  updateCam(mid,lead,tau,dt,byD[byD.length-1]);
+  if(FARM)farmCam(dt);else if(KUCHI)kuchiCam(dt);else updateCam(mid,lead,tau,dt,byD[byD.length-1]);
   hud(byD,tau,dt);
   if(started){
     commentary(byD,tau);}
@@ -1255,7 +1311,7 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
   if(IN&&started&&!MSHOT.done){const me=RUN.find(r=>r.mine);if(me&&!me.gone){const ready=me.won?(SIMT-TT>1.45):(me.d>=D+1.5);if(ready){MSHOT.done=true;try{const p=me.g.position,yw=me.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let sx=fz,sz=-fx;if(sz>0){sx=-sx;sz=-sz;}
       const tc=MSHOT.cam||(MSHOT.cam=new THREE.PerspectiveCamera(19,16/9,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=R3.domElement.width/R3.domElement.height;tc.position.set(p.x+fx*7.5+sx*8.5,2.0,p.z+fz*7.5+sz*8.5);tc.lookAt(p.x+fx*.6,1.55,p.z+fz*.6);tc.updateProjectionMatrix();
       R3.render(scene,tc);const W=R3.domElement.width,H=R3.domElement.height,cw=Math.min(W,H*16/9),ch=cw*9/16,o=document.createElement('canvas');o.width=640;o.height=360;o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,640,360);
-      parent.postMessage({type:'race3d-mine',img:o.toDataURL('image/jpeg',.82),won:!!me.won},'*');R3.render(scene,cam);}catch(e){console.error('mshot',e&&e.message);}}}}
+      parent.postMessage({type:'race3d-mine',img:o.toDataURL('image/jpeg',.82),won:!!me.won,no:me.no},'*');R3.render(scene,cam);}catch(e){console.error('mshot',e&&e.message);}}}}
   /* the finish, recorded small for the replay on the result board's turf vision */
   if(IN&&started&&!SPL.on){const rem0=D-(byDsorted[0]?byDsorted[0].d:0);if(rem0<150&&tau<1.025&&SIMT-(RPF.t||0)>.11&&RPF.list.length<34){RPF.t=SIMT;try{RPF.x.drawImage(R3.domElement,0,0,RPF.c.width,RPF.c.height);RPF.list.push(RPF.c.toDataURL('image/jpeg',.72));}catch(e){}}}
   if(IN&&!window.__ready&&(started||INGATE||PRE.stage||PAD.on||LOAD)){window.__ready=(window.__ready||0)+1;if(window.__ready===1)setTimeout(()=>{try{parent.postMessage({type:'race3d-ready'},'*');}catch(e){}},350);}
@@ -1305,7 +1361,7 @@ new GLTFLoader().parse(bin,'',g=>{horseGLTF=g;smoothHorse(g);buildChute();setupR
     document.getElementById('emb_done').onclick=()=>{try{parent.postMessage({type:'race3d-done'},'*');}catch(e){}};
     document.getElementById('tm').style.right='4.5%';document.getElementById('tm').style.top='14%';}window.__t0w=performance.now()/1000;const gs=document.getElementById('grades');if(IN)gs.style.display='none';Object.entries(CLOTH).forEach(([k,v])=>{const x=document.createElement('a');x.href='?grade='+k;x.textContent=v.label;x.style.cssText=`padding:6px 10px;border-radius:14px;font-size:12px;font-weight:700;text-decoration:none;background:${v.bg};color:${v.fg};border:2px solid ${k===GRADE?'#ffd166':v.edge}`;gs.appendChild(x);});
   b.onclick=()=>{if(PAD.on)leavePaddock();b.remove();gs.remove();pg.remove();try{ACX=ACX||new (window.AudioContext||window.webkitAudioContext)();ACX.resume();}catch(e){}if(IN&&!BIG){GATE.root&&(GATE.root.visible=true);GATE.back&&GATE.back.forEach(d=>d.piv.rotation.y=0);RUN.forEach(r=>{r.inGate=true;});window.__t0w=performance.now()/1000-30;INGATE=true;say('各馬ゲートに収まりました');setTimeout(()=>{INGATE=false;started=true;t0=performance.now()/1000;say('ゲートが開いて、スタートしました！');},IN.shot?0:3400);}else beginPre();};
-  const pg=document.getElementById('padgo');pg.hidden=!!IN;if(IN)setTimeout(()=>{if(MODE==='race')b.onclick();else if(MODE==='paddock'){b.remove();gs.remove();pg.remove();document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());enterPaddock();document.getElementById('padbar').style.display='none';document.getElementById('call').style.display='none';}else{b.remove();gs.remove();pg.remove();document.getElementById('tv').style.display='none';document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());if(GATE.root)GATE.root.visible=false;if(MODE==='box')buildBoxRoom();beginPre();document.getElementById('call').style.display='none';}},IN&&IN.shot?0:300);pg.onclick=()=>{b.hidden=true;gs.style.display='none';pg.hidden=true;enterPaddock();};
+  const pg=document.getElementById('padgo');pg.hidden=!!IN;if(IN)setTimeout(()=>{if(MODE==='farm'){b.remove();gs.remove();pg.remove();document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());farmScene();return;}if(MODE==='kuchi'){b.remove();gs.remove();pg.remove();document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());kuchiScene();return;}if(MODE==='race')b.onclick();else if(MODE==='paddock'){b.remove();gs.remove();pg.remove();document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());enterPaddock();document.getElementById('padbar').style.display='none';document.getElementById('call').style.display='none';}else{b.remove();gs.remove();pg.remove();document.getElementById('tv').style.display='none';document.querySelectorAll('#emb_ff,#emb_done').forEach(x=>x.remove());if(GATE.root)GATE.root.visible=false;if(MODE==='box')buildBoxRoom();beginPre();document.getElementById('call').style.display='none';}},IN&&IN.shot?0:300);pg.onclick=()=>{b.hidden=true;gs.style.display='none';pg.hidden=true;enterPaddock();};
   document.getElementById('tomare').onclick=()=>{PAD.stage='mount';PAD.t=0;say('止まーれー！ 騎手が騎乗します');};
   document.getElementById('tohon').onclick=()=>{leavePaddock();b.hidden=false;gs.style.display='';say('本馬場入場です');};
   window.__shotState=()=>JSON.stringify({started,SIMT,TT,D,M:MSHOT.done,P:MSHOT.pdone,E:MSHOT.end,pre:PRE.stage,load:!!LOAD,me:(RUN.find(r=>r.mine)||{}).d,won:(RUN.find(r=>r.mine)||{}).won,mines:RUN.filter(r=>r.mine).length,pk:IN.pk,why:window.__why});if(IN&&IN.shot){{const st=document.createElement('style');st.textContent='body>*:not(#cv){visibility:hidden!important}';document.head.appendChild(st);}const cv0=document.getElementById('cv');cv0.style.opacity='0';cv0.style.transition='opacity .35s';document.body.style.background='#0d1a12';const sk=()=>{try{window.__seek(.985);FFWD=3;}catch(e){}};setTimeout(sk,0);const iv=setInterval(()=>{if(started){sk();clearInterval(iv);setTimeout(()=>{cv0.style.opacity='1';},350);}else{if(PRE.stage)sk();if(LOAD&&!started)LOAD.t=LOAD.end;}},60);setTimeout(()=>{if(!MSHOT.end){MSHOT.end=true;try{parent.postMessage({type:'race3d-shotdone'},'*');}catch(e){}}},90000);}
