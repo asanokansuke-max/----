@@ -26,3 +26,13 @@ function debutApplyJ(h){try{const o=S.month&&S.month.orders&&S.month.orders[h.id
 ['debutTalk','debutJ'].forEach(k=>{const e=EV[k];if(!e)return;const f0=e.f;e.f=(d,i)=>{const r=f0(d,i);const h=HZ(d.hid);if(h)debutApplyJ(h);return r;};});
 /* and every month, an entry the trainer made keeps to the main rider whenever he can ride */
 planOmakase=(o=>function(){const r=o.apply(this,arguments);try{Object.entries(S.month.orders||{}).forEach(([k,od])=>{const h=HZ(+k);if(h&&od.type==='race'&&od.by==='trainer')debutApplyJ(h);});}catch(e){}return r;})(planOmakase);
+/* who would actually take the ride: a top jockey doesn't ride an unraced horse of an owner nobody knows.
+   The same yardstick as a normal riding request (trust, the owner's standing, what the horse has shown), without the dice */
+function wouldRide(j,h){if(j==='stable')return true;const p=P(j),k=JK(j);if(!p||!k)return false;if(h.mainJ===j)return true;
+  const tr=TR(h.trainer);if(tr&&tr.jk===j)return true;if(j==='hinata'&&(p.trust>=40||k.sk<80))return true;
+  const ab=Math.max(0,ability(h,h.dist||1800,h.surf||'芝')-50)*.8;const score=p.trust*.6+(S.fame||0)*.3+ab+(h.g1||0)*10+(h.wins||0)*2+6;return score>=(k.need??20);}
+debutJs=(o=>function(h){const all=jockeysAvail().filter(j=>j!=='stable'&&JK(j)&&!(JK(j).ban>S.t)&&!(typeof jockeyAway==='function'&&jockeyAway(j)));
+  const ok=all.filter(j=>wouldRide(j,h));const tr=TR(h.trainer)&&TR(h.trainer).jk;const score=j=>(j===h.mainJ?1000:0)+(j==='hinata'?300:0)+(j===tr?200:0)+(P(j)?P(j).trust:0)+JK(j).sk*.3;
+  return ok.sort((a,b)=>score(b)-score(a)).slice(0,4);})(debutJs);
+if(CALLS.jkAsk){const s0=CALLS.jkAsk.setup;CALLS.jkAsk.setup=()=>{const d=s0();if(!d)return d;const h=HZ(d.hid);if(!h)return null;
+  if(wouldRide(d.who,h))return d;const js=jockeysAvail().filter(j=>j!=='stable'&&wouldRide(j,h)&&j!==TR(h.trainer)?.jk);if(!js.length)return null;d.who=pick(js);return d;};}
