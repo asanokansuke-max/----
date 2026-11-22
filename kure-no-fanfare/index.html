@@ -9220,6 +9220,13 @@ EV.debutJ={r:d=>{const h=HZ(d.hid);if(!h||h.starts>0||h.status!=='現役'||h.deb
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.debutTalked=1;const j=(d.js||[])[i];if(j){h.mainJ=j;trust(j,4);return `${h.name}の主戦は${JNAME(j)}に決まった。`;}return '';}};
 storyTriggers=(o=>function(first){const r=o.apply(this,arguments);try{racing().filter(h=>h.owner==='me'&&!h.first&&h.status==='現役'&&h.starts===0&&!h.debutTalked&&!h.mainJ).slice(0,2).forEach(h=>{
   if(racesFor(h).some(x=>x.debut)&&!S.inbox.some(e=>e.type==='debutJ'&&e.data.hid===h.id))pushEv('debutJ',{hid:h.id});});}catch(e){}return r;})(storyTriggers);
+/* the rider chosen for the debut also rides this month: the trainer may already have entered the horse (with another jockey)
+   before the letter was read, so that entry is switched to the new main rider (if he is free) */
+function debutApplyJ(h){try{const o=S.month&&S.month.orders&&S.month.orders[h.id];if(!o||o.type!=='race'||!h.mainJ||o.j===h.mainJ)return;
+  const race=racesFor(h).find(r=>r.key===(o.race&&o.race.key))||o.race;const [ok]=askJockey(h.mainJ,h,race);if(ok)o.j=h.mainJ;}catch(e){}}
+['debutTalk','debutJ'].forEach(k=>{const e=EV[k];if(!e)return;const f0=e.f;e.f=(d,i)=>{const r=f0(d,i);const h=HZ(d.hid);if(h)debutApplyJ(h);return r;};});
+/* and every month, an entry the trainer made keeps to the main rider whenever he can ride */
+planOmakase=(o=>function(){const r=o.apply(this,arguments);try{Object.entries(S.month.orders||{}).forEach(([k,od])=>{const h=HZ(+k);if(h&&od.type==='race'&&od.by==='trainer')debutApplyJ(h);});}catch(e){}return r;})(planOmakase);
 /* =========================================================
    ほかの馬の名前を、実際の出馬表のようにばらけさせる（どれも架空の名前）:
    ・冠名＋ことば（「ミナトサンライズ」）
