@@ -2,6 +2,8 @@
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>3D中継テスト</title>
 <style>
+html{-webkit-text-size-adjust:100%}*{touch-action:manipulation}body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+
 :root{--ink:#f3f5f2;--bg:#0b120e}
 html,body{margin:0;height:100%;background:#0b120e;color:var(--ink);font-family:"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden}
 #cv{display:block;width:100vw;height:100vh}
@@ -1000,8 +1002,8 @@ let ACX=null;function fanfare(){if(IN){try{parent.postMessage({type:'race3d-fanf
   return t-t0;}catch(e){return 6;}}
 const MODE=(IN&&IN.mode)||QS0.get('mode')||'race';
 if(MODE==='parade'||MODE==='warmup'){const tv=document.getElementById('tv');if(tv)tv.style.display='none';const cl=document.getElementById('call');if(cl)cl.style.display='none';}
-function beginPre(){if(MODE==='race'&&IN&&IN.warmed){RUN.forEach(r=>r.g.visible=true);if(BIG){PRE.stage='starter';PRE.t=0;say('スターターが台に上がります');}else{PRE.stage=null;beginLoading();if(IN&&IN.fanG&&!IN.shot){try{parent.postMessage({type:'race3d-fanfare'},'*');}catch(e){}say('ファンファーレが鳴り響きます。各馬、ゲートインが始まりました');}else say('各馬、ゲートインが始まりました');}return;}PRE.stage='canter';PRE.t=0;const ord=MODE==='race'||MODE==='parade'?[...RUN].sort((a,b)=>a.no-b.no):[...RUN.filter(r=>r.mine),...RUN.filter(r=>!r.mine)];ord.forEach((r,i)=>{r.cs=MODE==='race'?i*2.2:MODE==='parade'?4+i*4.4:i*1.6;r.g.visible=false;});if(MODE==='parade')makePonies();say('本馬場入場。各馬、返し馬に向かいます');}
-function prePose(r,dt){let t=PRE.t-r.cs;if(MODE==='parade'&&t>=0&&!r.called){r.called=1;lowerThird(r);}if(MODE!=='race'&&t>22){r.cs=PRE.t+rnd()*4;r.cd=0;t=PRE.t-r.cs;}if(t<0){r.g.visible=false;return;}r.g.visible=t<16||MODE!=='race';const sp=MODE==='parade'?(t<7?1.7:Math.min(8,1.7+(t-7)*2.2)):Math.min(9,2+t*3);r.cd=(r.cd||0)+sp*dt;
+function beginPre(){if(MODE==='race'&&IN&&IN.warmed){RUN.forEach(r=>r.g.visible=true);if(BIG){PRE.stage='starter';PRE.t=0;say('スターターが台に上がります');}else{PRE.stage=null;beginLoading();if(IN&&IN.fanG&&!IN.shot){try{parent.postMessage({type:'race3d-fanfare'},'*');}catch(e){}say('ファンファーレが鳴り響きます。各馬、ゲートインが始まりました');}else say('各馬、ゲートインが始まりました');}return;}PRE.stage='canter';PRE.t=0;const ord=MODE==='race'||MODE==='parade'?[...RUN].sort((a,b)=>a.no-b.no):[...RUN.filter(r=>r.mine),...RUN.filter(r=>!r.mine)];ord.forEach((r,i)=>{r.cs=MODE==='race'?i*2.2:MODE==='parade'?4+i*4.4:i*1.6;r.g.visible=false;});if(MODE==='parade')makePonies();say(MODE==='race'&&IN?`本馬場入場。${RUN.length}頭が、馬番順に返し馬へ向かいます`:'本馬場入場。各馬、返し馬に向かいます');}
+function prePose(r,dt){let t=PRE.t-r.cs;if(MODE==='parade'&&t>=0&&!r.called){r.called=1;lowerThird(r);}if(MODE==='race'&&IN&&!IN.shot&&t>=0&&!r.called){r.called=1;lowerThird(r);const f0=IN.field[r.i]||{};say(`${r.no}番 ${r.name}${f0.pop&&f0.pop<=3?`、${f0.pop}番人気`:''}${r.mine?'。あなたの馬です':''}`);}if(MODE!=='race'&&t>22){r.cs=PRE.t+rnd()*4;r.cd=0;t=PRE.t-r.cs;}if(t<0){r.g.visible=false;return;}r.g.visible=t<16||MODE!=='race';const sp=MODE==='parade'?(t<7?1.7:Math.min(8,1.7+(t-7)*2.2)):Math.min(9,2+t*3);r.cd=(r.cd||0)+sp*dt;
   const ln=MODE==='parade'?8+(r.i%2)*2.6:9+(r.i%3)*1.5,p=pathAt(FIN-260+r.cd,ln),q=pathAt(FIN-260+r.cd+.5,ln);r.g.position.set(p.x,0,p.z);r.g.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);
   if(MODE==='parade'&&t<7){r.act.timeScale=.95;r.mixer.update(dt);walkify(r,.62);}else{r.act.timeScale=1.9;r.mixer.update(dt);}if(r.handler)r.handler.visible=false;r.J.visible=true;}
 const PONIES=[];
@@ -1177,26 +1179,45 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
      line itself smeared sideways (horizontal streaks), the horses keyed over it, all in that lavender-grey with the placings tagged */
   if(IN&&started&&IN.pk&&!MSHOT.pdone){const A=RUN.find(r=>r.no===IN.pk[0]),Bh=RUN.find(r=>r.no===IN.pk[1]);  const noseW=r=>{r.g.updateMatrixWorld(true);return r.g.localToWorld(morphedVertex(r,r.muzzle,new THREE.Vector3()));};
   let NZ=null;if(A&&Bh){NZ=noseW(A);const lp=pathAt(START+D,laneOf(A,1)),yw0=A.g.rotation.y;if((NZ.x-lp.x)*Math.sin(yw0)+(NZ.z-lp.z)*Math.cos(yw0)<-.05)NZ=null;}
-  if(A&&Bh&&NZ){MSHOT.pdone=true;try{
-      const OW=640,OH=500,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const tp={x:NZ.x,z:NZ.z},cp={x:tp.x+nx*28,z:tp.z+nz*28};
-      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));// no resizing of the live canvas (iPhone didn't like it): render at its size, crop the middle to the print's shape
-      const W=R3.domElement.width,H=R3.domElement.height,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,sx0=(W-cw)/2,sy0=(H-ch)/2;tc.layers.mask=cam.layers.mask;tc.aspect=W/H;tc.fov=2*Math.atan(Math.tan(13*Math.PI/360)*H/ch)*180/Math.PI;tc.position.set(cp.x,12,cp.z);tc.lookAt(tp.x,1,tp.z);tc.updateProjectionMatrix();
-      const crop=(ctx)=>ctx.drawImage(R3.domElement,sx0,sy0,cw,ch,0,0,OW,OH);
-      R3.render(scene,tc);const o=document.createElement('canvas');o.width=OW;o.height=OH;const x=o.getContext('2d');const bg=document.createElement('canvas');bg.width=1;bg.height=OH;bg.getContext('2d').drawImage(R3.domElement,sx0+cw/2,sy0,1,ch,0,0,1,OH);
-      MSHOT.plain=document.createElement('canvas');MSHOT.plain.width=OW;MSHOT.plain.height=OH;crop(MSHOT.plain.getContext('2d'));x.imageSmoothingEnabled=false;x.drawImage(bg,0,0,1,OH,0,0,OW,OH);                       // the streaked background
-      const keep=[],bgc=scene.background,fg=scene.fog;scene.children.forEach(ch=>{if(ch.isLight||RUN.some(r=>r.g===ch))return;keep.push([ch,ch.visible]);ch.visible=false;});scene.background=new THREE.Color('#ff00ff');scene.fog=null;
-      R3.render(scene,tc);keep.forEach(([ch,v])=>ch.visible=v);scene.background=bgc;scene.fog=fg;
-      const hz=document.createElement('canvas');hz.width=OW;hz.height=OH;const hx=hz.getContext('2d');crop(hx);const id=hx.getImageData(0,0,OW,OH),dd=id.data;
-      let solid=0;for(let k=0;k<dd.length;k+=4){const r=dd[k],g=dd[k+1],b=dd[k+2];if(r>200&&b>200&&g<80)dd[k+3]=0;else if(r>150&&b>150&&g<120)dd[k+3]=110;else solid++;}hx.putImageData(id,0,0);if(solid>1500)x.drawImage(hz,0,0);else x.drawImage(MSHOT.plain,0,0);
-      // the print: grey with a lavender cast, fine horizontal scan lines, a little grain
-      const im=x.getImageData(0,0,OW,OH),q=im.data;for(let k=0;k<q.length;k+=4){const L=q[k]*.3+q[k+1]*.59+q[k+2]*.11,y=((k/4)/OW)|0,ln=(y%3===0?-10:0)+(Math.random()-.5)*10;const v=L*.82+40+ln,c=.42;q[k]=(v*1.0)*(1-c)+(q[k]*.85+30+ln)*c;q[k+1]=(v*.93)*(1-c)+(q[k+1]*.85+26+ln)*c;q[k+2]=(v*1.06)*(1-c)+(q[k+2]*.85+38+ln)*c;}   x.putImageData(im,0,0);
-      x.fillStyle='rgba(255,255,255,.5)';x.fillRect(OW/2,0,1,OH);
-      // tags
-      const circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱',v3=new THREE.Vector3();const tag=(r,pl)=>{v3.set(r.g.position.x,2.5,r.g.position.z).project(tc);const px=((v3.x+1)/2*W-sx0)/cw*OW,py=((1-v3.y)/2*H-sy0)/ch*OH;const F='bold 19px "Hiragino Sans","Noto Sans JP",sans-serif';x.font=F;const t1=`${pl}着`,t2=r.name,w1=x.measureText(t1).width,w2=x.measureText(t2).width,cr=11,tw=w1+w2+cr*2+36;let bx=Math.min(OW-tw-6,Math.max(6,px-tw*.2)),by=Math.max(70,py-6);if(MSHOT.lastTag&&Math.abs(by-MSHOT.lastTag)<32)by=MSHOT.lastTag+(by>=MSHOT.lastTag?32:-32);MSHOT.lastTag=by;x.fillStyle='#fff';x.fillRect(bx,by-20,tw,27);x.strokeStyle='#222';x.lineWidth=1.5;x.strokeRect(bx,by-20,tw,27);x.fillStyle='#111';x.textAlign='left';x.fillText(t1,bx+8,by);const cx=bx+8+w1+8+cr,cy=by-7;x.lineWidth=1.8;x.strokeStyle='#111';x.beginPath();x.arc(cx,cy,cr,0,7);x.stroke();x.textAlign='center';x.font=`bold ${r.no>=10?14:16}px "Hiragino Sans","Noto Sans JP",sans-serif`;x.fillText(String(r.no),cx,cy+(r.no>=10?5:6));x.font=F;x.textAlign='left';x.fillText(t2,cx+cr+8,by);};
+  if(A&&Bh&&NZ){MSHOT.pdone=true;const saved=RUN.map(r=>[r,r.g.position.clone(),r.g.visible]);try{
+      /* a slit camera sees each horse at the moment it crosses the line, so on the print every horse stands where the result puts it:
+         the photo's first horse on the line, the others ahead or behind by their official margins. The print has two bands like the
+         real one: below, the horses seen from the stand; above, the same moment in the mirror on the far rail (their other side). */
+      const OW=640,OH=500,MB=150,GP=8,DB=OH-MB-GP,yw=A.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let nx=fz,nz=-fx;if(nz>0){nx=-nx;nz=-nz;}const tp={x:NZ.x,z:NZ.z};
+      const gx=r=>{const v=r.gapT!=null?r.gapT:r.gap;return v||0;},MPL=4.1;
+      RUN.forEach(r=>{if(!r.g.visible)return;const w=noseW(r),cur=(w.x-tp.x)*fx+(w.z-tp.z)*fz,want=-(gx(r)-gx(A))*MPL;if(r!==A&&r!==Bh&&(r.gone||Math.abs(want)>16)){r.g.visible=false;return;}const sh=want-cur;r.g.position.x+=fx*sh;r.g.position.z+=fz*sh;r.g.updateMatrixWorld(true);});
+      const tc=MSHOT.pc||(MSHOT.pc=new THREE.PerspectiveCamera(13,OW/OH,.5,3000));
+      const W=R3.domElement.width,H=R3.domElement.height,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,sx0=(W-cw)/2,sy0=(H-ch)/2;tc.layers.mask=cam.layers.mask;tc.aspect=W/H;tc.fov=2*Math.atan(Math.tan(13*Math.PI/360)*H/ch)*180/Math.PI;
+      const aim=sd=>{tc.position.set(tp.x+nx*28*sd,12,tp.z+nz*28*sd);tc.lookAt(tp.x,1,tp.z);tc.updateProjectionMatrix();tc.updateMatrixWorld(true);};
+      const grab=()=>{const c=document.createElement('canvas');c.width=OW;c.height=OH;c.getContext('2d').drawImage(R3.domElement,sx0,sy0,cw,ch,0,0,OW,OH);return c;};
+      const keep=[],bgc=scene.background,fg=scene.fog;
+      const keyed=()=>{keep.length=0;scene.children.forEach(c=>{if(c.isLight||RUN.some(r=>r.g===c))return;keep.push([c,c.visible]);c.visible=false;});scene.background=new THREE.Color('#ff00ff');scene.fog=null;
+        R3.render(scene,tc);keep.forEach(([c,v])=>c.visible=v);scene.background=bgc;scene.fog=fg;const c=grab(),cx=c.getContext('2d'),id=cx.getImageData(0,0,OW,OH),dd=id.data;let solid=0;
+        for(let k=0;k<dd.length;k+=4){const r=dd[k],g=dd[k+1],b=dd[k+2];if(r>200&&b>200&&g<80)dd[k+3]=0;else if(r>150&&b>150&&g<120)dd[k+3]=110;else solid++;}cx.putImageData(id,0,0);c.solid=solid;return c;};
+      const pv=new THREE.Vector3(),pyOf=r=>{pv.set(r.g.position.x,1.2,r.g.position.z).project(tc);return((1-pv.y)/2*H-sy0)/ch*OH;},cyOf=()=>(pyOf(A)+pyOf(Bh))/2;
+      aim(-1);const cyM=cyOf();R3.render(scene,tc);const plainM=grab(),keyM=keyed();
+      aim(1);const cyD=cyOf();R3.render(scene,tc);const plainD=grab(),keyD=keyed();
+      const o=document.createElement('canvas');o.width=OW;o.height=OH;const x=o.getContext('2d');
+      const syOf=(h,cy)=>Math.max(0,Math.min(OH-h,cy-h*.52));
+      /* each band: the line itself smeared sideways behind (the slit sees only the line), the horses keyed over it */
+      const band=(plain,key,h,y0,flip,cy)=>{const sy=syOf(h,cy);x.imageSmoothingEnabled=false;x.drawImage(plain,OW/2,sy,1,h,0,y0,OW,h);x.imageSmoothingEnabled=true;x.save();if(flip){x.translate(OW,0);x.scale(-1,1);}
+        x.drawImage(key.solid>800?key:plain,0,sy,OW,h,0,y0,OW,h);x.restore();};
+      band(plainM,keyM,MB,0,true,cyM);x.fillStyle='rgba(20,18,26,.28)';x.fillRect(0,0,OW,MB);x.fillStyle='#24222b';x.fillRect(0,MB,OW,GP);x.fillStyle='rgba(255,255,255,.18)';x.fillRect(0,MB+GP-1,OW,1);
+      band(plainD,keyD,DB,MB+GP,false,cyD);
+      /* the print: grey with a lavender cast, fine horizontal scan lines, a little grain */
+      const im=x.getImageData(0,0,OW,OH),q=im.data;for(let k=0;k<q.length;k+=4){const L=q[k]*.3+q[k+1]*.59+q[k+2]*.11,y=((k/4)/OW)|0,ln=(y%3===0?-10:0)+(Math.random()-.5)*10;const v=L*.82+40+ln,c=.42;q[k]=(v*1.0)*(1-c)+(q[k]*.85+30+ln)*c;q[k+1]=(v*.93)*(1-c)+(q[k+1]*.85+26+ln)*c;q[k+2]=(v*1.06)*(1-c)+(q[k+2]*.85+38+ln)*c;}x.putImageData(im,0,0);
+      x.fillStyle='rgba(255,255,255,.6)';x.fillRect(OW/2,0,1,OH);
+      /* the time scale along the bottom edge, as on the real print */
+      x.fillStyle='rgba(255,255,255,.55)';for(let k=-12;k<=12;k++){const px=OW/2+k*26;x.fillRect(px,OH-(k%5===0?14:8),1,k%5===0?14:8);}
+      /* tags (on the stand-side band) */
+      aim(1);MSHOT.lastTag=null;const v3=new THREE.Vector3(),y0D=MB+GP-syOf(DB,cyD);
+      const tag=(r,pl)=>{v3.set(r.g.position.x,2.5,r.g.position.z).project(tc);const px=((v3.x+1)/2*W-sx0)/cw*OW,py=((1-v3.y)/2*H-sy0)/ch*OH+y0D;const F='bold 19px "Hiragino Sans","Noto Sans JP",sans-serif';x.font=F;const t1=`${pl}着`,t2=r.name,w1=x.measureText(t1).width,w2=x.measureText(t2).width,cr=11,tw=w1+w2+cr*2+36;let bx=Math.min(OW-tw-6,Math.max(6,px-tw*.2)),by=Math.min(OH-24,Math.max(MB+GP+28,py-6));if(MSHOT.lastTag&&Math.abs(by-MSHOT.lastTag)<32)by=MSHOT.lastTag+(by>=MSHOT.lastTag?32:-32);MSHOT.lastTag=by;x.fillStyle='#fff';x.fillRect(bx,by-20,tw,27);x.strokeStyle='#222';x.lineWidth=1.5;x.strokeRect(bx,by-20,tw,27);x.fillStyle='#111';x.textAlign='left';x.fillText(t1,bx+8,by);const cx=bx+8+w1+8+cr,cy=by-7;x.lineWidth=1.8;x.strokeStyle='#111';x.beginPath();x.arc(cx,cy,cr,0,7);x.stroke();x.textAlign='center';x.font=`bold ${r.no>=10?14:16}px "Hiragino Sans","Noto Sans JP",sans-serif`;x.fillText(String(r.no),cx,cy+(r.no>=10?5:6));x.font=F;x.textAlign='left';x.fillText(t2,cx+cr+8,by);};
       const pl=IN.pkPos||[1,2];tag(A,pl[0]);tag(Bh,pl[1]);
       x.fillStyle='#0d0d0d';x.fillRect(0,0,190,58);x.fillStyle='#1d7a3d';x.fillRect(0,0,6,58);x.fillStyle='#fff';x.font='bold 24px "Hiragino Sans","Noto Sans JP",sans-serif';x.textAlign='left';x.fillText(CRS.jp,14,27);x.fillText((IN.rno||(IN.grade&&IN.grade!=='cond'?'11':'9'))+'R',118,27);
       x.font='bold 13px "Hiragino Sans","Noto Sans JP",sans-serif';x.fillText(String(IN.title||'').slice(0,13),14,49);
-      R3.render(scene,cam);parent.postMessage({type:'race3d-photo',img:o.toDataURL('image/jpeg',.86),baked:1,pk:IN.pk.slice()},'*');}catch(e){console.error('photo',e&&e.message);try{parent.postMessage({type:'race3d-photoerr',msg:String(e&&e.message)},'*');}catch(x){}MSHOT.pdone=false;MSHOT.perr=(MSHOT.perr||0)+1;if(MSHOT.perr>3)MSHOT.pdone=true;}}}
+      x.fillStyle='rgba(255,255,255,.75)';x.font='bold 12px "Hiragino Sans","Noto Sans JP",sans-serif';x.textAlign='right';x.fillText('決勝写真',OW-10,MB-8);
+      saved.forEach(([r,p,v])=>{r.g.position.copy(p);r.g.visible=v;r.g.updateMatrixWorld(true);});
+      R3.render(scene,cam);parent.postMessage({type:'race3d-photo',img:o.toDataURL('image/jpeg',.86),baked:1,pk:IN.pk.slice()},'*');}catch(e){saved.forEach(([r,p,v])=>{r.g.position.copy(p);r.g.visible=v;});console.error('photo',e&&e.message);try{parent.postMessage({type:'race3d-photoerr',msg:String(e&&e.message)},'*');}catch(x){}MSHOT.pdone=false;MSHOT.perr=(MSHOT.perr||0)+1;if(MSHOT.perr>3)MSHOT.pdone=true;}}}
   if(IN&&IN.shot&&!MSHOT.end&&(MSHOT.done||RUN.find(r=>r.mine&&r.gone))&&(!IN.pk||MSHOT.pdone)){MSHOT.end=true;window.__why='cond';try{parent.postMessage({type:'race3d-shotdone'},'*');}catch(e){}}
   if(IN&&started&&!MSHOT.done){const me=RUN.find(r=>r.mine);if(me&&!me.gone){const ready=me.won?(SIMT-TT>1.45):(me.d>=D+1.5);if(ready){MSHOT.done=true;try{const p=me.g.position,yw=me.g.rotation.y,fx=Math.sin(yw),fz=Math.cos(yw);let sx=fz,sz=-fx;if(sz>0){sx=-sx;sz=-sz;}
       const tc=MSHOT.cam||(MSHOT.cam=new THREE.PerspectiveCamera(19,16/9,.5,3000));tc.layers.mask=cam.layers.mask;tc.aspect=R3.domElement.width/R3.domElement.height;tc.position.set(p.x+fx*7.5+sx*8.5,2.0,p.z+fz*7.5+sz*8.5);tc.lookAt(p.x+fx*.6,1.55,p.z+fz*.6);tc.updateProjectionMatrix();

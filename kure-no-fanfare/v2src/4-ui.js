@@ -315,7 +315,7 @@ function showTrackGate(){
   const sick=S.restPenalty>0;
   const rows=RC.field.map(f=>`<tr class="${f.mine?'me':''}"><td class="num">${f.no}</td><td>${f.mine||f.rival?silk(f.silks,16):''} ${esc(f.name)}</td><td>${esc(f.jname)}</td><td class="r num">${f.odds.toFixed(1)}</td><td class="r num">${f.pop}</td></tr>`).join('');
   openModal(`<div class="from-line">${dstr(S.t)}　${esc(r.course)}競馬場</div>${raceHead(r)}
-   ${my.map(f=>`<div class="panel row">${horseSVG(f.h,44)}<div style="min-width:0;flex:1"><b>${esc(f.name)}</b>　<span class="chip">${f.pop}番人気</span><div class="muted" style="font-size:13px">騎手 ${esc(f.jname)}　${f.h.bond>=60?`${esc(f.name)}が、パドックであなたを見つけて首を振った。`:f.h.cond>=4?'毛づやがいい。気配は上々だ。':f.h.cond<=2?'少し元気がないように見える。':'落ち着いて周回している。'}</div></div></div>`).join('')}
+   ${my.map(f=>`<div class="panel row" style="width:100%;box-sizing:border-box">${horseSVG(f.h,44)}<div style="min-width:0;flex:1"><b>${esc(f.name)}</b>　<span class="chip">${f.pop}番人気</span><div class="muted" style="font-size:13px">騎手 ${esc(f.jname)}　${f.h.bond>=60?`${esc(f.name)}が、パドックであなたを見つけて首を振った。`:f.h.cond>=4?'毛づやがいい。気配は上々だ。':f.h.cond<=2?'少し元気がないように見える。':'落ち着いて周回している。'}</div></div></div>`).join('')}
    ${sick?'<div class="comment warnc">療養中のため、病室のテレビで観戦する。</div>':''}
    <div class="tbl-wrap"><table><thead><tr><th>馬番</th><th>馬名</th><th>騎手</th><th class="r">単勝</th><th class="r">人気</th></tr></thead><tbody>${rows}</tbody></table></div>
    <div class="row">${!r.g?'<label class="muted" style="font-size:12px"><input type="checkbox" id="condskip"> 次から条件戦は結果だけ聞く</label>':''}<span class="sp"></span><button class="btn" data-act="watch" data-w="0">結果だけ聞く</button><button class="btn pri" data-act="watch" data-w="1">${sick?'テレビで観る':'レースを観る'}</button></div>`,{wide:true,lock:true});

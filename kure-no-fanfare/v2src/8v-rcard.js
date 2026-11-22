@@ -69,7 +69,7 @@ showResult=(o=>function(){const RC=UI.race;const r=o.apply(this,arguments);try{i
   else if(RC&&RC.mineShot)rcPlaceShot(RC);}catch(e){console.error('shot',e);}return r;})(showResult);
 /* the finish photo on the board: the 3D still, with the judge's tags laid over it */
 function pfPlace(RC){const cv=document.getElementById('pfcv');if(!cv||!RC.photoShot)return;const wrap=cv.parentNode;const K=RC.photoK||0,ord=RC.order,circ='①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱';
-  wrap.style.position='relative';if(RC.photoBaked){wrap.innerHTML=`<img src="${RC.photoShot}" alt="決勝写真" style="display:block;width:100%">`;return;}wrap.innerHTML=`<img src="${RC.photoShot}" alt="決勝写真" style="display:block;width:100%;filter:saturate(.75) contrast(1.08)"><div class="pft">${RC.photo?`<b>${K?K+1+'着 ':''}写真判定</b>`:''}${[K,K+1].map(i=>ord[i]?`<span>${i+1}着 <i class="cn">${ord[i].no}</i> ${esc(ord[i].name)}</span>`:'').join('')}</div><i class="pfline"></i>`;}
+  wrap.style.position='relative';if(RC.photoBaked){const fresh=!RC.pfShown;RC.pfShown=1;wrap.innerHTML=`<div class="pfdev ${fresh?'run':''}"><img src="${RC.photoShot}" alt="決勝写真" style="display:block;width:100%"><i class="pfscan"></i><b class="pfjudge">写真判定</b></div>`;return;}wrap.innerHTML=`<img src="${RC.photoShot}" alt="決勝写真" style="display:block;width:100%;filter:saturate(.75) contrast(1.08)"><div class="pft">${RC.photo?`<b>${K?K+1+'着 ':''}写真判定</b>`:''}${[K,K+1].map(i=>ord[i]?`<span>${i+1}着 <i class="cn">${ord[i].no}</i> ${esc(ord[i].name)}</span>`:'').join('')}</div><i class="pfline"></i>`;}
 (function(){const st=document.createElement('style');st.textContent=`.pft{position:absolute;left:8px;top:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}.pft b{background:#d9a400;color:#000;font:800 11px "Zen Kaku Gothic New",sans-serif;padding:2px 7px;border-radius:3px}
 .pft span{background:#fff;color:#111;border:1px solid #333;font:700 11px "Zen Kaku Gothic New",sans-serif;padding:1px 7px}.pft .cn{display:inline-grid;place-items:center;width:1.45em;height:1.45em;border:1.5px solid #111;border-radius:50%;font:800 .82em/1 "Zen Kaku Gothic New",sans-serif;font-style:normal;vertical-align:-.15em}.pfline{position:absolute;left:50%;top:0;bottom:0;width:1.5px;background:rgba(255,255,255,.75)}`;document.head.appendChild(st);})();
 showBoard=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&RC.photoShot)setTimeout(()=>pfPlace(RC),50);}catch(e){}return r;})(showBoard);
@@ -106,3 +106,16 @@ function mountShot(RC,host){if(typeof R3D_HTML!=='string'||window.__noShot)retur
 
 /* the photo's race number matches the result board (重賞 11R, otherwise 9R) */
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.rno=RC.race&&RC.race.g?11:9;}catch(e){}return inp;})(r3dInput);
+
+/* the photo comes out of the slit camera like the real print: built from the right edge (the first across the line) to the left,
+   a bright scan line running across, the "写真判定" plate blinking until it is done */
+(function(){const st=document.createElement('style');st.textContent=`.pfdev{position:relative;overflow:hidden;background:#3a3742}
+.pfdev img{display:block;width:100%}
+.pfdev.run img{animation:pfbuild 2.6s cubic-bezier(.4,.1,.6,1) .3s both}
+.pfdev .pfscan{position:absolute;top:0;bottom:0;width:3px;right:0;background:linear-gradient(#fff,#e7e2ff,#fff);box-shadow:0 0 12px 3px rgba(230,225,255,.8);opacity:0}
+.pfdev.run .pfscan{animation:pfscanx 2.6s cubic-bezier(.4,.1,.6,1) .3s both}
+.pfdev .pfjudge{position:absolute;right:8px;bottom:22px;background:#d9a400;color:#000;font:800 12px "Zen Kaku Gothic New",sans-serif;padding:3px 9px;border-radius:3px;letter-spacing:.12em;opacity:0}
+.pfdev.run .pfjudge{animation:pfblink .5s steps(1) 0s 6 both}
+@keyframes pfbuild{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes pfscanx{0%{right:0;opacity:1}96%{right:calc(100% - 3px);opacity:1}100%{right:calc(100% - 3px);opacity:0}}
+@keyframes pfblink{0%{opacity:1}50%{opacity:0}}`;document.head.appendChild(st);})();

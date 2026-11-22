@@ -97,7 +97,7 @@ function showRaceDay(){
   const RC=UI.race,r=RC.race,my=RC.field.filter(f=>f.mine);
   const far=!['中山','東京'].includes(r.course);
   openModal(`<div class="from-line">${dstr(S.t)}　レース当日</div>${raceHead(r)}
-    ${my.map(f=>`<div class="panel row">${horseSVG(f.h,44)}<div style="min-width:0;flex:1"><b>${esc(f.name)}</b>　<span class="chip">${f.pop}番人気</span><div class="muted" style="font-size:13px">騎手 ${esc(f.jname)}　${RC.field.length}頭立て　1着 ${yen(r.prize)}</div></div></div>`).join('')}
+    ${my.map(f=>`<div class="panel row" style="width:100%;box-sizing:border-box">${horseSVG(f.h,44)}<div style="min-width:0;flex:1"><b>${esc(f.name)}</b>　<span class="chip">${f.pop}番人気</span><div class="muted" style="font-size:13px">騎手 ${esc(f.jname)}　${RC.field.length}頭立て　1着 ${yen(r.prize)}</div></div></div>`).join('')}
     ${paperBtn()}
     <div class="rdopts">
       <button class="rdopt go" data-act="rdGo" data-m="track"><span class="ic">${RDI.track}</span><span><b>${esc(r.course)}競馬場へ向かう</b><small>馬主席から観戦。パドックで愛馬を見届け、騎手に声をかけてから席へ。応援馬券、勝てば口取り式。${far?'遠征なので一日がかり。':''}</small></span></button>
