@@ -4,8 +4,8 @@
    ・付き合いの電話（会食、記者、テレビ、学校、早乙女・大鷹の雑談、出資の申し出）は、それぞれ1年に1回まで
    ・ネタや一度きりの話の電話（間違い電話、怪しい情報屋、占い、三國の夜の電話・結婚式、犬）は、断っても一度きり
    ========================================================= */
-(function(){const JOB=['colic','foaling','bargain','tv','workout','loose','overseas','bargainHorse','jockeyHurt','jkAsk','trCamp','hinataNight','typhoon'],
-  SOCIAL=['dinner','reporter','school','tvShow','saotomeCall','otakaCall','celeb','invest'],ONCE=['scam','wrong','fortune','mikuniLate','marry','dog'];
+(function(){const JOB=['colic','foaling','tv','workout','loose','overseas','bargainHorse','jockeyHurt','jkAsk','trCamp','hinataNight','typhoon'],
+  SOCIAL=['bargain','dinner','reporter','school','tvShow','saotomeCall','otakaCall','celeb','invest'],ONCE=['scam','wrong','fortune','mikuniLate','marry','dog'];
   const cnt=k=>((S.flags.callN||{})[k]||0),lastY=k=>(S.flags.callY||{})[k];
   Object.entries(CALLS).forEach(([k,v])=>{const w=v.w;
     if(JOB.includes(k))v.w=()=>{const x=w();return x?x*2.2:0;};
