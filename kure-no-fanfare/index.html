@@ -7319,6 +7319,10 @@ EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags
     h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.needName=1;h.nameHint=h.name;h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
     S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
     return `中原は、芦毛の首をぽんと叩いた。「名前は、あんたが付けてやってくれ」\n\n${who(h.trainer).split(" ")[0]}厩舎に入ることになった。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};
+/* 中原との出会いは一通で: 馬を見せてもらい、そのまま預ける厩舎を選ぶ（800万円）。問答と二通目はなし */
+EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`中原です。遠いところをよく来なさった。\n\nこいつだ。芦毛の2歳。気は強いが、いい目をしとる。…800万でいい。\n\n預ける厩舎は、あんたが決めてくれ。`,
+  ch:['戸川厩舎に預ける（美浦・大舞台をじっくり狙う）','早瀬厩舎に預ける（栗東・数を使って鍛える）']}),
+  f:(d,i)=>{if(S.horses.some(h=>h.first))return '';S.flags.fh=1;S.flags.fhPrice=800;S.flags.fh2T=-1;const t=EV.firstHorse2.f(d,i);return t;}};
 EV.meetShibahara={r:()=>({p:'shibahara',from:'柴原 誠',title:'ごあいさつ',body:`柴原だ。美浦で厩舎をやってる。\n\nうちはダートと短いところが専門でな。芝の長いところで夢を見る馬主さんは多いが、砂の千二で勝つ馬も、同じ一勝だ。\n\nスピードのある馬が手に入ったら、声をかけてくれ。`,ch:['ぜひ、そのときは','覚えておきます']}),f:(d,i)=>{S.people.shibahara.met=true;trust('shibahara',i===0?8:3);return '柴原は無骨に頭を下げた。これからは新しく入る馬を柴原厩舎にも預けられる。';}};
 EV.meetKitami={r:()=>({p:'kitami',from:'北見 玲子',title:'栗東の名門',body:`北見です。栗東で厩舎を預かっています。\n\n率直に申し上げます。うちは預託の枠が限られていて、実績のある馬主さんからお受けしています。\n\n${ownerName()}さんの馬は、拝見しています。もう少し結果が出れば──馬主の格が20を超えたら、ぜひお話をさせてください。`,ch:['必ず、その日を','肝に銘じます']}),f:(d,i)=>{S.people.kitami.met=true;trust('kitami',i===0?6:3);return S.fame>=20?'北見はわずかにほほえんだ。「…もう、その資格はお持ちですね」北見厩舎に馬を預けられるようになった。':'「お待ちしています」北見は静かに一礼した。（馬主の格20で、北見厩舎に預けられる）';}};
 storyTriggers=(o=>function(first){const r=o.apply(this,arguments);if(S.part!==1)return r;const t=S.t-S.startT;
