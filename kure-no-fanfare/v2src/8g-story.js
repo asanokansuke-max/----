@@ -124,7 +124,7 @@ ACT.newGame=(o=>function(){const args=arguments;if(START.noOpening){START.noOpen
 .tipcard .b{font-size:13.5px;line-height:1.65}.tipcard .b b{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-bottom:2px}
 .tipcard .r{grid-column:2;display:flex;justify-content:flex-end;gap:8px}.tipcard .r .btn{min-height:34px;padding:4px 14px;font-size:12.5px}`;document.head.appendChild(st);})();
 const TIPS=[
-  {k:'start',c:()=>!mine().length,t:'まずは画面上の「月初の出来事」から、中原さんの牧場の話を読んでください。一頭目は、お金だけでは譲ってもらえないかもしれません。\n読み終えたら、下の「月を進める」で次の月へ進みます。'},
+  {k:'start',c:()=>!mine().length,t:'まずは画面上の「月初の出来事」から、中原さんの牧場へ行きましょう。最初の一頭が待っています。\n読み終えたら、下の「月を進める」で次の月へ進みます。'},
   {k:'orders',c:()=>racing().some(h=>h.status==='現役'),t:'厩舎の馬には、毎月「調教」「レース」「休養」の指示を出します。迷ったら「調教師に任せる」に。調教師が状態を見て決めてくれます。'},
   {k:'people',c:()=>S.t-S.startT>=1&&mine().length>0,t:'月に一人だけ、誰かに会いに行けます（下の「人」）。信頼が上がると、騎手が依頼を受けてくれたり、調教師の見立てが正確になったりします。'},
   {k:'race',c:()=>racing().some(h=>h.status==='現役'&&h.starts===0)&&M(S.t)>=5,t:'レースは中継で見られます。3コーナーで騎手に指示（外に出す・内を突く・早めに動く）が出せます。直線では「行けー！」で声援を送れます（結果は変わりません）。'},

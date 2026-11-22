@@ -6,11 +6,12 @@
    ========================================================= */
 (function(){const st=document.createElement('style');st.textContent=`.fhs{display:grid;gap:10px}
 .fhs canvas{display:block;width:100%;aspect-ratio:16/10;border-radius:12px;background:#9fc1e0}
-.fhs .nar{min-height:66px;font-size:14px;line-height:1.75;white-space:pre-wrap}
+.fhs .nar{min-height:9.5em;font-size:14px;line-height:1.75;white-space:pre-wrap}
 .fhs .nar b{color:var(--gold,#b8862a)}
 .fhs .acts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .fhs .acts .btn{min-height:48px;padding:6px 4px;font-size:14px}
 .fhs .acts.two{grid-template-columns:1fr}
+.fhs .fhact{min-height:112px}
 .fhs .hint{font-size:11px;opacity:.6;text-align:center}`;document.head.appendChild(st);})();
 
 EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`日高。中原牧場は、海の見える丘の上にあった。\n\n「中原です。遠いところをよく来なさった」\n\n日焼けした男は、それだけ言うと放牧地のほうへ顎をしゃくった。\n\n「うちで生まれた2歳が三頭おる。…わしが選ぶより、馬に選ばせたほうがいい」`,ch:['放牧地へ行く']}),
@@ -18,11 +19,16 @@ EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭'
 
 const FH={};
 function fhOpen(){if(!S||S.horses.some(h=>h.first)){if(S)S.flags.fhScene=0;return;}
-  Object.assign(FH,{d:1,turn:0,miss:0,call:0,done:false,stable:0,ph:0,gz:null,gxx:null,chX:.25,chZ:.35,chDir:1,bayX:.42,handT:0,nuzzle:0});
-  fhRender('柵にもたれると、草の匂いがした。\n\n鹿毛は草を食んでいる。栗毛は落ち着きなく歩き回っている。\n奥の芦毛だけが、じっとこちらを見ていた。');fhLoop();}
-function fhRender(txt){const acts=FH.done?`<div class="acts two">${FH.stable?'':`<button class="btn pri" data-act="fhStable" data-i="0">戸川厩舎に預ける（美浦・大舞台をじっくり狙う）</button><button class="btn pri" data-act="fhStable" data-i="1">早瀬厩舎に預ける（栗東・数を使って鍛える）</button>`}</div>`
+  Object.assign(FH,{ready:0,d:1,turn:0,miss:0,call:0,done:false,stable:0,ph:0,gz:null,gxx:null,chX:.25,chZ:.35,chDir:1,bayX:.42,handT:0,nuzzle:0});
+  fhRender('柵にもたれると、草の匂いがした。\n\n鹿毛は草を食んでいる。栗毛は落ち着きなく歩き回っている。\n奥の芦毛だけが、じっとこちらを見ていた。');fhLoop();
+  /* no waiting game: after a moment the grey runs up to the fence by itself */
+  const run=FH.run=(FH.run||0)+1;setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=15;
+    fhRender('芦毛が、ふいに駆け出した。\nまっすぐこちらへ。');
+    setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.ready=1;FH.nuzzle=performance.now();fhRender('柵の前で止まると、鼻先を押しつけてきた。温かい息。\n\n中原は、しばらく黙っていた。\n<b>「…そいつが人に寄っていくのは、初めて見た」</b>\n「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');},2300);},1600);}
+function fhRender(txt){const acts=!FH.ready?'':FH.done?`<div class="acts two">${FH.stable?'':`<button class="btn pri" data-act="fhStable" data-i="0">戸川厩舎に預ける（美浦・大舞台をじっくり狙う）</button><button class="btn pri" data-act="fhStable" data-i="1">早瀬厩舎に預ける（栗東・数を使って鍛える）</button>`}</div>`
    :`<div class="acts"><button class="btn" data-act="fhDo" data-k="wait">じっと待つ</button><button class="btn" data-act="fhDo" data-k="call">声をかける</button><button class="btn pri" data-act="fhDo" data-k="hand">手を差し出す</button></div><div class="hint">あわてると、馬は逃げていく</div>`;
-  openModal(`<div class="from-line">日高・中原牧場　放牧地</div><div class="fhs"><canvas id="fhcv" width="640" height="400"></canvas><div class="nar">${txt}</div>${acts}</div>`,{lock:true,keepScroll:true});}
+  const box=document.querySelector('#sheet .fhs');if(box&&document.getElementById('fhcv')){box.querySelector('.nar').innerHTML=txt;const ac=box.querySelector('.fhact');if(ac)ac.innerHTML=acts;return;}
+  openModal(`<div class="from-line">日高・中原牧場　放牧地</div><div class="fhs"><canvas id="fhcv" width="640" height="400"></canvas><div class="nar">${txt}</div><div class="fhact">${acts}</div></div>`,{lock:true,keepScroll:true});}
 ACT.fhDo=d=>{if(FH.done)return;const k=d.k;FH.turn++;let t='';
   if(k==='wait'){FH.d=Math.max(0,FH.d-.28-Math.random()*.06);t=FH.d>.6?'息をひそめて待つ。\n芦毛の耳が、ぴんとこちらを向いた。':FH.d>.3?'芦毛が、一歩、また一歩と近づいてくる。\n蹄が草を踏む音だけが聞こえる。':'芦毛は柵のすぐ向こうで立ち止まった。\n小さく鼻を鳴らしている。…今かもしれない。';}
   else if(k==='call'){FH.call++;if(FH.d>.6){FH.d-=.12;FH.chZ=Math.min(.8,FH.chZ+.3);t='声をかけると、芦毛は首を上げた。\n…先に寄ってきたのは栗毛のほうだった。\n中原「そいつは誰にでも寄っていく」';}else{FH.d=Math.max(0,FH.d-.1);t='低い声で、ゆっくり話しかける。\n芦毛の耳が、こちらを向いたまま動かない。';}}
