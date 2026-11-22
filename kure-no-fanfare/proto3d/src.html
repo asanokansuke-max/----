@@ -879,15 +879,19 @@ function hud(byD,tau,dt){if(!mapDone){document.getElementById('crsnm').textConte
   {let d='';const L=Math.min(D,lead.d);for(let x=0;x<=L;x+=15){const q=mapPt(START+x);d+=(x?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1);}const pt=mapPt(START+L);
    document.getElementById('mprog').setAttribute('d',d);const dot=document.getElementById('mdot');dot.setAttribute('cx',pt[0]);dot.setAttribute('cy',pt[1]);}
   // direction the field runs on screen right now
-  const pa=pathAt(START+lead.d,3),pb=pathAt(START+lead.d+5,3),va=new THREE.Vector3(pa.x,1,pa.z).project(cam),vb=new THREE.Vector3(pb.x,1,pb.z).project(cam),dirR=vb.x>=va.x;
+  const pa=pathAt(START+lead.d,3),pb=pathAt(START+lead.d+5,3),va=new THREE.Vector3(pa.x,1,pa.z).project(cam),vb=new THREE.Vector3(pb.x,1,pb.z).project(cam),dirR0=vb.x>=va.x;
+  /* which way the field runs on screen: changes only once the camera has settled (no flip-flop at a cut) */
+  if(CHN.dir==null)CHN.dir=dirR0;if(dirR0!==CHN.dir){CHN.flip=(CHN.flip||0)+DTS;if(CHN.flip>.5){CHN.dir=dirR0;CHN.flip=0;}}else CHN.flip=0;const dirR=CHN.dir;
+  /* which way inside/outside lies on screen: the rows follow the picture (inside up when the inside is the far side) */
+  {const q0=pathAt(START+lead.d,0),q8=pathAt(START+lead.d,8),y0=new THREE.Vector3(q0.x,0,q0.z).project(cam).y,y8=new THREE.Vector3(q8.x,0,q8.z).project(cam).y,up0=Math.abs(y0-y8)<.02?(CHN.inUp??true):y0>y8;if(CHN.inUp==null)CHN.inUp=up0;if(up0!==CHN.inUp){CHN.vflip=(CHN.vflip||0)+DTS;if(CHN.vflip>.5){CHN.inUp=up0;CHN.vflip=0;}}else CHN.vflip=0;}
   // chain of numbered circles: spaced by distance behind the leader, three rows by lane
   const ch=document.getElementById('chain'),W=ch.clientWidth,span=Math.max(14,lead.d-byD[n-1].d),px=Math.min(W*.9/span,W/12);
   if(!ch.children.length)RUN.forEach(r=>{const b=document.createElement('div');const w=wakuOf(r.no,n);b.className='bb'+(r.mine?' me':'');b.style.background=WAKU[w];b.style.color=WINK[w];b.style.setProperty('--c',WAKU[w]==='#f5f5f5'?'#ddd':WAKU[w]);b.textContent=r.no;ch.appendChild(b);r.bb=b;});
   /* the running order flows like the tracking graphic: the scale eases instead of jumping, each number takes the height of its lane
      and slides up or down out of the way when it would sit on another, and everything glides on real time */
-  const Hc=ch.clientHeight,kr=1-Math.exp(-DTS*FFWD*4.5);CHN.px=CHN.px==null?px:CHN.px+(px-CHN.px)*(1-Math.exp(-DTS*FFWD*1.5));
+  const Hc=ch.clientHeight,kr=1-Math.exp(-DTS*FFWD*11);CHN.px=CHN.px==null?px:CHN.px+(px-CHN.px)*(1-Math.exp(-DTS*FFWD*4));
   const bd=(RUN[0].bb.offsetWidth||14)*1.08,lv=y=>Hc*(.14+y*.24),tl=Math.min(tau,1);
-  const its=RUN.map(r=>{const gap=(lead.d-r.d)*CHN.px;return {r,x:dirR?W*.95-gap:W*.05+gap,l:Math.max(0,Math.min(3,laneOf(r,tl)/2.6))};}).sort((a,b)=>Math.abs(a.x-(dirR?W*.95:W*.05))-Math.abs(b.x-(dirR?W*.95:W*.05)));
+  const its=RUN.map(r=>{const gap=(lead.d-r.d)*CHN.px;return {r,x:dirR?W*.95-gap:W*.05+gap,l:(L=>CHN.inUp?L:3-L)(Math.max(0,Math.min(3,(laneOf(r,tl)+(r.sep||0))/2.3)))};}).sort((a,b)=>Math.abs(a.x-(dirR?W*.95:W*.05))-Math.abs(b.x-(dirR?W*.95:W*.05)));
   const placed=[];its.forEach(it=>{let best=it.l,bc=1e9;for(let k=0;k<=12;k++){const c=Math.max(0,Math.min(3,it.l+(k%2?1:-1)*Math.ceil(k/2)*.5));const hit=placed.some(q=>Math.abs(q.x-it.x)<bd&&Math.abs(q.y-c)<1);const cost=Math.abs(c-it.l)+(hit?100:0);if(cost<bc){bc=cost;best=c;}if(!hit)break;}it.y=best;placed.push(it);});
   its.forEach(({r,x,y})=>{const py=lv(y);if(r.bx==null){r.bx=x;r.by=py;}r.bx+=(x-r.bx)*kr;r.by+=(py-r.by)*kr;r.bb.style.transform=`translate(${r.bx.toFixed(1)}px,${r.by.toFixed(1)}px)`;r.bb.classList.toggle('r',dirR);r.bb.classList.toggle('l',!dirR);});
   const cv2=document.getElementById('chev');cv2.textContent=dirR?'»':'«';cv2.style.left=dirR?'79.2vw':'28.2vw';
