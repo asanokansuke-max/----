@@ -9211,7 +9211,7 @@ if(CALLS.bargain)CALLS.bargain.miss=d=>{trust(d.who,-2);return '騎手から着�
 function debutJs(h){const L=jockeysAvail().filter(j=>j!=='stable'&&JK(j)&&!(JK(j).ban>S.t)&&!(typeof jockeyAway==='function'&&jockeyAway(j)));
   const tr=TR(h.trainer)&&TR(h.trainer).jk;const score=j=>(j===h.mainJ?1000:0)+(j==='hinata'?300:0)+(j===tr?200:0)+(P(j)?P(j).trust:0)+JK(j).sk*.5;return L.sort((a,b)=>score(b)-score(a)).slice(0,4);}
 function debutLabel(j){return `${JNAME(j)}（${typeof jTier==='function'?jTier(j):''}${JK(j).tag?'・'+JK(j).tag:''}）`;}
-EV.debutTalk=(o=>({...o,r:d=>{const v=o.r(d);if(!v)return v;const h=HZ(d.hid);d.js=d.js||debutJs(h);return {...v,body:v.body+'\n\n鞍上は、あなたが決めてください。',ch:[...d.js.map(j=>`${debutLabel(j)}に頼む`),'騎手は、厩舎に任せる']};},
+EV.debutTalk=(o=>({...o,r:d=>{const v=o.r(d);if(!v)return v;const h=HZ(d.hid);d.js=d.js||debutJs(h);return {...v,body:v.body,ch:[...d.js.map(j=>`${debutLabel(j)}に頼む`),'騎手は、厩舎に任せる']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.debutTalked=1;trust(h.trainer,3);const j=(d.js||[])[i];
     if(j){h.mainJ=j;trust(j,6);return `${j==='hinata'?'日向「…ありがとうございます！ 絶対に、いい競馬をします」':`${JNAME(j)}「デビュー戦、任せてください」`}\n\n${h.name}の主戦は${JNAME(j)}に決まった。厩舎タブで「レース」を選び、メイクデビュー戦に出走させよう。`;}
     return '厩舎タブで「レース」を選び、メイクデビュー戦に出走させよう。';}}))(EV.debutTalk);
@@ -9262,6 +9262,13 @@ makeName=(o=>function(pre){if(pre&&typeof S!=='undefined'&&S&&pre===S.kanmei)ret
       n=k<.045?pick(NM_POP):k<.24?pick(NM_CROWN)+pick(R()<.6?NM_WORD:FR):k<.46?pick(NM_FOREIGN):k<.64?pick(NM_ADJ)+pick(R()<.7?NM_WORD:FR2):k<.8?pick(NM_JP):(R()<.5?pick(FR)+pick(FR2):pick(FR2)+pick(FR));}
     if(ok(n)){NM_RECENT.push(n);if(NM_RECENT.length>60)NM_RECENT.shift();return n;}}
   return o.apply(this,arguments);})(makeName);
+/* =========================================================
+   細かい詰め:
+   ・2歳戦は2000mまで（実際の番組どおり。2400mの2歳戦は1800mに）
+   ・騎乗停止の知らせは1年に1回まで
+   ========================================================= */
+racesFor=(o=>function(h){const L=o.apply(this,arguments);try{L.forEach(r=>{if(!r.g&&r.grp==='2'&&r.dist>2000){r.dist=1800;r.key=r.key.replace(/\d+$/,'1800');}});}catch(e){}return L;})(racesFor);
+capEv('ban',12,'banT');
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */

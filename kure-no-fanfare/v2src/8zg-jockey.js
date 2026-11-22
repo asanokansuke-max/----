@@ -10,7 +10,7 @@ if(CALLS.bargain)CALLS.bargain.miss=d=>{trust(d.who,-2);return '騎手から着�
 function debutJs(h){const L=jockeysAvail().filter(j=>j!=='stable'&&JK(j)&&!(JK(j).ban>S.t)&&!(typeof jockeyAway==='function'&&jockeyAway(j)));
   const tr=TR(h.trainer)&&TR(h.trainer).jk;const score=j=>(j===h.mainJ?1000:0)+(j==='hinata'?300:0)+(j===tr?200:0)+(P(j)?P(j).trust:0)+JK(j).sk*.5;return L.sort((a,b)=>score(b)-score(a)).slice(0,4);}
 function debutLabel(j){return `${JNAME(j)}（${typeof jTier==='function'?jTier(j):''}${JK(j).tag?'・'+JK(j).tag:''}）`;}
-EV.debutTalk=(o=>({...o,r:d=>{const v=o.r(d);if(!v)return v;const h=HZ(d.hid);d.js=d.js||debutJs(h);return {...v,body:v.body+'\n\n鞍上は、あなたが決めてください。',ch:[...d.js.map(j=>`${debutLabel(j)}に頼む`),'騎手は、厩舎に任せる']};},
+EV.debutTalk=(o=>({...o,r:d=>{const v=o.r(d);if(!v)return v;const h=HZ(d.hid);d.js=d.js||debutJs(h);return {...v,body:v.body,ch:[...d.js.map(j=>`${debutLabel(j)}に頼む`),'騎手は、厩舎に任せる']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.debutTalked=1;trust(h.trainer,3);const j=(d.js||[])[i];
     if(j){h.mainJ=j;trust(j,6);return `${j==='hinata'?'日向「…ありがとうございます！ 絶対に、いい競馬をします」':`${JNAME(j)}「デビュー戦、任せてください」`}\n\n${h.name}の主戦は${JNAME(j)}に決まった。厩舎タブで「レース」を選び、メイクデビュー戦に出走させよう。`;}
     return '厩舎タブで「レース」を選び、メイクデビュー戦に出走させよう。';}}))(EV.debutTalk);
