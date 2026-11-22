@@ -24,7 +24,7 @@ html,body{margin:0;height:100%;background:#0b120e;color:var(--ink);font-family:"
 #tv .fav{display:grid;grid-template-columns:1.7em 1.4em 2.6em;align-items:center;gap:.4em;font-size:1.5vw}
 #tv .nb{display:grid;place-items:center;height:1.3em;font-weight:700}
 #tv .odd{text-align:right;font-weight:600}
-#tv .chain{position:absolute;left:31vw;right:21.5vw;bottom:1.4vw;height:8.4vw}
+#tv .chain{position:absolute;left:31vw;right:21.5vw;bottom:1.4vw;height:8.4vw;opacity:0;transition:opacity .8s}#tv .chev{transition:opacity .8s}
 #tv .bb{position:absolute;left:0;top:0;will-change:transform;width:2.3vw;height:2.3vw;margin:-1.15vw 0 0 -1.15vw;border-radius:50%;display:grid;place-items:center;font:700 1.35vw/1 "Oswald",sans-serif;box-shadow:0 .1vw .3vw rgba(0,0,0,.6);border:.16vw solid rgba(255,255,255,.9)}
 #tv .bb:after{content:"";position:absolute;top:50%;margin-top:-.45vw;border:.45vw solid transparent}
 #tv .bb.r:after{right:-.95vw;border-left-color:var(--c)}
@@ -891,6 +891,8 @@ function hud(byD,tau,dt){if(!mapDone){document.getElementById('crsnm').textConte
   const placed=[];its.forEach(it=>{let best=it.l,bc=1e9;for(let k=0;k<=12;k++){const c=Math.max(0,Math.min(3,it.l+(k%2?1:-1)*Math.ceil(k/2)*.5));const hit=placed.some(q=>Math.abs(q.x-it.x)<bd&&Math.abs(q.y-c)<1);const cost=Math.abs(c-it.l)+(hit?100:0);if(cost<bc){bc=cost;best=c;}if(!hit)break;}it.y=best;placed.push(it);});
   its.forEach(({r,x,y})=>{const py=lv(y);if(r.bx==null){r.bx=x;r.by=py;}r.bx+=(x-r.bx)*kr;r.by+=(py-r.by)*kr;r.bb.style.transform=`translate(${r.bx.toFixed(1)}px,${r.by.toFixed(1)}px)`;r.bb.classList.toggle('r',dirR);r.bb.classList.toggle('l',!dirR);});
   const cv2=document.getElementById('chev');cv2.textContent=dirR?'»':'«';cv2.style.left=dirR?'79.2vw':'28.2vw';
+  /* the running order appears with the start (before it, the numbers would only sit in a pile) */
+  {const on=started&&SIMT>.3?'1':'0';if(ch.style.opacity!==on)ch.style.opacity=on;if(cv2.style.opacity!==(on==='1'?'.8':'0'))cv2.style.opacity=on==='1'?'.8':'0';}
   // favourites
   if(!fav.length){[...RUN].sort((a,b)=>a.odds-b.odds).slice(0,3).forEach(r=>fav.push(r));document.getElementById('favs').innerHTML=fav.map(r=>{const w=wakuOf(r.no,n);return `<div class="fav"><span class="nb" style="background:${WAKU[w]};color:${WINK[w]}">${r.no}</span>${silkSVG(SILKS[r.i][0],SILKS[r.i][1])}<span class="odd">${r.odds.toFixed(1)}</span></div>`;}).join('');}
 }
