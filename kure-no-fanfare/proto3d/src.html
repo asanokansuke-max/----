@@ -1011,7 +1011,7 @@ function farmPose(r,dt){const f=r.farm;if(!f){r.g.visible=false;return;}r.g.visi
   else{r.g.position.set(f.home.x,0,f.home.z);r.g.rotation.y=Math.atan2(FARM.u.x,FARM.u.z)+.4;farmStand(r,.78);}}
 function farmCam(dt){FARM.t+=dt;const c=FARM.cam,l=FARM.look;cam.position.set(c.x,1.62+Math.sin(FARM.t*.6)*.02,c.z);cam.lookAt(l.x,1.05,l.z);cam.fov=42;cam.updateProjectionMatrix();sun.position.set(l.x+FARM.u.x*60,22,l.z+FARM.u.z*60);sun.target.position.set(l.x,0,l.z);}
 /* ---------- 口取り式: the winner standing in front of the stand, the rider up, the groom at its head, the connections in a row; one picture ---------- */
-let KUCHI=null;
+let KUCHI=null;const KR={cy:1.15,cz:.56,ay:.25,az:.17,bx:.25};
 function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMaterial({color:o.suit||'#2b2f36',roughness:.75}),skin=new THREE.MeshStandardMaterial({color:o.skin||'#e3b994',roughness:.7}),
    hair=new THREE.MeshStandardMaterial({color:o.hair||'#1b1612',roughness:.9}),shoe=new THREE.MeshStandardMaterial({color:'#111',roughness:.5}),shirt=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.8});
   const hip=new THREE.Group();hip.position.y=.92;g.add(hip);
@@ -1048,13 +1048,23 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
     const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[F.ctry]||'')+String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
     g.font='600 13px sans-serif';g.textAlign='left';g.fillStyle='rgba(255,255,255,.85)';g.fillText(ttl.slice(0,10),W*.2,H*.16);})}));
   cl.position.set(0,1.02,.25);jk.add(cl);
-  /* 前掛け: the winner's cloth hung on the horse's chest — dark blue (G1) or green, gold edge and fringe, the race's name down the middle */
-  {const bw=.42,bh=.86;const bG=shapeGeo(sh=>{sh.moveTo(-bw/2,0);sh.lineTo(bw/2,0);sh.lineTo(bw/2,-bh+.12);sh.lineTo(0,-bh);sh.lineTo(-bw/2,-bh+.12);sh.lineTo(-bw/2,0);},bw,bh,-bh);
-   const bn=new THREE.Mesh(bG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(128,284,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f5f3a';g.fillRect(0,0,W,H);g.strokeStyle='#d9b45a';g.lineWidth=8;g.beginPath();g.moveTo(5,0);g.lineTo(5,H*.88);g.lineTo(W/2,H-4);g.lineTo(W-5,H*.88);g.lineTo(W-5,0);g.stroke();
-     g.fillStyle='#f6e7b0';g.font='bold 30px "Hiragino Mincho ProN","Yu Mincho",serif';g.textAlign='center';const t=ttl.replace(/（.*?）/g,'').slice(0,8),fs=t.length>6?26:30;g.font=`bold ${fs}px "Hiragino Mincho ProN","Yu Mincho",serif`;[...t].forEach((c,k)=>g.fillText(c,W/2,52+k*(fs+2)));})}));
-   bn.position.set(0,1.24,1.0);bn.rotation.x=-.12;w.g.add(bn);
-   /* the gold fringe at the bottom */
-   const fr=new THREE.Mesh(new THREE.BoxGeometry(bw*.9,.07,.03),new THREE.MeshStandardMaterial({color:'#d9b45a',roughness:.5,metalness:.3}));fr.position.set(0,1.24-bh+.06,1.0+Math.sin(.12)*(bh-.06));fr.rotation.x=-.12;w.g.add(fr);}
+  /* 前掛け (優勝レイ): a band of cloth hung round the horse's neck — over the withers, down both shoulders, meeting low on the chest;
+     dark blue (G1) or green with gold edges, the race's name down each side, a gold tassel where the two sides meet */
+  {const C=new THREE.Vector3(0,KR.cy,KR.cz),A=new THREE.Vector3(0,-KR.ay,KR.az),B=new THREE.Vector3(KR.bx,0,0),N=new THREE.Vector3().crossVectors(A,B).normalize(),SEG=72,HW=.12,pos=[],uv=[],idx=[];
+   for(let k=0;k<=SEG;k++){const t=-Math.PI+k/SEG*Math.PI*2,c=Math.cos(t),sn=Math.sin(t);const P=C.clone().addScaledVector(A,c).addScaledVector(B,sn);
+     /* the cloth hangs: wider and flatter as it comes down the chest */
+     const hw=HW*(1+.25*Math.max(0,c)),out=P.clone().sub(C).normalize().multiplyScalar(.012);P.add(out);
+     [-1,1].forEach(sd=>{const Q=P.clone().addScaledVector(N,sd*hw);pos.push(Q.x,Q.y,Q.z);uv.push(k/SEG,sd<0?0:1);});
+     if(k<SEG){const a=k*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}}
+   const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));lg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));lg.setIndex(idx);lg.computeVertexNormals();
+   const t0=ttl.replace(/（.*?）/g,'').slice(0,9);
+   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,64,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f5f3a';g.fillRect(0,0,W,H);g.fillStyle='#d9b45a';g.fillRect(0,0,W,6);g.fillRect(0,H-6,W,6);
+     g.fillStyle='#f6e7b0';g.font='bold 34px "Hiragino Mincho ProN","Yu Mincho",serif';g.textAlign='center';g.textBaseline='middle';
+     /* each side reads downward toward the chest */
+     [[.34,1],[.66,-1]].forEach(([u,d])=>{g.save();g.translate(W*u,H/2);if(d<0)g.rotate(Math.PI);g.fillText(t0,0,2);g.restore();});})});
+   const lei=new THREE.Mesh(lg,lm);lei.castShadow=true;w.g.add(lei);
+   const bot=C.clone().add(A);const ts=new THREE.Mesh(new THREE.ConeGeometry(.05,.16,10),new THREE.MeshStandardMaterial({color:'#d9b45a',roughness:.45,metalness:.35}));ts.position.set(bot.x,bot.y-.1,bot.z+.02);w.g.add(ts);
+   const kn=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),ts.material);kn.position.set(bot.x,bot.y-.01,bot.z+.02);w.g.add(kn);}
   const ppl=(K.people||[]).slice(0,7),n=ppl.length,kR=Math.min(2,Math.floor(n/2)),L=ppl.slice(0,n-kR),Rr=ppl.slice(n-kR);
   const put=(f,off,dep)=>{f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
   put(jk,-.9,.15);L.forEach((o,i)=>put(personFig(o),-1.55-(L.length-1-i)*.58,.05+(i%2)*.08));Rr.forEach((o,i)=>put(personFig(o),1.35+i*.58,.05));
