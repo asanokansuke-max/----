@@ -1011,7 +1011,7 @@ function farmPose(r,dt){const f=r.farm;if(!f){r.g.visible=false;return;}r.g.visi
   else{r.g.position.set(f.home.x,0,f.home.z);r.g.rotation.y=Math.atan2(FARM.u.x,FARM.u.z)+.4;farmStand(r,.78);}}
 function farmCam(dt){FARM.t+=dt;const c=FARM.cam,l=FARM.look;cam.position.set(c.x,1.62+Math.sin(FARM.t*.6)*.02,c.z);cam.lookAt(l.x,1.05,l.z);cam.fov=42;cam.updateProjectionMatrix();sun.position.set(l.x+FARM.u.x*60,22,l.z+FARM.u.z*60);sun.target.position.set(l.x,0,l.z);}
 /* ---------- 口取り式: the winner standing in front of the stand, the rider up, the groom at its head, the connections in a row; one picture ---------- */
-let KUCHI=null;const KR={x:.25,y:1.2,yb:.6,z:.42};
+let KUCHI=null;const KR={x:.25,y:1.2,yb:.36,z:.4,lean:.17};
 function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMaterial({color:o.suit||'#2b2f36',roughness:.75}),skin=new THREE.MeshStandardMaterial({color:o.skin||'#e3b994',roughness:.7}),
    hair=new THREE.MeshStandardMaterial({color:o.hair||'#1b1612',roughness:.9}),shoe=new THREE.MeshStandardMaterial({color:'#111',roughness:.5}),shirt=new THREE.MeshStandardMaterial({color:'#f2f2ee',roughness:.8});
   const hip=new THREE.Group();hip.position.y=.92;g.add(hip);
@@ -1050,21 +1050,26 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   cl.position.set(0,1.02,.25);jk.add(cl);
   /* 前掛け (優勝レイ): one long sash laid over the base of the neck, hanging straight down both shoulders — the same on each side,
      dark blue (G1) or green with gold edges, the race's name written down each side, gold fringe at the two ends */
-  {const XS=KR.x,YT=KR.y,R0=KR.x,YB=KR.yb,Z0=KR.z,HW=.15,pts=[];
+  {const XS=KR.x,YT=KR.y,R0=KR.x,YB=KR.yb,Z0=KR.z,HW=.2,pts=[];
    for(let k=0;k<=12;k++){const y=YB+(YT-YB)*k/12;pts.push([-XS,y]);}
    for(let k=1;k<24;k++){const a=Math.PI-k/24*Math.PI;pts.push([Math.cos(a)*R0,YT+Math.sin(a)*R0*.55]);}
    for(let k=0;k<=12;k++){const y=YT-(YT-YB)*k/12;pts.push([XS,y]);}
    const len=[0];for(let k=1;k<pts.length;k++)len.push(len[k-1]+Math.hypot(pts[k][0]-pts[k-1][0],pts[k][1]-pts[k-1][1]));const LT=len[len.length-1];
-   const pos=[],uv=[],idx=[];pts.forEach(([x,y],k)=>{const zc=Z0+(YT-y)*.1;[-1,1].forEach(sd=>{pos.push(x*(1+.04*sd),y,zc+sd*HW);uv.push(len[k]/LT,sd<0?1:0);});if(k<pts.length-1){const a=k*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}});
+   const pos=[],uv=[],idx=[];pts.forEach(([x,y],k)=>{const zc=Z0+(YT-y)*KR.lean;[-1,1].forEach(sd=>{pos.push(x*(1+.04*sd),y,zc+sd*HW);uv.push(len[k]/LT,sd<0?1:0);});if(k<pts.length-1){const a=k*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}});
    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));lg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));lg.setIndex(idx);lg.computeVertexNormals();
    const t0=[...ttl.replace(/（.*?）/g,'').replace(/ステークス$/,'S')].slice(0,8),side=(YT-YB)/LT;
-   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,128,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f5f3a';g.fillRect(0,0,W,H);g.fillStyle='#d9b45a';g.fillRect(0,0,W,9);g.fillRect(0,H-9,W,9);g.fillRect(0,0,6,H);g.fillRect(W-6,0,6,H);
-     const n=t0.length,fs=Math.min(64,Math.floor(side*W*.86/n));g.fillStyle='#f6e7b0';g.font=`bold ${fs}px "Hiragino Mincho ProN","Yu Mincho",serif`;g.textAlign='center';g.textBaseline='middle';
+   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,128,(g,W,H)=>{g.fillStyle='#1d6b48';g.fillRect(0,0,W,H);const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(0,0,0,.18)');gr.addColorStop(.5,'rgba(255,255,255,.05)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+     const n=t0.length,fs=Math.min(84,Math.floor(side*W*.8/n));g.fillStyle="#f2c53c";g.strokeStyle="#f2c53c";g.lineWidth=3;g.font=`900 ${fs}px "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif`;g.textAlign='center';g.textBaseline='middle';
      /* left side: the top is at larger u; right side: the top at smaller u — each reads downward from the neck */
-     const top=side*W*.94,step=fs*1.04;t0.forEach((c,k)=>{g.save();g.translate(top-step*(k+.5),H/2);g.rotate(Math.PI/2);g.fillText(c,0,2);g.restore();
-       g.save();g.translate(W-top+step*(k+.5),H/2);g.rotate(-Math.PI/2);g.fillText(c,0,2);g.restore();});})});
+     const top=side*W*.9,step=fs*1.04;t0.forEach((c,k)=>{g.save();g.translate(top-step*(k+.5),H/2);g.rotate(Math.PI/2);g.strokeText(c,0,2);g.fillText(c,0,2);g.restore();
+       g.save();g.translate(W-top+step*(k+.5),H/2);g.rotate(-Math.PI/2);g.strokeText(c,0,2);g.fillText(c,0,2);g.restore();});})});
    const lei=new THREE.Mesh(lg,lm);lei.castShadow=true;w.g.add(lei);
-   const fm=new THREE.MeshStandardMaterial({color:'#d9b45a',roughness:.45,metalness:.35});[-1,1].forEach(sd=>{const f=new THREE.Mesh(new THREE.BoxGeometry(.025,.07,HW*2),fm);f.position.set(sd*XS*1.01,YB-.035,Z0+(YT-YB)*.1+.0);w.g.add(f);});}
+   /* the yellow cord tied across the chest, holding the two sides, its ends hanging in loops */
+   const cm=new THREE.MeshStandardMaterial({color:'#e6c13a',roughness:.5}),yc=.9,zc=Z0+(YT-yc)*KR.lean+HW*.7,V=(x,y,z)=>new THREE.Vector3(x,y,z);
+   const tube=(pts,r)=>{const m=new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),40,r,6,false),cm);m.castShadow=true;w.g.add(m);};
+   tube([V(-XS-.01,yc,zc),V(-.14,yc-.07,zc+.1),V(0,yc-.1,zc+.15),V(.14,yc-.07,zc+.1),V(XS+.01,yc,zc)],.012);
+   tube([V(0,yc-.1,zc+.15),V(-.05,yc-.28,zc+.17),V(.02,yc-.36,zc+.16),V(.05,yc-.22,zc+.16),V(0,yc-.1,zc+.15)],.01);
+   tube([V(0,yc-.1,zc+.15),V(.03,yc-.3,zc+.16),V(.01,yc-.46,zc+.15)],.01);}
   const ppl=(K.people||[]).slice(0,7),n=ppl.length,kR=Math.min(2,Math.floor(n/2)),L=ppl.slice(0,n-kR),Rr=ppl.slice(n-kR);
   const put=(f,off,dep)=>{f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
   put(jk,-.9,.15);L.forEach((o,i)=>put(personFig(o),-1.55-(L.length-1-i)*.58,.05+(i%2)*.08));Rr.forEach((o,i)=>put(personFig(o),1.35+i*.58,.05));
