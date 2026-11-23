@@ -40,5 +40,5 @@ ACT.warmup=(o=>function(){const RC=UI.race;if(RC&&RC.race.grade==='G1'&&!RC.para
 
 /* with the 3D view, the announcer follows the horses on screen */
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-parade')return;const RC=UI.race;if(!RC)return;const f=RC.field.find(x=>x.no===d.no),cast=$('#prdcast');
-  if(f&&cast)cast.innerHTML=`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;if(f&&f.mine){try{se('up');}catch(x){}}
+  if(f&&cast&&!window.__castLine)cast.innerHTML=`<span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b>　${esc(f.jname)}騎手　${f.pop}番人気`;if(f&&f.mine){try{se('up');}catch(x){}}
   if(d.last)setTimeout(()=>{const b=$('#prdgo');if(b&&b.disabled){b.disabled=false;if(cast)cast.innerHTML='<span class="pc-l">場内アナウンス</span>以上、出走馬の本馬場入場でした';}},3000);});

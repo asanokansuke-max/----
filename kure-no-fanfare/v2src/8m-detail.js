@@ -208,9 +208,11 @@ function catchFor(RC){const F=RC.field||[];if(F.every(f=>f.cc!==undefined))retur
 /* the 3D view gets them for its on-screen caption */
 r3dInput=(o=>function(RC){try{catchFor(RC);}catch(e){}const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f){x.cc=f.cc||'';x.jc=f.jc||'';x.pop=f.pop||0;}});}catch(e){}return inp;})(r3dInput);
 /* the course announcer reads them too */
-(function(){const castLine=f=>`<span class="pc-l">場内アナウンス</span><span class="pcn"><b>${f.no}番 ${esc(f.name)}</b>${f.cc?`<i class="pcc">「${esc(f.cc)}」</i>`:''}</span><span class="pcj">${esc(f.jname)}騎手${f.jc?`<small>${esc(f.jc)}</small>`:''}　${f.pop}番人気</span>`;
-  const st=document.createElement('style');st.textContent=`.padcast .pcn{display:inline-flex;flex-direction:column;vertical-align:middle;margin-right:10px}.padcast .pcc{font-style:normal;font-size:12px;color:#ffd166;letter-spacing:.04em}
-  .padcast .pcj{display:inline-flex;flex-direction:column;vertical-align:middle;font-size:13px}.padcast .pcj small{font-size:11px;color:#c9d4cc}`;document.head.appendChild(st);
+/* three fixed lines (name / catchphrase / rider), each kept to one line, so the box never shifts with the length of the words */
+(function(){const castLine=f=>`<div class="pcg"><div class="pcr1"><span class="pc-l">場内アナウンス</span><b>${f.no}番 ${esc(f.name)}</b></div><div class="pcc">${f.cc?`「${esc(f.cc)}」`:'&nbsp;'}</div><div class="pcj">${esc(f.jname)}騎手${f.jc?`<small>／${esc(f.jc)}</small>`:''}<span class="pcp">${f.pop}番人気</span></div></div>`;
+  const st=document.createElement('style');st.textContent=`.padcast .pcg{display:flex;flex-direction:column;gap:1px;min-width:0}.padcast .pcg>div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+  .padcast .pcr1{line-height:1.5}#prdcast,#padcast{min-height:5.2em}.padcast .pcc{font-style:normal;font-size:12px;line-height:1.45;color:#ffd166;letter-spacing:.04em}
+  .padcast .pcj{font-size:13px;line-height:1.45}.padcast .pcj small{font-size:11px;color:#c9d4cc;margin-left:4px}.padcast .pcp{margin-left:10px}`;document.head.appendChild(st);
   addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-parade')return;const RC=UI.race;if(!RC)return;try{catchFor(RC);}catch(x){}const f=RC.field.find(x=>x.no===d.no),cast=$('#prdcast');if(f&&cast)setTimeout(()=>{cast.innerHTML=castLine(f);},0);});
   showParade=(o=>function(){try{catchFor(UI.race);}catch(e){}return o.apply(this,arguments);})(showParade);
   window.__castLine=castLine;})();
