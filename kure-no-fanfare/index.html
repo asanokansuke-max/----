@@ -9481,7 +9481,7 @@ ACT.rcdOpen=d=>{const h=HZ(+d.hid);if(h&&h.rcard)retireCardOpen(h.rcard);};
 /* =========================================================
    自分の馬の3D写真を、ゲームのあちこちの絵に使う:
    レースのたびに3Dで撮っているゴールの写真（結果カードの絵）を、その馬の「最新の写真」として残す
-   （小さく縮めて保存）。スポーツ紙の写真・朝刊一面の写真（自分の馬が本命のとき）・月替わりの絵・引退記念カードの絵は、
+   （小さく縮めて保存）。スポーツ紙の写真・朝刊一面の写真（自分の馬が本命のとき）・引退記念カードの絵は、
    写真があればそれを使い、なければこれまでの絵のまま。
    ========================================================= */
 function picShrink(src,maxW,q){return new Promise(res=>{const im=new Image();im.onload=()=>{try{const k=Math.min(1,maxW/im.naturalWidth),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);
@@ -9500,11 +9500,7 @@ ACT.pressOpen=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.rac
 /* 朝刊一面: when the ◎ is your horse and it has a photo */
 drawFrontPhoto=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race,F=RC.field,d=paperData(RC),h1=F[d.marks.findIndex(x=>x[0]==='◎')];const h=h1&&h1.mine&&h1.h;if(h&&h.pic)picLoad(h.pic).then(im=>{const cv=$('#fpphoto');if(!im||!cv)return;const c=cv.getContext('2d');c.save();c.setTransform(1,0,0,1,0,0);
   picCover(c,im,0,0,cv.width,cv.height,.62);c.globalCompositeOperation='multiply';c.fillStyle='rgba(180,160,130,.25)';c.fillRect(0,0,cv.width,cv.height);c.restore();});}catch(e){}return r;})(drawFrontPhoto);
-/* 月替わり: the season's picture shows your latest horse photo, washed with the month's light */
-drawSeason=(o=>function(cv,m){const r=o.apply(this,arguments);try{const h=latestPic();if(h)picLoad(h.pic).then(im=>{if(!im||!cv.isConnected)return;const c=cv.getContext('2d'),dpr=window.devicePixelRatio||1,W=cv.width/dpr,H=cv.height/dpr;c.save();c.setTransform(dpr,0,0,dpr,0,0);
-  picCover(c,im,0,0,W,H,.6);const tint=m<=2||m===12?'rgba(200,215,235,.28)':m<=5?'rgba(255,220,230,.16)':m<=8?'rgba(255,240,190,.14)':'rgba(240,180,110,.2)';c.fillStyle=tint;c.fillRect(0,0,W,H);
-  if(m<=2||m===12){c.fillStyle='rgba(255,255,255,.9)';for(let i=0;i<50;i++){c.beginPath();c.arc(hash('s'+i)*W,hash('t'+i)*H,1+hash('u'+i)*1.8,0,7);c.fill();}}
-  const g=c.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,W*.7);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.35)');c.fillStyle=g;c.fillRect(0,0,W,H);c.restore();});}catch(e){}return r;})(drawSeason);
+/* 月替わり: keeps its own seasonal picture (the race photo there read as the result screen coming back) */
 /* 引退記念カード: the horse's own photo in the picture frame */
 retireCardData=(o=>function(h,dest){const d=o.apply(this,arguments);try{if(h&&h.pic)d.pic=h.pic;}catch(e){}return d;})(retireCardData);
 retireCardOpen=(o=>function(d){if(!d||!d.pic)return o.apply(this,arguments);picLoad(d.pic).then(im=>{if(!im){const dd={...d};delete dd.pic;return o.call(this,dd);}
