@@ -1057,8 +1057,10 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
    const len=[0];for(let k=1;k<pts.length;k++)len.push(len[k-1]+Math.hypot(pts[k][0]-pts[k-1][0],pts[k][1]-pts[k-1][1]));const LT=len[len.length-1];
    const pos=[],uv=[],idx=[];pts.forEach(([x,y],k)=>{const zc=Z0+(YT-y)*KR.lean;[-1,1].forEach(sd=>{pos.push(x*(1+.04*sd),y,zc+sd*HW);uv.push(len[k]/LT,sd<0?1:0);});if(k<pts.length-1){const a=k*2;idx.push(a,a+1,a+2,a+1,a+3,a+2);}});
    const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));lg.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));lg.setIndex(idx);lg.computeVertexNormals();
+   /* each race has its own colour (the same every year): green, red, navy, purple, crimson, teal */
+   const LEI_PAL=['#1d6b48','#b01c2e','#1d3c8a','#4b2a7d','#8a1630','#145f63'],th=[...ttl.replace(/（.*?）/g,'')].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7),LEI_COL=LEI_PAL[th%LEI_PAL.length];
    const t0=[...ttl.replace(/（.*?）/g,'').replace(/ステークス$/,'S')].slice(0,8),side=(YT-YB)/LT;
-   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,128,(g,W,H)=>{g.fillStyle='#1d6b48';g.fillRect(0,0,W,H);const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(0,0,0,.18)');gr.addColorStop(.5,'rgba(255,255,255,.05)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,128,(g,W,H)=>{g.fillStyle=LEI_COL;g.fillRect(0,0,W,H);const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(0,0,0,.18)');gr.addColorStop(.5,'rgba(255,255,255,.05)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(0,0,W,H);
      const n=t0.length,fs=Math.min(84,Math.floor(side*W*.8/n));g.fillStyle="#f2c53c";g.strokeStyle="#f2c53c";g.lineWidth=3;g.font=`900 ${fs}px "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif`;g.textAlign='center';g.textBaseline='middle';
      /* left side: the top is at larger u; right side: the top at smaller u — each reads downward from the neck */
      const top=side*W*.9,step=fs*1.04;t0.forEach((c,k)=>{g.save();g.translate(top-step*(k+.5),H/2);g.rotate(Math.PI/2);g.strokeText(c,0,2);g.fillText(c,0,2);g.restore();
