@@ -1038,10 +1038,13 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   jk.traverse(m=>{if(m.isMesh&&m.position.y<0&&m.geometry.type==='CapsuleGeometry')m.material=new THREE.MeshStandardMaterial({color:'#f4f2ec',roughness:.8});});
   /* the number cloth: straight top, the bottom swelling into a round, the number large and the name under it */
   const shapeGeo=(pts,w0,h0,y0)=>{const sh=new THREE.Shape();pts(sh);const g=new THREE.ShapeGeometry(sh,16),pa=g.attributes.position,uv=g.attributes.uv;for(let k=0;k<pa.count;k++)uv.setXY(k,(pa.getX(k)+w0/2)/w0,(pa.getY(k)-y0)/h0);uv.needsUpdate=true;return g;};
-  const clG=shapeGeo(sh=>{sh.moveTo(-.4,.24);sh.lineTo(.4,.24);sh.lineTo(.4,-.04);sh.quadraticCurveTo(.38,-.27,0,-.3);sh.quadraticCurveTo(-.38,-.27,-.4,-.04);sh.lineTo(-.4,.24);},.8,.54,-.3);
-  const ttl=String(IN.title||'');const cl=new THREE.Mesh(clG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.75,map:canvasTex(256,172,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f6b3c';g.fillRect(0,0,W,H);
-    g.strokeStyle='#f2efe6';g.lineWidth=5;g.beginPath();g.moveTo(7,7);g.lineTo(W-7,7);g.lineTo(W-7,H*.48);g.quadraticCurveTo(W*.98,H*.9,W/2,H-7);g.quadraticCurveTo(W*.02,H*.9,7,H*.48);g.closePath();g.stroke();
-    g.fillStyle='#fff';g.textAlign='center';g.font='600 15px sans-serif';g.fillText(ttl.slice(0,12),W/2,30);g.font='bold 78px Oswald,sans-serif';g.fillText(String(w.no),W/2,108);g.font='bold 18px sans-serif';g.fillText(String(F.name||'').slice(0,9),W/2,140);})}));
+  /* the JRA saddle cloth: straight top and bottom, the right edge leaning out a little, the left a big rounded curve; the number large on the right, the name under it */
+  const ZW=.84,ZH=.62,zp=(x,y)=>[(x-.5)*ZW,(.5-y)*ZH];
+  const clG=shapeGeo(sh=>{sh.moveTo(...zp(.13,.05));sh.lineTo(...zp(.87,.05));sh.lineTo(...zp(.95,.93));sh.lineTo(...zp(.25,.93));sh.bezierCurveTo(...zp(.06,.86),...zp(.0,.55),...zp(.03,.4));sh.bezierCurveTo(...zp(.05,.22),...zp(.09,.1),...zp(.13,.05));},ZW,ZH,-ZH/2);
+  const ttl=String(IN.title||'');const cl=new THREE.Mesh(clG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.75,map:canvasTex(256,190,(g,W,H)=>{g.fillStyle=K.g1?'#33297a':'#1f6b3c';g.fillRect(0,0,W,H);
+    g.fillStyle='#fff';g.textAlign='center';g.font='bold 112px Oswald,"Arial Black",sans-serif';g.fillText(String(w.no),W*.72,H*.64);
+    const nm=String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
+    g.font='600 13px sans-serif';g.textAlign='left';g.fillStyle='rgba(255,255,255,.85)';g.fillText(ttl.slice(0,10),W*.2,H*.16);})}));
   cl.position.set(0,1.02,.25);jk.add(cl);
   /* 前掛け: the winner's cloth hung on the horse's chest — dark blue (G1) or green, gold edge and fringe, the race's name down the middle */
   {const bw=.42,bh=.86;const bG=shapeGeo(sh=>{sh.moveTo(-bw/2,0);sh.lineTo(bw/2,0);sh.lineTo(bw/2,-bh+.12);sh.lineTo(0,-bh);sh.lineTo(-bw/2,-bh+.12);sh.lineTo(-bw/2,0);},bw,bh,-bh);
