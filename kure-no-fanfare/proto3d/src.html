@@ -1045,7 +1045,7 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   const clG=shapeGeo(sh=>{sh.moveTo(...zp(.13,.05));sh.lineTo(...zp(.87,.05));sh.lineTo(...zp(.95,.93));sh.lineTo(...zp(.25,.93));sh.bezierCurveTo(...zp(.06,.86),...zp(.0,.55),...zp(.03,.4));sh.bezierCurveTo(...zp(.05,.22),...zp(.09,.1),...zp(.13,.05));},ZW,ZH,-ZH/2);
   const ttl=String(IN.title||'');const cl=new THREE.Mesh(clG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.75,map:canvasTex(256,190,(g,W,H)=>{g.fillStyle=K.g1?'#33297a':'#1f6b3c';g.fillRect(0,0,W,H);
     g.fillStyle='#fff';g.textAlign='center';g.font='bold 112px Oswald,"Arial Black",sans-serif';g.fillText(String(w.no),W*.72,H*.64);
-    const nm=String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
+    const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[F.cc]||'')+String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
     g.font='600 13px sans-serif';g.textAlign='left';g.fillStyle='rgba(255,255,255,.85)';g.fillText(ttl.slice(0,10),W*.2,H*.16);})}));
   cl.position.set(0,1.02,.25);jk.add(cl);
   /* 前掛け: the winner's cloth hung on the horse's chest — dark blue (G1) or green, gold edge and fringe, the race's name down the middle */
@@ -1119,7 +1119,7 @@ function lowerThird(r){if(IN){try{parent.postMessage({type:'race3d-parade',no:r.
   el.style.bottom='5%';el.style.left='2.5%';el.innerHTML=`<span style="display:grid;place-items:center;min-width:2.1em;font:800 clamp(13px,3.2vw,22px)/1 Oswald,sans-serif;background:${WAKU[w]};color:${WINK[w]};padding:0 .28em;border-radius:3px 0 0 3px">${r.no}</span>
    <span style="display:flex;flex-direction:column;justify-content:center;gap:.1em;background:linear-gradient(90deg,rgba(6,14,10,.9),rgba(6,14,10,.72) 80%,rgba(6,14,10,.0));color:#fff;padding:.28em 1.6em .3em .55em;border-left:3px solid ${SILKS[r.i][0]}">
     ${cc?`<i style="font:700 clamp(7px,1.5vw,11px)/1.2 'Hiragino Mincho ProN','Yu Mincho',serif;color:#ffd166;letter-spacing:.08em;font-style:normal">${cc}</i>`:''}
-    <b style="font-size:clamp(11px,2.7vw,19px);letter-spacing:.05em;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.4)">${({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[f0.cc]||''}${r.name}</b>
+    <b style="font-size:clamp(11px,2.7vw,19px);letter-spacing:.05em;line-height:1.1;text-shadow:0 1px 0 rgba(0,0,0,.4)">${r.name}</b>
     <small style="font-size:clamp(7px,1.4vw,10px);color:#d5ddd8;letter-spacing:.03em">${jn?jn+'騎手':''}${jc?`<span style="color:#9fd8b5"> ／ ${jc}</span>`:''}${pop?`　${pop}番人気`:''}${r.mine?'　<span style="color:#ffd166">あなたの馬</span>':''}</small></span>`;
   el.style.opacity=1;el.style.transform='none';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity=0;el.style.transform='translateX(-12px)';},3400);}
 function makePonies(){for(let k=0;k<2;k++){const g=new THREE.Group(),src=horseGLTF.scene.children[0],mesh=src.clone();mesh.geometry=src.geometry;mesh.material=new THREE.MeshStandardMaterial({color:'#d9d8d3',roughness:.45});

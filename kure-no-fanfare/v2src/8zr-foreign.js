@@ -39,7 +39,6 @@ function flagPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC
   const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});
   const nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);
   nodes.forEach(n=>{let v=n.nodeValue,ch=false;L.forEach(f=>{const fl=FLAG[f.cc];if(!fl||!f.name||v.indexOf(f.name)<0)return;v=v.split(f.name).map((seg,i,a)=>i<a.length-1&&!seg.endsWith(fl)?seg+fl:seg).join(f.name);ch=true;});if(ch&&v!==n.nodeValue)n.nodeValue=v;});}catch(e){}}
-(function(){let q=false;const run=()=>{q=false;const sh=document.getElementById('sheet');if(sh)flagPass(sh);const ov=document.getElementById('r3d');if(ov)flagPass(ov);};
-  new MutationObserver(()=>{if(!q){q=true;requestAnimationFrame(run);}}).observe(document.body,{childList:true,subtree:true});})();
+/* (the flag is shown on the saddle cloths only, not in the lists) */
 /* the 3D broadcast gets the country too (the name strip shows the flag) */
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.cc)x.cc=f.cc;});}catch(e){}return inp;})(r3dInput);
