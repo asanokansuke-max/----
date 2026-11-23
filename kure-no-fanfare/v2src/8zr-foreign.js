@@ -26,18 +26,20 @@ buildField=(o=>function(race,ents){const fld=o.apply(this,arguments);const uj=ne
     if(race.abroad){const cc=ABROAD_CC[race.abroad]||['GB'];fld.forEach(f=>{if(f.npc)foreignize(f,pick(cc),uj);else f.cc='JPN';});}
     else{const it=INTL[race.name];
       if(it&&race.grade==='G1'){const lo=it[0],hi=it[1],ccs=it[2];let k=lo+Math.floor(R()*(hi-lo+1));const npc=fld.filter(f=>f.npc&&!f.jid);
-        for(const f of npc){if(k<=0)break;foreignize(f,pick(ccs),uj);k--;}}}
+        for(const f of npc){if(k<=0)break;foreignize(f,pick(ccs),uj);k--;}}
+      /* with visitors in the field, the home runners carry the Japanese flag too */
+      if(fld.some(f=>f.cc))fld.forEach(f=>{if(!f.cc)f.cc='JPN';});}
     /* no foreign name may sit inside another runner's name (the flag must find the right one) */
     fld.filter(f=>f.cc&&f.npc).forEach(f=>{for(let i=0;i<8&&fld.some(g=>g!==f&&(g.name.includes(f.name)||f.name.includes(g.name)));i++)f.name=foreignName(f.cc,uj.names);});
   }catch(e){console.error('foreign',e);}
   return fld;})(buildField);
 const flagOf=f=>f&&f.cc&&FLAG[f.cc]||'';
 /* the flag goes in front of the name wherever a race's runner names are shown */
-function flagPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC.field.filter(f=>f.cc&&(f.cc!=='JPN'||RC.race.abroad));if(!L.length)return;
+function flagPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC.field.filter(f=>f.cc);if(!L.length)return;
   const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TEXTAREA|INPUT)$/.test(p.nodeName))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});
   const nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);
   nodes.forEach(n=>{let v=n.nodeValue,ch=false;L.forEach(f=>{const fl=FLAG[f.cc];if(!fl||!f.name||v.indexOf(f.name)<0)return;v=v.split(f.name).map((seg,i,a)=>i<a.length-1&&!seg.endsWith(fl)?seg+fl:seg).join(f.name);ch=true;});if(ch&&v!==n.nodeValue)n.nodeValue=v;});}catch(e){}}
 (function(){let q=false;const run=()=>{q=false;const sh=document.getElementById('sheet');if(sh)flagPass(sh);const ov=document.getElementById('r3d');if(ov)flagPass(ov);};
   new MutationObserver(()=>{if(!q){q=true;requestAnimationFrame(run);}}).observe(document.body,{childList:true,subtree:true});})();
 /* the 3D broadcast gets the country too (the name strip shows the flag) */
-r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.cc&&(f.cc!=='JPN'||RC.race.abroad))x.cc=f.cc;});}catch(e){}return inp;})(r3dInput);
+r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.cc)x.cc=f.cc;});}catch(e){}return inp;})(r3dInput);
