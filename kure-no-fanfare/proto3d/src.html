@@ -1036,8 +1036,20 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   /* the rider: helmet and jacket in the colours, white breeches, boots, the number cloth held in front */
   const F=IN.field.find(f=>f.no===w.no)||{},jk=personFig({suit:F.a||'#1f3a8a',hair:F.b||'#f2b705',tie:F.a||'#1f3a8a'});
   jk.traverse(m=>{if(m.isMesh&&m.position.y<0&&m.geometry.type==='CapsuleGeometry')m.material=new THREE.MeshStandardMaterial({color:'#f4f2ec',roughness:.8});});
-  const cl=new THREE.Mesh(new THREE.BoxGeometry(.78,.5,.02),new THREE.MeshStandardMaterial({map:canvasTex(256,164,(g,W,H)=>{g.fillStyle='#1d3c8a';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.font='bold 92px Oswald,sans-serif';g.textAlign='center';g.fillText(String(w.no),W*.62,H*.62);g.font='bold 20px sans-serif';g.fillText(String(F.name||'').slice(0,9),W*.62,H*.9);g.strokeStyle='#e8e2d4';g.lineWidth=6;g.strokeRect(4,4,W-8,H-8);}),roughness:.7}));
-  cl.position.set(0,1.05,.24);jk.add(cl);
+  /* the number cloth: straight top, the bottom swelling into a round, the number large and the name under it */
+  const shapeGeo=(pts,w0,h0,y0)=>{const sh=new THREE.Shape();pts(sh);const g=new THREE.ShapeGeometry(sh,16),pa=g.attributes.position,uv=g.attributes.uv;for(let k=0;k<pa.count;k++)uv.setXY(k,(pa.getX(k)+w0/2)/w0,(pa.getY(k)-y0)/h0);uv.needsUpdate=true;return g;};
+  const clG=shapeGeo(sh=>{sh.moveTo(-.4,.24);sh.lineTo(.4,.24);sh.lineTo(.4,-.04);sh.quadraticCurveTo(.38,-.27,0,-.3);sh.quadraticCurveTo(-.38,-.27,-.4,-.04);sh.lineTo(-.4,.24);},.8,.54,-.3);
+  const ttl=String(IN.title||'');const cl=new THREE.Mesh(clG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.75,map:canvasTex(256,172,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f6b3c';g.fillRect(0,0,W,H);
+    g.strokeStyle='#f2efe6';g.lineWidth=5;g.beginPath();g.moveTo(7,7);g.lineTo(W-7,7);g.lineTo(W-7,H*.48);g.quadraticCurveTo(W*.98,H*.9,W/2,H-7);g.quadraticCurveTo(W*.02,H*.9,7,H*.48);g.closePath();g.stroke();
+    g.fillStyle='#fff';g.textAlign='center';g.font='600 15px sans-serif';g.fillText(ttl.slice(0,12),W/2,30);g.font='bold 78px Oswald,sans-serif';g.fillText(String(w.no),W/2,108);g.font='bold 18px sans-serif';g.fillText(String(F.name||'').slice(0,9),W/2,140);})}));
+  cl.position.set(0,1.02,.25);jk.add(cl);
+  /* 前掛け: the winner's cloth hung on the horse's chest — dark blue (G1) or green, gold edge and fringe, the race's name down the middle */
+  {const bw=.42,bh=.86;const bG=shapeGeo(sh=>{sh.moveTo(-bw/2,0);sh.lineTo(bw/2,0);sh.lineTo(bw/2,-bh+.12);sh.lineTo(0,-bh);sh.lineTo(-bw/2,-bh+.12);sh.lineTo(-bw/2,0);},bw,bh,-bh);
+   const bn=new THREE.Mesh(bG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(128,284,(g,W,H)=>{g.fillStyle=K.g1?'#1d3c8a':'#1f5f3a';g.fillRect(0,0,W,H);g.strokeStyle='#d9b45a';g.lineWidth=8;g.beginPath();g.moveTo(5,0);g.lineTo(5,H*.88);g.lineTo(W/2,H-4);g.lineTo(W-5,H*.88);g.lineTo(W-5,0);g.stroke();
+     g.fillStyle='#f6e7b0';g.font='bold 30px "Hiragino Mincho ProN","Yu Mincho",serif';g.textAlign='center';const t=ttl.replace(/（.*?）/g,'').slice(0,8),fs=t.length>6?26:30;g.font=`bold ${fs}px "Hiragino Mincho ProN","Yu Mincho",serif`;[...t].forEach((c,k)=>g.fillText(c,W/2,52+k*(fs+2)));})}));
+   bn.position.set(0,1.24,1.0);bn.rotation.x=-.12;w.g.add(bn);
+   /* the gold fringe at the bottom */
+   const fr=new THREE.Mesh(new THREE.BoxGeometry(bw*.9,.07,.03),new THREE.MeshStandardMaterial({color:'#d9b45a',roughness:.5,metalness:.3}));fr.position.set(0,1.24-bh+.06,1.0+Math.sin(.12)*(bh-.06));fr.rotation.x=-.12;w.g.add(fr);}
   const ppl=(K.people||[]).slice(0,7),n=ppl.length,kR=Math.min(2,Math.floor(n/2)),L=ppl.slice(0,n-kR),Rr=ppl.slice(n-kR);
   const put=(f,off,dep)=>{f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
   put(jk,-.9,.15);L.forEach((o,i)=>put(personFig(o),-1.55-(L.length-1-i)*.58,.05+(i%2)*.08));Rr.forEach((o,i)=>put(personFig(o),1.35+i*.58,.05));
