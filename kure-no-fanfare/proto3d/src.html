@@ -534,7 +534,7 @@ function makeRunner(i){const g=new THREE.Group();
       c.fillStyle=CL.fg;c.fillText(num,0,0);
       c.globalCompositeOperation='source-atop';c.fillStyle='rgba(255,255,255,.10)';c.fillRect(-200,-130,400,90);c.globalCompositeOperation='source-over';c.restore();
       // the name, centred under the number and always inside the cloth (between the binding and the over-girth): big when it fits, smaller and then condensed when it is long
-      {const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[IN&&IN.field[i]&&IN.field[i].cc]||'')+String(NAMES[i]||''),FF='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif',MAXW=330,sg=flipX?-1:1,cx=sg*Math.max(-200+MAXW/2,Math.min(150-MAXW/2,sg*nx));let fs=62;c.font=`800 ${fs}px ${FF}`;let tw=c.measureText(nm).width;
+      {const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[IN&&IN.field[i]&&IN.field[i].ctry]||'')+String(NAMES[i]||''),FF='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif',MAXW=330,sg=flipX?-1:1,cx=sg*Math.max(-200+MAXW/2,Math.min(150-MAXW/2,sg*nx));let fs=62;c.font=`800 ${fs}px ${FF}`;let tw=c.measureText(nm).width;
        if(tw>MAXW){fs=Math.max(46,fs*MAXW/tw);c.font=`800 ${fs}px ${FF}`;tw=c.measureText(nm).width;}const sx=Math.min(1,MAXW/Math.max(1,tw));
        c.save();c.translate(cx,102);c.scale(sx,1);c.fillStyle=light?'rgba(0,0,0,.15)':'rgba(0,0,0,.3)';c.fillText(nm,2,2);c.fillStyle=CL.fg;c.fillText(nm,0,0);c.restore();}
       c.restore();};
@@ -1045,7 +1045,7 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   const clG=shapeGeo(sh=>{sh.moveTo(...zp(.13,.05));sh.lineTo(...zp(.87,.05));sh.lineTo(...zp(.95,.93));sh.lineTo(...zp(.25,.93));sh.bezierCurveTo(...zp(.06,.86),...zp(.0,.55),...zp(.03,.4));sh.bezierCurveTo(...zp(.05,.22),...zp(.09,.1),...zp(.13,.05));},ZW,ZH,-ZH/2);
   const ttl=String(IN.title||'');const cl=new THREE.Mesh(clG,new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.75,map:canvasTex(256,190,(g,W,H)=>{g.fillStyle=K.g1?'#33297a':'#1f6b3c';g.fillRect(0,0,W,H);
     g.fillStyle='#fff';g.textAlign='center';g.font='bold 112px Oswald,"Arial Black",sans-serif';g.fillText(String(w.no),W*.72,H*.64);
-    const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[F.cc]||'')+String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
+    const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[F.ctry]||'')+String(F.name||'').slice(0,9);g.font=`bold ${nm.length>7?17:20}px "Hiragino Sans","Noto Sans JP",sans-serif`;g.fillText(nm,W*.66,H*.86);
     g.font='600 13px sans-serif';g.textAlign='left';g.fillStyle='rgba(255,255,255,.85)';g.fillText(ttl.slice(0,10),W*.2,H*.16);})}));
   cl.position.set(0,1.02,.25);jk.add(cl);
   /* 前掛け: the winner's cloth hung on the horse's chest — dark blue (G1) or green, gold edge and fringe, the race's name down the middle */
