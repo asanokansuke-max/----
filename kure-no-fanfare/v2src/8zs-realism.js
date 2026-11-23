@@ -27,7 +27,7 @@ drawReg=(o=>function(){const r=o.apply(this,arguments);try{document.querySelecto
 let EXQ=null;
 beginRaces=(o=>function(){const out=[];try{for(const [hid,od] of Object.entries(S.month.orders||{})){if(!od||od.type!=='race'||!od.race)continue;const h=HZ(+hid);if(!h||h.owner!=='me'||h.status!=='現役')continue;
     const st=entryStatus(h,od.race);
-    if(st.st==='抽選'&&!od.lotOk&&od.race.grade!=='G1'){if(R()>(st.p||.45)){out.push({h,race:od.race,why:'抽選に外れた'});S.month.orders[hid]={type:'train',int:'普通'};continue;}od.lotOk=1;}
+    if(st.st==='抽選'&&!od.lotOk){if(R()>(st.p||(od.race.grade==='G1'?.35:.45))){out.push({h,race:od.race,why:'抽選に外れた'});S.month.orders[hid]={type:'train',int:'普通'};continue;}od.lotOk=1;}
     if(st.ex&&R()<st.ex){h.exN=(h.exN||0)+1;out.push({h,race:od.race,why:'除外'});S.month.orders[hid]={type:'train',int:'普通'};continue;}
     h.exN=0;}}catch(e){console.error('ex',e);}
   if(!out.length)return o.apply(this,arguments);
@@ -40,7 +40,7 @@ beginRaces=(o=>function(){const out=[];try{for(const [hid,od] of Object.entries(
 ACT.exGo=()=>{closeModal();const f=EXQ;EXQ=null;if(f)f();};
 /* the G1 shortcut in the registration already draws the lot; a graded race's lot is drawn there too, at its own odds */
 ACT.regOk=(o=>function(){const rg=UI.reg,h=rg&&HZ(rg.hid),race=h&&racesFor(h).find(r=>r.key===rg.key);if(!race||!rg.j)return o.apply(this,arguments);
-  const st=entryStatus(h,race);if(st.st!=='抽選'||race.grade==='G1')return o.apply(this,arguments);
+  const st=entryStatus(h,race);if(st.st!=='抽選'||race.grade==='G1'){const r=o.apply(this,arguments);try{const od=S.month.orders[h.id];if(st.st==='抽選'&&od&&od.race&&od.race.key===race.key)od.lotOk=1;}catch(e){}return r;}
   if(R()>(st.p||.45)){S.month.lot=S.month.lot||{};S.month.lot[h.id+race.key]=1;rg.key=null;rg.j=null;save();drawReg();toast(`${race.name}は抽選で外れてしまった`);return;}
   toast(`抽選を突破。${race.name}に出られる`);S.month.orders[h.id]={type:'race',race,j:rg.j,tac:'おまかせ',lotOk:1};save();closeModal();render();})(ACT.regOk);
 /* ---------- ゲート試験 ---------- */
