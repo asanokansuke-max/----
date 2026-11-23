@@ -9607,6 +9607,15 @@ function flagPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC
 /* (the flag is shown on the saddle cloths only, not in the lists) */
 /* the 3D broadcast gets the country too (the name strip shows the flag) */
 r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.field.forEach(x=>{const f=RC.field.find(y=>y.no===x.no);if(f&&f.cc)x.cc=f.cc;});}catch(e){}return inp;})(r3dInput);
+/* in the lists (出馬表・結果・掲示板の脇など) a foreign runner's name carries the 外 mark in a circle, as on the JRA card (the flags stay on the saddle cloths) */
+function gaiPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC.field.filter(f=>f.cc&&f.cc!=='JPN'&&f.name);if(!L.length)return;
+  const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TEXTAREA|INPUT|OPTION)$/.test(p.nodeName)||(p.classList&&p.classList.contains('marugai')))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});
+  const nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);
+  nodes.forEach(n=>{const v=n.nodeValue;const f=L.find(x=>v.indexOf(x.name)>=0);if(!f)return;const prev=n.previousSibling;if(v.indexOf(f.name)===0&&prev&&prev.classList&&prev.classList.contains('marugai'))return;
+    const i=v.indexOf(f.name),frag=document.createDocumentFragment();if(i>0)frag.appendChild(document.createTextNode(v.slice(0,i)));const m=document.createElement('span');m.className='marugai';m.textContent='外';frag.appendChild(m);frag.appendChild(document.createTextNode(v.slice(i)));n.parentNode.replaceChild(frag,n);});}catch(e){}}
+(function(){let q=false;const run=()=>{q=false;['sheet','r3d'].forEach(id=>{const el=document.getElementById(id);if(el)gaiPass(el);});};
+  new MutationObserver(()=>{if(!q){q=true;requestAnimationFrame(run);}}).observe(document.body,{childList:true,subtree:true});
+  const st=document.createElement('style');st.textContent=`.marugai{display:inline-grid;place-items:center;width:1.25em;height:1.25em;margin-right:.18em;border:1.5px solid currentColor;border-radius:50%;font-size:.72em;line-height:1;font-weight:800;vertical-align:.12em;opacity:.9}`;document.head.appendChild(st);})();
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
