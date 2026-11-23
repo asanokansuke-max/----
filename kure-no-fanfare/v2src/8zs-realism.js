@@ -6,6 +6,7 @@
    ・デビューの前にゲート試験。落ちたら翌月に受け直し（最初の一頭だけは、一度で受かる）。
    ・3歳の9月で未勝利戦が終わる。勝てていない馬は、格上挑戦・地方へ移籍・引退のどれかを決める。
    ・厩舎の馬房には限りがあり、自分の馬を預けられる頭数に上限がある（名前が売れると一頭増える）。
+     ただし、その厩舎でG1を勝った仲・長い付き合い・誰もが知る馬主なら、いっぱいでも一頭分は空けてくれる。
    ========================================================= */
 /* ---------- 除外 ---------- */
 function exPrio(h,r){if((h.exN||0)>0)return '除外明けの優先出走';const l=(h.rec||[])[0];if(l&&S.t-l.t<=2&&l.pos<=5&&(l.gr==='新馬'||l.gr==='未勝利'))return '前走5着以内で優先出走';return '';}
@@ -74,6 +75,18 @@ beginMonth=(o=>function(first){try{if(S&&!first){
 /* ---------- 厩舎の馬房 ---------- */
 const STALLS={togawa:2,hayase:3,koyanagi:3,washio:2,shibahara:3,kitami:2};
 function stallRoom(id){const cap=(STALLS[id]||3)+((S.fame||0)>=40?1:0),n=mine().filter(h=>h.trainer===id&&['現役','放牧','休養'].includes(h.status)).length;return cap-n;}
-if(EV.nyukyu){const n0=EV.nyukyu;EV.nyukyu={...n0,r:d=>{const v=n0.r(d);if(!v)return v;const tl=trainersAvail();let ok=tl.filter(id=>stallRoom(id)>0);if(!ok.length)ok=[tl.slice().sort((a,b)=>stallRoom(b)-stallRoom(a))[0]];d.tl=ok;
-    const no=tl.filter(id=>!ok.includes(id));return{...v,body:v.body+(no.length?`\n\n${no.map(id=>`${who(id)}厩舎は、オーナーの馬ですでに馬房が埋まっていて、今回は預かれないそうです。`).join('\n')}`:''),ch:ok.map(id=>`${who(id)}厩舎へ`)};},
-  f:(d,i)=>{const h=HZ(d.hid);const id=(d.tl||trainersAvail())[i]||(d.tl||trainersAvail())[0];h.trainer=id;h.status='現役';h.ev=evalHorse(h);trust(id,3);if(h.unnamed)return `${h.name}は${who(id)}厩舎に入った。厩舎タブで名前を付けよう。`;return `${h.name}は${who(id)}厩舎に入った。ゲート試験に受かれば、6月からデビューできる。`;}};}
+/* a full stable can still find one box for an owner it owes: a G1 won together, a long and trusted relationship, or a name everyone knows.
+   Only one over the limit — when it is already one over, even that runs out. */
+function stallFavor(id){if(stallRoom(id)!==0)return '';const tn=P(id)?P(id).n.split(' ')[0]:'調教師',own=S.part===1?S.parent.name:(S.child&&S.child.name)||'オーナー';
+  const g1=mine().concat(S.horses.filter(h=>h.owner==='me')).filter((h,k,a)=>a.indexOf(h)===k&&h.trainer===id).reduce((a,h)=>a+(h.g1||0),0);
+  if(g1>0)return `${tn}「${own}さんの馬で、G1を勝たせてもらいました。その${own}さんの頼みを断ったら、罰が当たります。一頭分、なんとかしましょう」`;
+  if(P(id)&&P(id).trust>=75)return `${tn}「長いお付き合いですから。…馬房はいっぱいですが、ほかでもない${own}さんの頼みです。なんとか空けます」`;
+  if((S.fame||0)>=60)return `${tn}「正直いっぱいいっぱいですが、${own}さんの馬となれば話は別です。預からせてください」`;
+  return '';}
+if(EV.nyukyu){const n0=EV.nyukyu;EV.nyukyu={...n0,r:d=>{const v=n0.r(d);if(!v)return v;const tl=trainersAvail();const fav={};tl.forEach(id=>{const f=stallFavor(id);if(f)fav[id]=f;});
+    let ok=tl.filter(id=>stallRoom(id)>0||fav[id]);if(!ok.length)ok=[tl.slice().sort((a,b)=>stallRoom(b)-stallRoom(a))[0]];d.tl=ok;
+    const no=tl.filter(id=>!ok.includes(id)),fv=ok.filter(id=>fav[id]&&stallRoom(id)<=0);
+    return{...v,body:v.body+(fv.length?`\n\n${fv.map(id=>`${who(id)}厩舎は、オーナーの馬で馬房が埋まっています。それでも──\n${fav[id]}`).join('\n\n')}`:'')+(no.length?`\n\n${no.map(id=>`${who(id)}厩舎は、オーナーの馬ですでに馬房が埋まっていて、今回は預かれないそうです。`).join('\n')}`:''),
+      ch:ok.map(id=>fav[id]&&stallRoom(id)<=0?`${who(id)}厩舎へ（無理を言って空けてもらう）`:`${who(id)}厩舎へ`)};},
+  f:(d,i)=>{const h=HZ(d.hid);const id=(d.tl||trainersAvail())[i]||(d.tl||trainersAvail())[0];const squeezed=stallRoom(id)<=0;h.trainer=id;h.status='現役';h.ev=evalHorse(h);trust(id,squeezed?1:3);
+    const tail=squeezed?`${who(id)}は、どこかの馬房をやりくりして空けてくれたらしい。`:'';if(h.unnamed)return `${h.name}は${who(id)}厩舎に入った。${tail}厩舎タブで名前を付けよう。`;return `${h.name}は${who(id)}厩舎に入った。${tail}ゲート試験に受かれば、6月からデビューできる。`;}};}
