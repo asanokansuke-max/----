@@ -57,3 +57,7 @@ buildField=(o=>function(race,ents){try{const seen=new Set();(ents||[]).forEach(e
     const was=e.j;let nj='stable';for(const c of [e.h.mainJ,TR(e.h.trainer)&&TR(e.h.trainer).jk,...jockeysAvail()].filter(x=>x&&x!=='stable'&&!seen.has(x))){try{if(o2ask(c,e.h,race)){nj=c;break;}}catch(x){}}
     e.j=nj;if(nj!=='stable')seen.add(nj);RC_SUB.push(`${JNAME(was)}騎手は${(ents.find(x=>x.j===was)||{}).h?.name||'もう1頭'}に騎乗するため、${e.h.name}は${JNAME(nj)}騎手に乗り替わり。`);});}catch(e){console.error('dupJ',e);}return o.apply(this,arguments);})(buildField);
 function o2ask(c,h,race){const j=JK(c);if(!j||(j.ban>S.t)||(typeof jockeyAway==='function'&&jockeyAway(c)))return false;return true;}
+/* the trainer's letters: a rider already booked for another of your horses in that race is not offered again */
+if(EV.g1consult){const r0=EV.g1consult.r,f0=EV.g1consult.f;
+  EV.g1consult.r=d=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);if(h&&race&&d.js&&d.js.some(j=>jBookedElsewhere(j,h,race)))delete d.js;}catch(e){}return r0(d);};
+  EV.g1consult.f=(d,i)=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);const j=d.js&&d.js[i];if(h&&race&&j&&jBookedElsewhere(j,h,race)){d.js=d.js.slice();d.js[i]='stable';}}catch(e){}return f0(d,i);};}

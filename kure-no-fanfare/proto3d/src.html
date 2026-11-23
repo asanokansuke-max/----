@@ -230,14 +230,17 @@ var MONG=null;function buildMonument(p,yaw){const g=new THREE.Group();MONG=g;g.p
 /* =================== the racecourse: grandstand, apron, infield screen, signage =================== */
 const STX=20,STZ=-RAD-30-XO,SLEN=LS+80;   // stand runs along the home straight; its front edge sits ~30m outside the outer rail
 function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.13,.1,.85,6);g.scale(1.25,1,.75);return g;})(),new THREE.MeshStandardMaterial({color:'#2a2b30',roughness:.9}),N),
-   coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshStandardMaterial({roughness:.7}),N),
+   coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh((()=>{const g=new THREE.SphereGeometry(.112,12,9);g.scale(1,1.14,1.02);return g;})(),new THREE.MeshStandardMaterial({roughness:.75}),N),
+   hair=new THREE.InstancedMesh((()=>{const g=new THREE.SphereGeometry(.121,12,8,0,Math.PI*2,0,Math.PI*.56);g.scale(1,1.12,1.04);return g;})(),new THREE.MeshStandardMaterial({roughness:.95}),N),
    hat=new THREE.InstancedMesh(new THREE.CylinderGeometry(.13,.14,.08,8),new THREE.MeshStandardMaterial({roughness:.7}),N);
-  const m=new THREE.Matrix4(),q=new THREE.Quaternion(),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3(),c=new THREE.Color();let n=0;
+  const m=new THREE.Matrix4(),q=new THREE.Quaternion(),hq=new THREE.Quaternion(),XAX=new THREE.Vector3(1,0,0),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3(),c=new THREE.Color();let n=0;
   const add=(x,y,z,face)=>{if(n>=N)return;const s=.9+rnd()*.2,lean=(rnd()-.5)*.08;e.set(lean,face+(rnd()-.5)*.8,0);q.setFromEuler(e);
     sc.set(s,s,s);v.set(x,y+.43*s,z);m.compose(v,q,sc);legs.setMatrixAt(n,m);v.set(x,y+1.18*s,z);sc.set(s*(1.05+rnd()*.25),s,s*(.68+rnd()*.15));m.compose(v,q,sc);coat.setMatrixAt(n,m);coat.setColorAt(n,c.set(people()));
-    sc.set(s,s,s);v.set(x,y+1.66*s,z);m.compose(v,q,sc);head.setMatrixAt(n,m);const fc=face===Math.PI;head.setColorAt(n,c.set(fc?(rnd()<.5?'#e2c4a4':'#d2ad88'):(rnd()<.18?'#d8c2a6':rnd()<.7?'#23201d':'#7a7470')));
-    const realHat=rnd()<.2;v.set(x,y+(realHat||fc?1.76:-5)*s,z);m.compose(v,q,sc);hat.setMatrixAt(n,m);hat.setColorAt(n,c.set(realHat?['#1f2a33','#e9e4d6','#7a1f24','#3a3a3a','#c8452f'][n%5]:rnd()<.85?'#1c1916':'#6f6a66'));n++;};
-  const grp=new THREE.Group();grp.add(legs,coat,head,hat);[legs,coat,head,hat].forEach(x=>x.layers.set(1));return {grp,add,done:()=>{[legs,coat,head,hat].forEach(x=>{x.count=n;x.instanceMatrix.needsUpdate=true;});}};}
+    /* the head: a rounded, slightly long skull in a skin tone; the hair a cap over the crown, swept down the back so a face shows from the front and hair from behind */
+    sc.set(s,s,s);v.set(x,y+1.66*s,z);m.compose(v,q,sc);head.setMatrixAt(n,m);head.setColorAt(n,c.set(['#e9cbab','#dcb48e','#cfa27c','#e4bf9b','#b98a64'][Math.floor(rnd()*5)]));
+    hq.setFromAxisAngle(XAX,.5);hq.premultiply(q);v.set(x,y+1.672*s,z);m.compose(v,hq,sc);hair.setMatrixAt(n,m);const hr=rnd();hair.setColorAt(n,c.set(hr<.62?'#1d1916':hr<.8?'#3b2a1f':hr<.93?'#8c8680':'#6b4a2e'));
+    const realHat=rnd()<.16;v.set(x,y+(realHat?1.775:-5)*s,z);m.compose(v,q,sc);hat.setMatrixAt(n,m);hat.setColorAt(n,c.set(['#1f2a33','#e9e4d6','#7a1f24','#3a3a3a','#c8452f'][n%5]));n++;};
+  const grp=new THREE.Group();grp.add(legs,coat,head,hair,hat);[legs,coat,head,hair,hat].forEach(x=>x.layers.set(1));return {grp,add,done:()=>{[legs,coat,head,hair,hat].forEach(x=>{x.count=n;x.instanceMatrix.needsUpdate=true;});}};}
 const people=(()=>{const cols=['#2b3a55','#3a3a3a','#4a3b30','#d8d2c4','#5a2d2d','#2e4a3f','#7d6a52','#1b1b1e','#bdb6a6','#1f2a33','#8a8f94','#46566b','#5e6b4a','#2f2f35','#e9e6de','#3c4a63','#1b1b1e','#22252b','#2b3a55'],acc=['#c8452f','#e07a2a','#c9b28a','#2f5f9f','#d9a441','#9b2335','#f0ece2'];return ()=>rnd()<.13?acc[Math.floor(rnd()*acc.length)]:cols[Math.floor(rnd()*cols.length)];})();
 // seating tiers: rows of seats with spectators (instanced), stepped up and back, under a cantilever roof
 const SEATS={N:16000,n:0,mesh:new THREE.InstancedMesh((()=>{const g=new THREE.BoxGeometry(.46,.5,.08);g.translate(0,.05,0);return g;})(),new THREE.MeshStandardMaterial({color:'#2c5f8a',roughness:.6,emissive:'#0d1f2e',emissiveIntensity:.5}),16000)};
