@@ -1023,27 +1023,30 @@ function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMater
   const head=new THREE.Mesh(new THREE.SphereGeometry(.12,12,10),skin);head.position.y=.86;hip.add(head);
   const hr=new THREE.Mesh(new THREE.SphereGeometry(.128,12,8,0,Math.PI*2,0,Math.PI*.55),hair);hr.position.set(0,.875,-.012);hip.add(hr);
   if(o.rosette){const rs=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.02,14),new THREE.MeshStandardMaterial({color:'#d62828',roughness:.6}));rs.rotation.x=Math.PI/2;rs.position.set(-.11,.56,.16);hip.add(rs);}
-  if(o.child)g.scale.setScalar(.72);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
+  g.scale.setScalar(o.child?.66:.9);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
 function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN.find(r=>r.mine)||RUN[0];
   RUN.forEach(r=>{r.g.visible=r===w;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
   const s=FIN-4,p=pathAt(s,10),q=pathAt(s+1,10),hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
   /* n: from the horse toward the camera (the infield side, so the stand is behind); r: the camera's right */
   const rx=nz,rz=-nx;
-  /* the horse turned three-quarters to the camera, head to the right */
-  const fx=nx*.5+rx*.87,fz=nz*.5+rz*.87,yaw=Math.atan2(fx,fz);w.g.position.set(p.x,0,p.z);w.g.rotation.y=yaw;
-  if(!w.handler)addHandler(w);w.handler.visible=true;{const lx=Math.cos(yaw),lz=-Math.sin(yaw),near=(lx*nx+lz*nz)>0?1:-1;w.handler.position.set(-.7*near,0,1.05);w.handler.rotation.y=near>0?.9:-.9;}
-  /* the connections: the first ones to the left of the horse, the trainer (and the last one) to its right, as the caption reads */
+  /* as at the races today: the horse stands facing the camera, unsaddled; the rider stands beside it holding the number cloth */
+  const fx=nx*.94+rx*.34,fz=nz*.94+rz*.34,yaw=Math.atan2(fx,fz);w.g.position.set(p.x+nx*.35,0,p.z+nz*.35);w.g.rotation.y=yaw;
+  w.J.visible=false;if(w.TACK)w.TACK.visible=false;if(w.reins)(Array.isArray(w.reins)?w.reins:[w.reins]).forEach(o=>{if(o&&o.isObject3D)o.visible=false;});
+  if(!w.handler)addHandler(w);w.handler.visible=true;{const lx=Math.cos(yaw),lz=-Math.sin(yaw),rs=(lx*rx+lz*rz)>0?1:-1;w.handler.position.set(.58*rs,0,.62);w.handler.scale.setScalar(.92);w.handler.rotation.y=rs>0?-1.35:1.35;}
+  /* the rider: helmet and jacket in the colours, white breeches, boots, the number cloth held in front */
+  const F=IN.field.find(f=>f.no===w.no)||{},jk=personFig({suit:F.a||'#1f3a8a',hair:F.b||'#f2b705',tie:F.a||'#1f3a8a'});
+  jk.traverse(m=>{if(m.isMesh&&m.position.y<0&&m.geometry.type==='CapsuleGeometry')m.material=new THREE.MeshStandardMaterial({color:'#f4f2ec',roughness:.8});});
+  const cl=new THREE.Mesh(new THREE.BoxGeometry(.78,.5,.02),new THREE.MeshStandardMaterial({map:canvasTex(256,164,(g,W,H)=>{g.fillStyle='#1d3c8a';g.fillRect(0,0,W,H);g.fillStyle='#fff';g.font='bold 92px Oswald,sans-serif';g.textAlign='center';g.fillText(String(w.no),W*.62,H*.62);g.font='bold 20px sans-serif';g.fillText(String(F.name||'').slice(0,9),W*.62,H*.9);g.strokeStyle='#e8e2d4';g.lineWidth=6;g.strokeRect(4,4,W-8,H-8);}),roughness:.7}));
+  cl.position.set(0,1.05,.24);jk.add(cl);
   const ppl=(K.people||[]).slice(0,7),n=ppl.length,kR=Math.min(2,Math.floor(n/2)),L=ppl.slice(0,n-kR),Rr=ppl.slice(n-kR);
-  const put=(o,off,dep)=>{const f=personFig(o);f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
-  L.forEach((o,i)=>put(o,-1.2-(L.length-1-i)*.6,.15+(i%2)*.12));Rr.forEach((o,i)=>put(o,2.55+i*.6,-.1));
-  const lo=L.length?-1.2-(L.length-1)*.6:-1.2,hi=Rr.length?2.55+(Rr.length-1)*.6:2.2;
+  const put=(f,off,dep)=>{f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
+  put(jk,-.9,.15);L.forEach((o,i)=>put(personFig(o),-1.55-(L.length-1-i)*.58,.05+(i%2)*.08));Rr.forEach((o,i)=>put(personFig(o),1.35+i*.58,.05));
+  const lo=-1.55-Math.max(0,L.length-1)*.58,hi=Rr.length?1.35+(Rr.length-1)*.58:1.2;
   KUCHI={n,w,p,nx,nz,rx,rz,c:(lo+hi)/2,span:hi-lo,t:0,shot:false,avg:.78};/* the horse only knows how to gallop: the average of the whole stride stands it square */
   setTimeout(()=>{try{parent.postMessage({type:'race3d-kuchiready'},'*');}catch(e){}},450);}
 function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime(0);const inf=r.mesh.morphTargetInfluences;if(inf){const n=inf.length;for(let k=0;k<n;k++)inf[k]=KUCHI.avg/n;}
-  /* the rider sits up, one fist raised */
-  r.J.rotation.set(-.62,0,0);r.J.position.y=.1;r.J.position.z=-.12;r.spd=0;if(r.whipArm)r.whipArm.visible=false;
-  const a=r.arms[1];[a.up,a.lo,a.el,a.hd,a.cu].forEach(m=>m.visible=false);r.fist.visible=true;r.fist.scale.setScalar(1);r.fist.rotation.set(.1,0,-.1);handlerWalk(r,dt,0);}
-function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=6.2+K.span*.55,cx=p.x+K.rx*K.c,cz=p.z+K.rz*K.c;cam.position.set(cx+K.nx*d,1.55,cz+K.nz*d);cam.lookAt(cx,1.2,cz);cam.fov=34;cam.updateProjectionMatrix();
+  r.J.visible=false;r.spd=0;if(r.whipArm)r.whipArm.visible=false;handlerWalk(r,dt,0);}
+function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=4.6+K.span*.55,cx=p.x+K.rx*K.c,cz=p.z+K.rz*K.c;cam.position.set(cx+K.nx*d,1.45,cz+K.nz*d);cam.lookAt(cx,1.15,cz);cam.fov=34;cam.updateProjectionMatrix();
   sun.position.set(p.x+K.nx*40+30,60,p.z+K.nz*40);sun.target.position.set(p.x,0,p.z);
   if(!K.shot&&K.t>1.2){K.shot=true;try{R3.render(scene,cam);const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=422,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
     o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.86);if(url.length<4000){K.shot=false;K.t=.8;return;}parent.postMessage({type:'race3d-kuchi',img:url},'*');}catch(e){console.error('kuchi',e&&e.message);K.shot=false;K.t=.6;}}}
