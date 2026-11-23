@@ -986,7 +986,7 @@ function leavePaddock(){PAD.on=false;RUN.forEach(r=>{r.handler.visible=false;r.J
 
 /* ---------- 放牧地 (the first horse): three young horses loose on grass beyond a wooden fence, evening; on the word the grey runs up to the fence ---------- */
 let FARM=null;
-function farmScene(){RUN.forEach(r=>{r.g.children.forEach(c=>{if(c!==r.mesh)c.visible=false;});r.mesh.children.forEach(c=>{c.visible=false;});/* no hood on a loose young horse */r.J.visible=false;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
+function farmScene(){RUN.forEach(r=>{r.g.children.forEach(c=>{if(c!==r.mesh)c.visible=false;});r.mesh.children.forEach(c=>{if(!(r.eyes||[]).some(o=>o.e===c))c.visible=false;});/* no hood on a loose young horse (the eyes stay) */r.J.visible=false;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
   /* the spot: the infield, looking away from the stand */
   const s=FIN-170,b0=pathAt(s,-34),b1=pathAt(s+1,-34),ux=b1.x-b0.x,uz=b1.z-b0.z,ul=Math.hypot(ux,uz)||1,u={x:ux/ul,z:uz/ul};let n={x:u.z,z:-u.x};const pin=pathAt(s,-60);if((pin.x-b0.x)*n.x+(pin.z-b0.z)*n.z<0)n={x:-n.x,z:-n.z};
   const at=(f,w)=>({x:b0.x+n.x*f+u.x*w,z:b0.z+n.z*f+u.z*w});
@@ -1157,9 +1157,13 @@ function makePonies(){for(let k=0;k<2;k++){const g=new THREE.Group(),src=horseGL
     const body=new THREE.Mesh(new THREE.CapsuleGeometry(.2,.45,4,10),red);body.position.set(0,1.66,-.05);const leg=new THREE.Mesh(new THREE.CapsuleGeometry(.09,.5,4,8),wht);leg.position.set(.22,1.3,.05);leg.rotation.x=-.5;const leg2=leg.clone();leg2.position.x=-.22;
     const head=new THREE.Mesh(new THREE.SphereGeometry(.13,12,10),new THREE.MeshStandardMaterial({color:'#e0b592'}));head.position.set(0,2.1,.02);const hat=new THREE.Mesh(new THREE.CylinderGeometry(.14,.15,.18,14),blk);hat.position.set(0,2.27,0);
     const boot=new THREE.Mesh(new THREE.CapsuleGeometry(.07,.32,4,8),blk);boot.position.set(.25,1.0,.18);const boot2=boot.clone();boot2.position.x=-.24;
-    [body,leg,leg2,head,hat,boot,boot2].forEach(m=>{m.castShadow=true;g.add(m);});scene.add(g);PONIES.push({g,mixer,act,cd:0,lane:6+k*2.2,off:k*5});}}
+    [body,leg,leg2,head,hat,boot,boot2].forEach(m=>{m.castShadow=true;g.add(m);});scene.add(g);
+    /* the lead pony's eyes, as on the runners */
+    const pa=mesh.geometry.attributes.position,nr0=mesh.geometry.attributes.normal,eyes=[1,-1].map(sd=>{let best=0,bd=1e9;for(let q=0;q<pa.count;q++){const d=Math.hypot(pa.getX(q)-sd*12.5,pa.getY(q)-156,pa.getZ(q)-114.5);if(d<bd){bd=d;best=q;}}
+      const e=new THREE.Mesh(new THREE.SphereGeometry(2.7,12,10),new THREE.MeshStandardMaterial({color:'#0d0a08',roughness:.12,metalness:.1}));e.scale.set(.75,1,1.25);mesh.add(e);return {e,k:best,n:new THREE.Vector3(nr0.getX(best),nr0.getY(best),nr0.getZ(best))};});
+    PONIES.push({g,mixer,act,cd:0,lane:6+k*2.2,off:k*5,mesh,S,eyes});}}
 function ponyStep(dt){PONIES.forEach(p=>{const t=PRE.t-p.off*.2;const sp=t<11?1.7:Math.min(7,1.7+(t-11)*2);p.cd+=sp*dt;const a=pathAt(FIN-246+p.cd,p.lane),b=pathAt(FIN-246+p.cd+.5,p.lane);p.g.position.set(a.x,0,a.z);p.g.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
-  p.act.timeScale=t<11?.95:1.8;p.mixer.update(dt);if(t<11){const inf=p.g.children[0].morphTargetInfluences;if(inf)for(let k=0;k<inf.length;k++)inf[k]*=.62;}p.g.visible=p.cd<400;});}
+  p.act.timeScale=t<11?.95:1.8;p.mixer.update(dt);if(t<11){const inf=p.g.children[0].morphTargetInfluences;if(inf)for(let k=0;k<inf.length;k++)inf[k]*=.62;}p.g.visible=p.cd<400;if(p.g.visible&&p.eyes)p.eyes.forEach(o=>{morphedVertex(p,o.k,_tv);o.e.position.set(_tv.x/p.S+o.n.x*.6,_tv.y/p.S+o.n.y*.6,_tv.z/p.S+o.n.z*.6);});});}
 function preStep(dt){PRE.t+=dt;if(PONIES.length)ponyStep(dt);
   if(PRE.stage==='canter'){RUN.forEach(r=>prePose(r,dt));if(MODE==='race'&&PRE.t>RUN.length*2.2+12){RUN.forEach(r=>r.g.visible=true);if(BIG){PRE.stage='starter';PRE.t=0;say('スターターが台に上がります');}else{PRE.stage=null;beginLoading();if(IN&&IN.fanG&&!IN.shot){try{parent.postMessage({type:'race3d-fanfare'},'*');}catch(e){}say('ファンファーレが鳴り響きます。各馬、ゲートインが始まりました');}else say('各馬、ゲートインが始まりました');}}}
   else if(PRE.stage==='starter'){RUN.forEach(r=>{if(!r.ring)return;});starterPose(PRE.t);if(PRE.t>1.2&&!PRE.played){PRE.played=1;PRE.len=fanfare();say('スターターの旗が上がる！ ファンファーレ！');}
