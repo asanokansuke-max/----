@@ -512,7 +512,9 @@ function makeRunner(i){const g=new THREE.Group();
   const backV=zc=>{let best=0,by=-1e9;for(let k=0;k<pa.count;k++){const z=pa.getZ(k)*S,y=pa.getY(k)*S;if(Math.abs(z-zc)<.09&&Math.abs(pa.getX(k))*S<.06&&y>by){by=y;best=k;}}return {k:best,y:by,z:pa.getZ(best)*S};};
   const BK={m:backV(-.08),f:backV(.15),r:backV(-.3)};
   const clothTex=canvasTex(512,1024,(c,w,h)=>{const base=CL.bg,R0=44,light=CL.bg==='#f7f6f1';
-    const rr=(ins,r)=>{c.beginPath();c.moveTo(r,ins);c.lineTo(w-r,ins);c.quadraticCurveTo(w-ins,ins,w-ins,r);c.lineTo(w-ins,h-r);c.quadraticCurveTo(w-ins,h-ins,w-r,h-ins);c.lineTo(r,h-ins);c.quadraticCurveTo(ins,h-ins,ins,h-r);c.lineTo(ins,r);c.quadraticCurveTo(ins,ins,r,ins);c.closePath();};
+    /* the JRA cut: on each flank the edge by the tail runs straight and flares a little toward the bottom, the edge by the shoulder sweeps round in a big curve
+       (the texture wraps both flanks: the first half's shoulder is on the right, the second half's on the left) */
+    const rr=(ins)=>{c.beginPath();c.moveTo(ins,ins);c.lineTo(w*.8,ins);c.bezierCurveTo(w*.985-ins,h*.1,w-ins,h*.34,w*.93-ins*.6,h/2);c.lineTo(w-ins,h-ins);c.lineTo(w*.2,h-ins);c.bezierCurveTo(w*.015+ins,h*.9,ins,h*.66,w*.07+ins*.6,h/2);c.closePath();};
     c.save();rr(0,R0);c.clip();
     c.fillStyle=base;c.fillRect(0,0,w,h);
     // twill weave: fine diagonal ribs + fibre speckle
@@ -532,7 +534,7 @@ function makeRunner(i){const g=new THREE.Group();
       c.fillStyle=CL.fg;c.fillText(num,0,0);
       c.globalCompositeOperation='source-atop';c.fillStyle='rgba(255,255,255,.10)';c.fillRect(-200,-130,400,90);c.globalCompositeOperation='source-over';c.restore();
       // the name, centred under the number and always inside the cloth (between the binding and the over-girth): big when it fits, smaller and then condensed when it is long
-      {const nm=String(NAMES[i]||''),FF='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif',MAXW=330,sg=flipX?-1:1,cx=sg*Math.max(-200+MAXW/2,Math.min(150-MAXW/2,sg*nx));let fs=62;c.font=`800 ${fs}px ${FF}`;let tw=c.measureText(nm).width;
+      {const nm=(({GB:'🇬🇧',IRE:'🇮🇪',FR:'🇫🇷',USA:'🇺🇸',GER:'🇩🇪',AUS:'🇦🇺',HK:'🇭🇰',UAE:'🇦🇪',JPN:'🇯🇵'})[IN&&IN.field[i]&&IN.field[i].cc]||'')+String(NAMES[i]||''),FF='"Hiragino Kaku Gothic StdN","Hiragino Sans","Noto Sans JP",sans-serif',MAXW=330,sg=flipX?-1:1,cx=sg*Math.max(-200+MAXW/2,Math.min(150-MAXW/2,sg*nx));let fs=62;c.font=`800 ${fs}px ${FF}`;let tw=c.measureText(nm).width;
        if(tw>MAXW){fs=Math.max(46,fs*MAXW/tw);c.font=`800 ${fs}px ${FF}`;tw=c.measureText(nm).width;}const sx=Math.min(1,MAXW/Math.max(1,tw));
        c.save();c.translate(cx,102);c.scale(sx,1);c.fillStyle=light?'rgba(0,0,0,.15)':'rgba(0,0,0,.3)';c.fillText(nm,2,2);c.fillStyle=CL.fg;c.fillText(nm,0,0);c.restore();}
       c.restore();};
