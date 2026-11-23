@@ -1032,7 +1032,7 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
   const hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
   const ppl=(K.people||[]).slice(0,7),n=ppl.length,grp=new THREE.Group();scene.add(grp);
   ppl.forEach((o,i)=>{const f=personFig(o);const along=-1.45-(n-1-i)*.58,side=.55;f.position.set(p.x+ux*along+nx*side,0,p.z+uz*along+nz*side);f.rotation.y=Math.atan2(nx,nz);grp.add(f);});
-  KUCHI={n,w,p,nx,nz,ux,uz,t:0,shot:false,pt:0,pw:1,avg:.78};/* the horse only knows how to gallop: the average of the whole stride stands it square */}
+  KUCHI={n,w,p,nx,nz,ux,uz,t:0,shot:false,pt:0,pw:1,avg:.78};setTimeout(()=>{try{parent.postMessage({type:'race3d-kuchiready'},'*');}catch(e){}},450);/* the horse only knows how to gallop: the average of the whole stride stands it square */}
 function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime(KUCHI.pt??.18);walkify(r,KUCHI.pw??1);if(KUCHI.avg!=null){const inf=r.mesh.morphTargetInfluences;if(inf){const n=inf.length;for(let k=0;k<n;k++)inf[k]=KUCHI.avg/n;}}r.J.rotation.x=-.42;r.J.position.y=.04;r.J.position.z=-.08;r.spd=0;if(r.whipArm)r.whipArm.visible=false;handlerWalk(r,dt,0);}
 function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=7.8,c0=-.25-(KUCHI&&KUCHI.n||4)*.3;cam.position.set(p.x+K.nx*d+K.ux*c0,1.45,p.z+K.nz*d+K.uz*c0);cam.lookAt(p.x+K.ux*c0+K.nx*.5,1.15,p.z+K.uz*c0+K.nz*.5);cam.fov=33;cam.updateProjectionMatrix();
   sun.position.set(p.x+K.nx*40+30,60,p.z+K.nz*40);sun.target.position.set(p.x,0,p.z);

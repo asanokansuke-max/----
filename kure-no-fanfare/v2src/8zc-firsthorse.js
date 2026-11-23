@@ -23,9 +23,9 @@ function fhOpen(){if(!S||S.horses.some(h=>h.first)){if(S)S.flags.fhScene=0;retur
   if(FH.seen){FH.done=true;FH.ready=1;FH.d=0;FH.gz=.97;FH.bond=15;FH.nuzzle=performance.now();fhRender('芦毛は、柵の前であなたを待っていた。\n\n中原「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');fhLoop();return;}FH.seen=1;
   fhRender('柵にもたれると、草の匂いがした。\n\n鹿毛は草を食んでいる。栗毛は落ち着きなく歩き回っている。\n奥の芦毛だけが、じっとこちらを見ていた。');fhLoop();
   /* no waiting game: after a moment the grey runs up to the fence by itself */
-  const run=FH.run=(FH.run||0)+1;setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=15;
+  const run=FH.run=(FH.run||0)+1;FH.go=()=>{FH.go=null;setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.done=true;FH.d=0;FH.nuzzle=performance.now();FH.bond=15;
     fhRender('芦毛が、ふいに駆け出した。\nまっすぐこちらへ。');
-    setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.ready=1;FH.nuzzle=performance.now();fhRender('柵の前で止まると、鼻先を押しつけてきた。温かい息。\n\n中原は、しばらく黙っていた。\n<b>「…そいつが人に寄っていくのは、初めて見た」</b>\n「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');},2300);},1600);}
+    setTimeout(()=>{if(FH.run!==run||FH.stable)return;FH.ready=1;FH.nuzzle=performance.now();fhRender('柵の前で止まると、鼻先を押しつけてきた。温かい息。\n\n中原は、しばらく黙っていた。\n<b>「…そいつが人に寄っていくのは、初めて見た」</b>\n「こいつが選んだんだ。600万でいい。預ける厩舎は、あんたが決めてくれ」');},2300);},1600);};/* with the 3D field, the grey waits until the field is up */if(!FH.wait3d)FH.go();}
 function fhRender(txt){const acts=!FH.ready?'':FH.done?`<div class="acts two">${FH.stable?'':`<button class="btn pri" data-act="fhStable" data-i="0">戸川厩舎に預ける（美浦・大舞台をじっくり狙う）</button><button class="btn pri" data-act="fhStable" data-i="1">早瀬厩舎に預ける（栗東・数を使って鍛える）</button>`}</div>`
    :`<div class="acts"><button class="btn" data-act="fhDo" data-k="wait">じっと待つ</button><button class="btn" data-act="fhDo" data-k="call">声をかける</button><button class="btn pri" data-act="fhDo" data-k="hand">手を差し出す</button></div><div class="hint">あわてると、馬は逃げていく</div>`;
   const box=document.querySelector('#sheet .fhs');if(box&&document.getElementById('fhcv')){box.querySelector('.nar').innerHTML=txt;const ac=box.querySelector('.fhact');if(ac)ac.innerHTML=acts;return;}
