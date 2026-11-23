@@ -1026,15 +1026,24 @@ function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMater
   if(o.child)g.scale.setScalar(.72);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
 function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN.find(r=>r.mine)||RUN[0];
   RUN.forEach(r=>{r.g.visible=r===w;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
-  const s=FIN-4,p=pathAt(s,10),q=pathAt(s+1,10);w.g.position.set(p.x,0,p.z);w.g.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);
-  if(!w.handler)addHandler(w);w.handler.visible=true;w.fist.visible=false;
-  /* the infield side: from there the stand and the crowd are the background */
-  const hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
-  const ppl=(K.people||[]).slice(0,7),n=ppl.length,grp=new THREE.Group();scene.add(grp);
-  ppl.forEach((o,i)=>{const f=personFig(o);const along=-1.45-(n-1-i)*.58,side=.55;f.position.set(p.x+ux*along+nx*side,0,p.z+uz*along+nz*side);f.rotation.y=Math.atan2(nx,nz);grp.add(f);});
-  KUCHI={n,w,p,nx,nz,ux,uz,t:0,shot:false,pt:0,pw:1,avg:.78};setTimeout(()=>{try{parent.postMessage({type:'race3d-kuchiready'},'*');}catch(e){}},450);/* the horse only knows how to gallop: the average of the whole stride stands it square */}
-function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime(KUCHI.pt??.18);walkify(r,KUCHI.pw??1);if(KUCHI.avg!=null){const inf=r.mesh.morphTargetInfluences;if(inf){const n=inf.length;for(let k=0;k<n;k++)inf[k]=KUCHI.avg/n;}}r.J.rotation.x=-.42;r.J.position.y=.04;r.J.position.z=-.08;r.spd=0;if(r.whipArm)r.whipArm.visible=false;handlerWalk(r,dt,0);}
-function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=7.8,c0=-.25-(KUCHI&&KUCHI.n||4)*.3;cam.position.set(p.x+K.nx*d+K.ux*c0,1.45,p.z+K.nz*d+K.uz*c0);cam.lookAt(p.x+K.ux*c0+K.nx*.5,1.15,p.z+K.uz*c0+K.nz*.5);cam.fov=33;cam.updateProjectionMatrix();
+  const s=FIN-4,p=pathAt(s,10),q=pathAt(s+1,10),hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
+  /* n: from the horse toward the camera (the infield side, so the stand is behind); r: the camera's right */
+  const rx=nz,rz=-nx;
+  /* the horse turned three-quarters to the camera, head to the right */
+  const fx=nx*.5+rx*.87,fz=nz*.5+rz*.87,yaw=Math.atan2(fx,fz);w.g.position.set(p.x,0,p.z);w.g.rotation.y=yaw;
+  if(!w.handler)addHandler(w);w.handler.visible=true;{const lx=Math.cos(yaw),lz=-Math.sin(yaw),near=(lx*nx+lz*nz)>0?1:-1;w.handler.position.set(-.7*near,0,1.05);w.handler.rotation.y=near>0?.9:-.9;}
+  /* the connections: the first ones to the left of the horse, the trainer (and the last one) to its right, as the caption reads */
+  const ppl=(K.people||[]).slice(0,7),n=ppl.length,kR=Math.min(2,Math.floor(n/2)),L=ppl.slice(0,n-kR),Rr=ppl.slice(n-kR);
+  const put=(o,off,dep)=>{const f=personFig(o);f.position.set(p.x+rx*off+nx*dep,0,p.z+rz*off+nz*dep);f.rotation.y=Math.atan2(nx,nz)+(off<0?.12:-.12);scene.add(f);};
+  L.forEach((o,i)=>put(o,-1.2-(L.length-1-i)*.6,.15+(i%2)*.12));Rr.forEach((o,i)=>put(o,2.55+i*.6,-.1));
+  const lo=L.length?-1.2-(L.length-1)*.6:-1.2,hi=Rr.length?2.55+(Rr.length-1)*.6:2.2;
+  KUCHI={n,w,p,nx,nz,rx,rz,c:(lo+hi)/2,span:hi-lo,t:0,shot:false,avg:.78};/* the horse only knows how to gallop: the average of the whole stride stands it square */
+  setTimeout(()=>{try{parent.postMessage({type:'race3d-kuchiready'},'*');}catch(e){}},450);}
+function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime(0);const inf=r.mesh.morphTargetInfluences;if(inf){const n=inf.length;for(let k=0;k<n;k++)inf[k]=KUCHI.avg/n;}
+  /* the rider sits up, one fist raised */
+  r.J.rotation.set(-.62,0,0);r.J.position.y=.1;r.J.position.z=-.12;r.spd=0;if(r.whipArm)r.whipArm.visible=false;
+  const a=r.arms[1];[a.up,a.lo,a.el,a.hd,a.cu].forEach(m=>m.visible=false);r.fist.visible=true;r.fist.scale.setScalar(1);r.fist.rotation.set(.1,0,-.1);handlerWalk(r,dt,0);}
+function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=6.2+K.span*.55,cx=p.x+K.rx*K.c,cz=p.z+K.rz*K.c;cam.position.set(cx+K.nx*d,1.55,cz+K.nz*d);cam.lookAt(cx,1.2,cz);cam.fov=34;cam.updateProjectionMatrix();
   sun.position.set(p.x+K.nx*40+30,60,p.z+K.nz*40);sun.target.position.set(p.x,0,p.z);
   if(!K.shot&&K.t>1.2){K.shot=true;try{R3.render(scene,cam);const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=422,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
     o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.86);if(url.length<4000){K.shot=false;K.t=.8;return;}parent.postMessage({type:'race3d-kuchi',img:url},'*');}catch(e){console.error('kuchi',e&&e.message);K.shot=false;K.t=.6;}}}
