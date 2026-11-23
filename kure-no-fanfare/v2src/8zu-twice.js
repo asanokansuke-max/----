@@ -54,10 +54,26 @@ function jBookedElsewhere(jid,h,race){if(!jid||jid==='stable'||!race||!S.month)r
 askJockey=(o=>function(jid,h,race){const other=jBookedElsewhere(jid,h,race);if(other)return [false,`「そのレースは、${other.name}に乗せてもらうことになっています。2頭には乗れません」`];return o.apply(this,arguments);})(askJockey);
 /* and on race day, whatever slipped through (a rider chosen in a letter, a trainer's entry): the second horse gets another rider */
 buildField=(o=>function(race,ents){try{const seen=new Set();(ents||[]).forEach(e=>{if(!e||!e.h||!e.j||e.j==='stable'){return;}if(!seen.has(e.j)){seen.add(e.j);return;}
-    const was=e.j;let nj='stable';for(const c of [e.h.mainJ,TR(e.h.trainer)&&TR(e.h.trainer).jk,...jockeysAvail()].filter(x=>x&&x!=='stable'&&!seen.has(x))){try{if(o2ask(c,e.h,race)){nj=c;break;}}catch(x){}}
+    const was=e.j;const nj=freeRider(e.h,race,seen);
     e.j=nj;if(nj!=='stable')seen.add(nj);RC_SUB.push(`${JNAME(was)}騎手は${(ents.find(x=>x.j===was)||{}).h?.name||'もう1頭'}に騎乗するため、${e.h.name}は${JNAME(nj)}騎手に乗り替わり。`);});}catch(e){console.error('dupJ',e);}return o.apply(this,arguments);})(buildField);
 function o2ask(c,h,race){const j=JK(c);if(!j||(j.ban>S.t)||(typeof jockeyAway==='function'&&jockeyAway(c)))return false;return true;}
 /* the trainer's letters: a rider already booked for another of your horses in that race is not offered again */
 if(EV.g1consult){const r0=EV.g1consult.r,f0=EV.g1consult.f;
   EV.g1consult.r=d=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);if(h&&race&&d.js&&d.js.some(j=>jBookedElsewhere(j,h,race)))delete d.js;}catch(e){}return r0(d);};
-  EV.g1consult.f=(d,i)=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);const j=d.js&&d.js[i];if(h&&race&&j&&jBookedElsewhere(j,h,race)){d.js=d.js.slice();d.js[i]='stable';}}catch(e){}return f0(d,i);};}
+  EV.g1consult.f=(d,i)=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);const j=d.js&&d.js[i];if(h&&race&&j&&jBookedElsewhere(j,h,race)){d.js=d.js.slice();d.js[i]=freeRider(h,race);}}catch(e){}return f0(d,i);};}
+
+/* a real rider for a big race: when your usual riders are taken (several of your horses in the same race), the trainer books whoever is free —
+   the best one who'll take it, and failing that one glad of a big-race ride. 「厩舎所属の若手」 only when nobody at all is free. */
+function freeRider(h,race,also){const used=new Set(also||[]);try{const all=[...Object.entries(S.month&&S.month.orders||{}),...Object.entries(S.month&&S.month.orders2||{}).map(([k,v])=>[k,{...v,type:'race'}])];
+    all.forEach(([hid,o])=>{if(+hid!==h.id&&o&&o.type==='race'&&o.race&&race&&o.race.key===race.key&&o.j)used.add(o.j);});}catch(e){}
+  const C=Object.keys(S.jockeys).filter(j=>!used.has(j)&&JK(j)&&!(JK(j).ban>S.t)&&!JK(j).retired&&!(typeof jockeyAway==='function'&&jockeyAway(j))&&!(j==='washio'&&S.part===2)&&!(j==='hinata'&&S.br&&S.br.hinataLeft)).sort((a,b)=>JK(b).sk-JK(a).sk);
+  for(const j of C){try{if(askJockey(j,h,race)[0])return j;}catch(e){}}
+  return C.slice().sort((a,b)=>JK(a).need-JK(b).need)[0]||'stable';}
+/* the trainer's letter for a big race offers real riders, never the stable lad while someone is free */
+if(EV.g1consult){const r1=EV.g1consult.r,f1=EV.g1consult.f;
+  EV.g1consult.r=d=>{let v=r1(d);try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);if(v&&h&&race&&race.g&&d.js){const real=d.js.filter(j=>j!=='stable');
+      if(real.length<3){const add=[];while(real.length+add.length<3){const j=freeRider(h,race,[...real,...add]);if(!j||j==='stable')break;add.push(j);}
+        d.js=[...real,...add];if(!d.js.length)d.js=['stable'];v=r1(d);}}}catch(e){}return v;};
+  EV.g1consult.f=(d,i)=>{try{const h=HZ(d.hid),race=h&&racesFor(h).find(r=>r.key===d.key);const j=d.js&&d.js[i];if(h&&race&&race.g&&j==='stable'){d.js=d.js.slice();d.js[i]=freeRider(h,race);}}catch(e){}return f1(d,i);};}
+/* a trainer's own entry in a graded race: the same */
+planOmakase=(o=>function(){const r=o.apply(this,arguments);try{Object.entries(S.month.orders||{}).forEach(([k,od])=>{const h=HZ(+k);if(h&&od&&od.type==='race'&&od.race&&od.race.g&&od.j==='stable'){od.j=freeRider(h,od.race);}});}catch(e){}return r;})(planOmakase);
