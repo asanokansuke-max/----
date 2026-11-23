@@ -9597,7 +9597,8 @@ buildField=(o=>function(race,ents){const fld=o.apply(this,arguments);const uj=ne
       /* with visitors in the field, the home runners carry the Japanese flag too */
       if(fld.some(f=>f.cc))fld.forEach(f=>{if(!f.cc)f.cc='JPN';});}
     /* ○外 (foreign-bred, trained in Japan): a few of the home runners, as on any JRA card */
-    fld.forEach(f=>{if(f.npc&&!f.cc&&R()<(race.surf==='ダ'?.09:.05))f.marugai=1;});
+    {const nb=/新馬|デビュー/.test(race.name||'')||race.grade==='新馬',pm=(race.surf==='ダ'?.03:.015)*(nb?.5:1);let k=0;
+     fld.forEach(f=>{if(k<1&&f.npc&&!f.cc&&R()<pm){f.marugai=1;k++;}});}
     /* no foreign name may sit inside another runner's name (the flag must find the right one) */
     fld.filter(f=>f.cc&&f.npc).forEach(f=>{for(let i=0;i<8&&fld.some(g=>g!==f&&(g.name.includes(f.name)||f.name.includes(g.name)));i++)f.name=foreignName(f.cc,uj.names);});
   }catch(e){console.error('foreign',e);}
@@ -9615,11 +9616,12 @@ r3dInput=(o=>function(RC){const inp=o.apply(this,arguments);try{inp.field.forEac
 function gaiPass(root){try{const RC=UI.race;if(!RC||!RC.field)return;const L=RC.field.filter(f=>((f.cc&&f.cc!=='JPN')||f.marugai)&&f.name);if(!L.length)return;
   const tw=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode;if(!p||/^(SCRIPT|STYLE|TEXTAREA|INPUT|OPTION)$/.test(p.nodeName)||(p.classList&&p.classList.contains('marugai')))return NodeFilter.FILTER_REJECT;return NodeFilter.FILTER_ACCEPT;}});
   const nodes=[];while(tw.nextNode())nodes.push(tw.currentNode);
-  nodes.forEach(n=>{const v=n.nodeValue;const f=L.find(x=>v.indexOf(x.name)>=0);if(!f)return;const prev=n.previousSibling;if(v.indexOf(f.name)===0&&prev&&prev.classList&&prev.classList.contains('marugai'))return;
-    const i=v.indexOf(f.name),frag=document.createDocumentFragment();if(i>0)frag.appendChild(document.createTextNode(v.slice(0,i)));const m=document.createElement('span');m.className=f.cc&&f.cc!=='JPN'?'marugai kaku':'marugai';m.textContent='外';frag.appendChild(m);frag.appendChild(document.createTextNode(v.slice(i)));n.parentNode.replaceChild(frag,n);});}catch(e){}}
+  const KT=/[\u30A0-\u30FF]/,whole=(v,nm)=>{const i=v.indexOf(nm);return i>=0&&!(i>0&&KT.test(v[i-1]))&&!KT.test(v[i+nm.length]||'')?i:-1;};
+  nodes.forEach(n=>{const v=n.nodeValue;const f=L.find(x=>whole(v,x.name)>=0);if(!f)return;const prev=n.previousSibling;if(v.indexOf(f.name)===0&&prev&&prev.classList&&prev.classList.contains('marugai'))return;
+    const i=whole(v,f.name),frag=document.createDocumentFragment();if(i>0)frag.appendChild(document.createTextNode(v.slice(0,i)));const m=document.createElement('span');m.className=f.cc&&f.cc!=='JPN'?'marugai kaku':'marugai';m.textContent='外';frag.appendChild(m);frag.appendChild(document.createTextNode(v.slice(i)));n.parentNode.replaceChild(frag,n);});}catch(e){}}
 (function(){let q=false;const run=()=>{q=false;['sheet','r3d'].forEach(id=>{const el=document.getElementById(id);if(el)gaiPass(el);});};
   new MutationObserver(()=>{if(!q){q=true;requestAnimationFrame(run);}}).observe(document.body,{childList:true,subtree:true});
-  const st=document.createElement('style');st.textContent=`.marugai{display:inline-grid;place-items:center;width:1.25em;height:1.25em;margin-right:.18em;border:1.5px solid currentColor;border-radius:50%;font-size:.72em;line-height:1;font-weight:800;vertical-align:.12em;opacity:.9}.marugai.kaku{border-radius:0;width:auto;height:auto;border:0;padding:0;font-size:.8em;vertical-align:.06em}.marugai.kaku::before{content:'［'}.marugai.kaku::after{content:'］'}`;document.head.appendChild(st);})();
+  const st=document.createElement('style');st.textContent=`.marugai{display:inline-grid;place-items:center;width:1.25em;height:1.25em;margin-right:.18em;border:1.5px solid currentColor;border-radius:50%;font-size:.72em;line-height:1;font-weight:800;vertical-align:.12em;opacity:.9}.marugai{white-space:nowrap;flex:none}.marugai.kaku{display:inline;border-radius:0;width:auto;height:auto;border:0;padding:0;font-size:.8em;vertical-align:.06em;letter-spacing:0}.marugai.kaku::before{content:'［'}.marugai.kaku::after{content:'］'}`;document.head.appendChild(st);})();
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
