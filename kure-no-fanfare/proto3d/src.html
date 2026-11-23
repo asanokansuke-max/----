@@ -1060,11 +1060,23 @@ function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN
    /* each race has its own colour (the same every year): green, red, navy, purple, crimson, teal */
    const LEI_PAL=['#1d6b48','#b01c2e','#1d3c8a','#4b2a7d','#8a1630','#145f63'],th=[...ttl.replace(/（.*?）/g,'')].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7),LEI_COL=LEI_PAL[th%LEI_PAL.length];
    const t0=[...ttl.replace(/（.*?）/g,'').replace(/ステークス$/,'S')].slice(0,8),side=(YT-YB)/LT;
-   const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:canvasTex(1024,128,(g,W,H)=>{g.fillStyle=LEI_COL;g.fillRect(0,0,W,H);const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(0,0,0,.18)');gr.addColorStop(.5,'rgba(255,255,255,.05)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(0,0,W,H);
-     const n=t0.length,fs=Math.min(84,Math.floor(side*W*.8/n));g.fillStyle="#f2c53c";g.strokeStyle="#f2c53c";g.lineWidth=3;g.font=`900 ${fs}px "Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif`;g.textAlign='center';g.textBaseline='middle';
+   /* the lettering: a heavy brush-like Mincho in gold leaf — lighter at the top of each stroke, a dark rim, a soft shadow as if sewn on */
+   const LF='"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif';
+   const drawLei=(g,W,H)=>{g.clearRect(0,0,W,H);g.fillStyle=LEI_COL;g.fillRect(0,0,W,H);const gr=g.createLinearGradient(0,0,0,H);gr.addColorStop(0,'rgba(0,0,0,.22)');gr.addColorStop(.5,'rgba(255,255,255,.06)');gr.addColorStop(1,'rgba(0,0,0,.22)');g.fillStyle=gr;g.fillRect(0,0,W,H);
+     /* fine weave */
+     const Z=H/128;g.fillStyle='rgba(255,255,255,.035)';for(let x=0;x<W;x+=3*Z)g.fillRect(x,0,Z,H);
+     const n=t0.length,fs=Math.min(H*.72,Math.floor(side*W*.82/n)),top=side*W*.92,step=fs*1.0;g.textAlign='center';g.textBaseline='middle';g.font=`800 ${fs}px ${LF}`;
+     const glyph=(c,x,rot)=>{g.save();g.translate(x,H/2);g.rotate(rot);
+       g.shadowColor='rgba(0,0,0,.5)';g.shadowBlur=5*Z;g.shadowOffsetX=2*Z;g.shadowOffsetY=2*Z;g.lineJoin='round';g.lineWidth=3*Z;g.strokeStyle='#4a2e06';g.strokeText(c,0,3*Z);g.shadowColor='transparent';
+       const gd=g.createLinearGradient(0,-fs*.5,0,fs*.5);gd.addColorStop(0,'#fff3b8');gd.addColorStop(.35,'#f2cc4a');gd.addColorStop(.7,'#c8921c');gd.addColorStop(1,'#f0c84a');g.fillStyle=gd;g.fillText(c,0,3*Z);g.restore();};
      /* left side: the top is at larger u; right side: the top at smaller u — each reads downward from the neck */
-     const top=side*W*.9,step=fs*1.04;t0.forEach((c,k)=>{g.save();g.translate(top-step*(k+.5),H/2);g.rotate(Math.PI/2);g.strokeText(c,0,2);g.fillText(c,0,2);g.restore();
-       g.save();g.translate(W-top+step*(k+.5),H/2);g.rotate(-Math.PI/2);g.strokeText(c,0,2);g.fillText(c,0,2);g.restore();});})});
+     t0.forEach((c,k)=>{glyph(c,top-step*(k+.5),Math.PI/2);glyph(c,W-top+step*(k+.5),-Math.PI/2);});};
+   const ltex=canvasTex(2048,256,drawLei);const lm=new THREE.MeshStandardMaterial({side:THREE.DoubleSide,roughness:.6,map:ltex});
+   /* the web font may arrive a moment later: draw again with it (the photo waits for it, a few seconds at most) */
+   window.LEI_OK=0;try{const FN=`800 40px "Shippori Mincho B1"`,TX=t0.join('');
+     const sheet=new Promise(res=>{const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&display=block&text='+encodeURIComponent(TX);l.onload=res;l.onerror=res;document.head.appendChild(l);});
+     Promise.race([new Promise(r=>setTimeout(r,4500)),sheet.then(()=>document.fonts.load(FN,TX))])
+       .then(()=>{try{drawLei(ltex.image.getContext('2d'),ltex.image.width,ltex.image.height);ltex.needsUpdate=true;}catch(e){}window.LEI_OK=1;},()=>{window.LEI_OK=1;});}catch(e){window.LEI_OK=1;}
    const lei=new THREE.Mesh(lg,lm);lei.castShadow=true;w.g.add(lei);
    /* the yellow cord tied across the chest, holding the two sides, its ends hanging in loops */
    const cm=new THREE.MeshStandardMaterial({color:'#e6c13a',roughness:.5}),yc=.9,zc=Z0+(YT-yc)*KR.lean+HW*.7,V=(x,y,z)=>new THREE.Vector3(x,y,z);
@@ -1082,7 +1094,7 @@ function kuchiPose(r,dt){if(r!==KUCHI.w)return;r.act.timeScale=1;r.mixer.setTime
   r.J.visible=false;r.spd=0;if(r.whipArm)r.whipArm.visible=false;handlerWalk(r,dt,0);}
 function kuchiCam(dt){const K=KUCHI,p=K.p;K.t+=dt;const d=4.6+K.span*.55,cx=p.x+K.rx*K.c,cz=p.z+K.rz*K.c;cam.position.set(cx+K.nx*d,1.45,cz+K.nz*d);cam.lookAt(cx,1.15,cz);cam.fov=34;cam.updateProjectionMatrix();
   sun.position.set(p.x+K.nx*40+30,60,p.z+K.nz*40);sun.target.position.set(p.x,0,p.z);
-  if(!K.shot&&K.t>1.2){K.shot=true;try{R3.render(scene,cam);const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=422,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
+  if(!K.shot&&K.t>1.2&&(window.LEI_OK||K.t>6)){K.shot=true;try{R3.render(scene,cam);const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=422,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
     o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.86);if(url.length<4000){K.shot=false;K.t=.8;return;}parent.postMessage({type:'race3d-kuchi',img:url},'*');}catch(e){console.error('kuchi',e&&e.message);K.shot=false;K.t=.6;}}}
 function walkify(r,a){const inf=r.mesh.morphTargetInfluences;if(!inf)return;for(let k=0;k<inf.length;k++)inf[k]*=a;}
 /* ---------- before the race: 返し馬 (warm-up canter), then for the big races the starter climbs his stand and the fanfare plays ---------- */
