@@ -1023,16 +1023,16 @@ function personFig(o){const g=new THREE.Group(),suit=new THREE.MeshStandardMater
   const head=new THREE.Mesh(new THREE.SphereGeometry(.12,12,10),skin);head.position.y=.86;hip.add(head);
   const hr=new THREE.Mesh(new THREE.SphereGeometry(.128,12,8,0,Math.PI*2,0,Math.PI*.55),hair);hr.position.set(0,.875,-.012);hip.add(hr);
   if(o.rosette){const rs=new THREE.Mesh(new THREE.CylinderGeometry(.055,.055,.02,14),new THREE.MeshStandardMaterial({color:'#d62828',roughness:.6}));rs.rotation.x=Math.PI/2;rs.position.set(-.11,.56,.16);hip.add(rs);}
-  g.scale.setScalar(o.child?.66:.9);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
+  g.scale.setScalar(o.child?.62:.86);g.traverse(m=>{if(m.isMesh)m.castShadow=true;});return g;}
 function kuchiScene(){const K=IN.kuchi||{};const w=RUN.find(r=>r.no===K.no)||RUN.find(r=>r.mine)||RUN[0];
   RUN.forEach(r=>{r.g.visible=r===w;});if(GATE.root)GATE.root.visible=false;['tv','call'].forEach(i=>{const e=document.getElementById(i);if(e)e.style.display='none';});
   const s=FIN-4,p=pathAt(s,10),q=pathAt(s+1,10),hx=q.x-p.x,hz=q.z-p.z,hl=Math.hypot(hx,hz)||1,ux=hx/hl,uz=hz/hl;let nx=uz,nz=-ux;const sp=pathAt(s,40);if((sp.x-p.x)*nx+(sp.z-p.z)*nz>0){nx=-nx;nz=-nz;}
   /* n: from the horse toward the camera (the infield side, so the stand is behind); r: the camera's right */
   const rx=nz,rz=-nx;
   /* as at the races today: the horse stands facing the camera, unsaddled; the rider stands beside it holding the number cloth */
-  const fx=nx*.94+rx*.34,fz=nz*.94+rz*.34,yaw=Math.atan2(fx,fz);w.g.position.set(p.x+nx*.35,0,p.z+nz*.35);w.g.rotation.y=yaw;
+  const fx=nx*.94+rx*.34,fz=nz*.94+rz*.34,yaw=Math.atan2(fx,fz);w.g.position.set(p.x+nx*.35,0,p.z+nz*.35);w.g.rotation.y=yaw;w.g.scale.setScalar(1.2);
   w.J.visible=false;if(w.TACK)w.TACK.visible=false;if(w.reins)(Array.isArray(w.reins)?w.reins:[w.reins]).forEach(o=>{if(o&&o.isObject3D)o.visible=false;});
-  if(!w.handler)addHandler(w);w.handler.visible=true;{const lx=Math.cos(yaw),lz=-Math.sin(yaw),rs=(lx*rx+lz*rz)>0?1:-1;w.handler.position.set(.58*rs,0,.62);w.handler.scale.setScalar(.92);w.handler.rotation.y=rs>0?-1.35:1.35;}
+  if(!w.handler)addHandler(w);w.handler.visible=true;{const lx=Math.cos(yaw),lz=-Math.sin(yaw),rs=(lx*rx+lz*rz)>0?1:-1;w.handler.position.set(.58*rs,0,.62);w.handler.scale.setScalar(.86/1.2);w.handler.rotation.y=rs>0?-1.35:1.35;}
   /* the rider: helmet and jacket in the colours, white breeches, boots, the number cloth held in front */
   const F=IN.field.find(f=>f.no===w.no)||{},jk=personFig({suit:F.a||'#1f3a8a',hair:F.b||'#f2b705',tie:F.a||'#1f3a8a'});
   jk.traverse(m=>{if(m.isMesh&&m.position.y<0&&m.geometry.type==='CapsuleGeometry')m.material=new THREE.MeshStandardMaterial({color:'#f4f2ec',roughness:.8});});
