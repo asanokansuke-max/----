@@ -192,7 +192,7 @@ function animate(long){
   const trackCol=dirt?(race.going==='良'?'#b48a5a':'#8f6a45'):(race.going==='良'?'#4f9a5e':race.going==='稍重'?'#478a55':'#3d7a4b');
   const trackCol2=dirt?'#a67d50':'#468c55';
   let call='',callT=0;const callEl=$('#call');
-  const say=s=>{call=s;callT=performance.now();if(callEl)callEl.textContent=s;speak(s,tau>.8);};
+  const say=s=>{s=String(s||'').replace(/([！？])。/g,'$1');call=s;callT=performance.now();if(callEl)callEl.textContent=s;speak(s,tau>.8);};
   const pos=(cur,f)=>cur.indexOf(f)+1;
   const lenJ=L=>{const n=Math.round(L*2)/2,w=Math.floor(n);return n<1?'半馬身':`${w}馬身${n-w?'半':''}`;};
   const fN=f=>`${f.name}`,num=f=>`${f.no}番`;
@@ -212,19 +212,26 @@ function animate(long){
   if(long)CALLS.push([.52,cur=>{const g=(posX(cur[0],tau)-posX(cur[1],tau))/LEN;return `向こう正面に入って、先頭は依然${fN(cur[0])}。後続との差は${g>=10?'10馬身以上！ 場内がざわつく':g<.8?'わずか':lenJ(g)}`;}],[.6,cur=>`隊列は縦長。${fN(cur[0])}、${fN(cur[1])}、${fN(cur[2])}と続いて…`]);
   const TR=r=>1-r/D;
   if(courseChar(race).kyoto&&D>=1800)CALLS.push([TR(long?1000:820),cur=>`3コーナー、淀の坂の上り！ ここはゆっくり上って、ゆっくり下る`]);
-  CALLS.push([TR(long?900:700),cur=>`3コーナーカーブ！ ${pos(cur,m0||cur[4])>5?'後方各馬も一斉に進出開始':'各馬の手が動き始めた'}`],
-    [TR(long?640:520),cur=>`${fN(cur[0])}、まだ手応え十分か。外から${fN(cur[2])}が並びかけて4コーナー`],
+  CALLS.push([TR(long?900:700),cur=>pick([`3コーナーカーブ！ ${pos(cur,m0||cur[4])>5?'後方各馬も一斉に進出開始':'各馬の手が動き始めた'}`,`3コーナーから4コーナーへ。${fN(cur[0])}の手応えはどうか`,`勝負どころの3コーナー！ 馬群が一気に凝縮してきた`,`3コーナー。${fN(cur[0])}のリードが少しずつ詰まってきた`])],
+    [TR(long?640:520),cur=>pick([`${fN(cur[0])}、まだ手応え十分か。外から${fN(cur[2])}が並びかけて4コーナー`,`4コーナー！ 外を回って${fN(cur[2])}、内で${fN(cur[1])}が待ち構える`,`各馬、直線を向く態勢。先頭${fN(cur[0])}、鞍上の手はまだ動かない`,`4コーナー、${fN(cur[1])}がじわっと差を詰める！`])],
     [TR(long?560:420),()=>{const cc=courseChar(race);return cc.long?`4コーナーを回って、${race.course}の長い直線！ ここからが長い！`:cc.short?`4コーナーを回って、${race.course}の短い直線！ 前は止まらないか！`:'さあ4コーナーを回って、直線コースに向いた！';}],
     [TR(380),cur=>m0&&cur[0]===m0?`${fN(m0)}先頭！ ${fN(m0)}が先頭に立った！ 後続を突き放しにかかる！`:m0?`${fN(cur[0])}先頭！ ${fN(m0)}は${pos(cur,m0)}番手、${pos(cur,m0)<=3?'並びかける！':'外から追い込んでくる！'}`:`${fN(cur[0])}先頭！ ${fN(cur[1])}が迫る！`],
     [TR(320),cur=>{if(!LD||(m0&&m0!==LD&&R()<.4))return '';const p=pos(cur,LD);if(SH==='大逃げ')return p===1?`大逃げの${fN(LD)}、まだリードがある！ 後続は届くのか！`:`大逃げの${fN(LD)}、ここで一杯になった！ 後続が飲み込む！`;
       return p===1?`${fN(LD)}、逃げる逃げる！ 粘れるか！`:p<=3?`逃げた${fN(LD)}、まだ粘っている！`:`逃げた${fN(LD)}は苦しくなった`;}],
     [TR(275),cur=>{const rv=RC.rivalF;if(!rv)return `${fN(cur[1])}、懸命に追う！ 内で${fN(cur[2])}も粘る！`;const p=pos(cur,rv);return p===1?`${fN(rv)}が先頭！ 宿敵が伸びる！`:`宿敵${fN(rv)}、${p}番手から${p<=3?'並びかける！':'大外から追い込む！'}`;}],
-    [TR(200),cur=>{const cc=courseChar(race);return cc.hs>=2?`急坂！ ${cc.hill}を駆け上がる！ 先頭は${fN(cur[0])}！ 脚が上がるか！`:cc.hs===1&&cc.hill?`${cc.hill}を越えて、残り200！ 先頭は${fN(cur[0])}！`:`残り200を切った！ 先頭は${fN(cur[0])}！`;}],
+    [TR(200),cur=>{const cc=courseChar(race);if(!cc.hs&&R()<.5)return pick([`残り200！ ${fN(cur[0])}が粘る、${fN(cur[1])}が迫る！`,`あと200メートル！ 先頭${fN(cur[0])}、まだ脚は残っているか！`,`残り1ハロン！ ${fN(cur[0])}、${fN(cur[1])}、${fN(cur[2])}！`]);return cc.hs>=2?`急坂！ ${cc.hill}を駆け上がる！ 先頭は${fN(cur[0])}！ 脚が上がるか！`:cc.hs===1&&cc.hill?`${cc.hill}を越えて、残り200！ 先頭は${fN(cur[0])}！`:`残り200を切った！ 先頭は${fN(cur[0])}！`;}],
     [TR(160),cur=>{const ls=cur.slice(0,3).filter(f=>f.pop>=8&&(f.ev==='激走'||f.pos<=3));if(ls.length)return `人気薄の${fN(ls[0])}が突っ込んでくる！ これは波乱か！`;const fav=fld.find(f=>f.pop===1);const p=pos(cur,fav);return p>4?`1番人気${fN(fav)}は${p}番手、伸びない！ 場内がどよめく！`:`${fN(cur[0])}、懸命に粘る！`;}],
     [TR(110),cur=>{const ord=RC.order,lead=(ord[1].gapL-ord[0].gapL);if(lead>1.6)return `${fN(ord[0])}、${lead>4?'独走！ これは強い！':'抜け出した！ リードは'+lenJ(lead)+'！'} 2着争いは${fN(ord[1])}と${fN(ord[2])}！`;
       return `${fN(ord[0])}か、${fN(ord[1])}か！ ${m0&&m0.pos<=4&&m0.pos>2?fN(m0)+'も来ている！':'内から'+fN(ord[2])+'！'}`;}],
     [TR(45),cur=>{const ord=RC.order,lead=ord[1].gapL-ord[0].gapL,l23=ord[2].gapL-ord[1].gapL;if(lead<.6)return `${fN(ord[0])}、${fN(ord[1])}、並んで…！`;
       return `${fN(ord[0])}、${lead>2.5?'悠々先頭！':'先頭！'} 2着は${fN(ord[1])}か${fN(ord[2])}か${l23<.5?'、横並び！':'！'}`;}]);
+  /* 展開（馬場の傾向・流れ・まくり・内ラチ）を読む実況 */
+  {const FL=RC.flow||{},byNo=n=>fld.find(f=>f.no===n);
+   if(FL.bias)CALLS.push([.42,()=>FL.bias==='内'?pick(['今日の馬場、内がよく伸びています。前の馬は止まらないか','内ラチ沿いの芝が生きています。内を通る馬が有利','インコースが伸びる馬場状態。先行勢には追い風です']):pick(['馬場の外目が伸びる傾向。差し馬には追い風か','今日は外差しが決まっている馬場。後ろの馬にもチャンスがあります','内は荒れてきています。各馬、外へ外へ'])]);
+   if(FL.tempo)CALLS.push([.56,()=>FL.tempo==='消耗戦'?pick(['前半から息の入らない流れ。これは消耗戦になりそうだ','緩みのないラップが続いています。最後はスタミナ勝負か','速いペースで飛ばしている。後半、脚が残っているのはどの馬か']):pick(['ペースは落ち着いたまま。最後は瞬発力勝負になりそうです','各馬じっと我慢。直線のよーいドンになるか','ゆったりした流れ。切れる脚を持つ馬が有利か'])]);
+   const mk=FL.makuri&&byNo(FL.makuri);if(mk)CALLS.push([TR(long?820:660),()=>pick([`${fN(mk)}が外から一気にまくって上がっていく！`,`おっと、${fN(mk)}が早めに動いた！ 外からまくり気味に進出！`,`${fN(mk)}、3コーナー手前から押し上げる！ ロングスパートだ！`])]);
+   const rl=FL.rail&&byNo(FL.rail);if(rl)CALLS.push([TR(300),()=>pick([`内ラチ沿い、${fN(rl)}がぴったり突いてくる！`,`最内から${fN(rl)}！ ロスなく回って伸びてくる！`,`内をすくって${fN(rl)}！ 経済コースを通ってきた！`])]);
+   CALLS.sort((a,b)=>a[0]-b[0]);}
   let fired=0,speed=1,prev=performance.now(),tau=0,camX=0,k=6,goalT=0,photo=false,spurtDone=!m0,spurtMsg='',spurtT=0,parts=[];
   const midTS=long?3:3.8,realFrom=D-(long?520:360);
   const lerp=(a,b,t)=>a+(b-a)*clamp(t,0,1);

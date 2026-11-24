@@ -1142,7 +1142,7 @@ function fanfare(){if(IN){try{parent.postMessage({type:'race3d-fanfare'},'*');}c
 const MODE=(IN&&IN.mode)||QS0.get('mode')||'race';
 if(MODE==='parade'||MODE==='warmup'){const tv=document.getElementById('tv');if(tv)tv.style.display='none';const cl=document.getElementById('call');if(cl)cl.style.display='none';}
 function beginPre(){if(MODE==='race'&&IN&&IN.warmed){RUN.forEach(r=>r.g.visible=true);if(BIG){PRE.stage='starter';PRE.t=0;say('スターターが台に上がります');}else{PRE.stage=null;beginLoading();if(IN&&IN.fanG&&!IN.shot){try{parent.postMessage({type:'race3d-fanfare'},'*');}catch(e){}say('ファンファーレが鳴り響きます。各馬、ゲートインが始まりました');}else say('各馬、ゲートインが始まりました');}return;}PRE.stage='canter';PRE.t=0;const ord=MODE==='race'||MODE==='parade'?[...RUN].sort((a,b)=>a.no-b.no):[...RUN.filter(r=>r.mine),...RUN.filter(r=>!r.mine)];ord.forEach((r,i)=>{r.cs=MODE==='race'?i*2.2:MODE==='parade'?4+i*4.4:i*1.6;r.g.visible=false;});if(MODE==='parade')makePonies();say(MODE==='race'&&IN?`本馬場入場。${RUN.length}頭が、馬番順に返し馬へ向かいます`:'本馬場入場。各馬、返し馬に向かいます');}
-function prePose(r,dt){let t=PRE.t-r.cs;if(MODE==='parade'&&t>=0&&!r.called){r.called=1;lowerThird(r);}if(MODE==='race'&&IN&&!IN.shot&&t>=0&&!r.called){r.called=1;lowerThird(r);const f0=IN.field[r.i]||{};say(`${r.no}番 ${r.name}${f0.pop&&f0.pop<=3?`、${f0.pop}番人気`:''}${r.mine?'。あなたの馬です':''}`);}if(MODE!=='race'&&t>22){r.cs=PRE.t+rnd()*4;r.cd=0;t=PRE.t-r.cs;}if(t<0){r.g.visible=false;return;}r.g.visible=t<16||MODE!=='race';const sp=MODE==='parade'?(t<7?1.7:Math.min(8,1.7+(t-7)*2.2)):Math.min(9,2+t*3);r.cd=(r.cd||0)+sp*dt;
+function prePose(r,dt){let t=PRE.t-r.cs;if(MODE==='parade'&&t>=0&&!r.called){r.called=1;lowerThird(r);}if(MODE==='race'&&IN&&!IN.shot&&t>=0&&!r.called){r.called=1;lowerThird(r);const f0=IN.field[r.i]||{};say(`${r.no}番 ${r.name}${f0.pop&&f0.pop<=3?`、${f0.pop}番人気`:''}${r.mine?'。あなたの馬です':''}`);}/* past the stand: in the parade a horse does its one pass and is gone; in the warm-up loop it comes round again, never on top of another */if(MODE==='parade'&&t>22){r.g.visible=false;return;}if(MODE!=='race'&&t>22){r.cs=Math.max(PRE.t,(PRE.lastRe||0)+3.4)+rnd()*1.2;PRE.lastRe=r.cs;r.cd=0;t=PRE.t-r.cs;}if(t<0){r.g.visible=false;return;}r.g.visible=t<16||MODE!=='race';const sp=MODE==='parade'?(t<7?1.7:Math.min(8,1.7+(t-7)*2.2)):Math.min(9,2+t*3);r.cd=(r.cd||0)+sp*dt;
   const ln=MODE==='parade'?8+(r.i%2)*2.6:9+(r.i%3)*1.5,p=pathAt(FIN-260+r.cd,ln),q=pathAt(FIN-260+r.cd+.5,ln);r.g.position.set(p.x,0,p.z);r.g.rotation.y=Math.atan2(q.x-p.x,q.z-p.z);
   if(MODE==='parade'&&t<7){r.act.timeScale=.95;r.mixer.update(dt);walkify(r,.62);}else{r.act.timeScale=1.9;r.mixer.update(dt);}if(r.handler)r.handler.visible=false;r.J.visible=true;}
 const PONIES=[];
@@ -1164,8 +1164,8 @@ function makePonies(){for(let k=0;k<2;k++){const g=new THREE.Group(),src=horseGL
     /* the lead pony's eyes, as on the runners */
     const pa=mesh.geometry.attributes.position,nr0=mesh.geometry.attributes.normal,eyes=[1,-1].map(sd=>{let best=0,bd=1e9;for(let q=0;q<pa.count;q++){const d=Math.hypot(pa.getX(q)-sd*12.5,pa.getY(q)-156,pa.getZ(q)-114.5);if(d<bd){bd=d;best=q;}}
       const e=new THREE.Mesh(new THREE.SphereGeometry(2.7,12,10),new THREE.MeshStandardMaterial({color:'#0d0a08',roughness:.12,metalness:.1}));e.scale.set(.75,1,1.25);mesh.add(e);return {e,k:best,n:new THREE.Vector3(nr0.getX(best),nr0.getY(best),nr0.getZ(best))};});
-    PONIES.push({g,mixer,act,cd:0,lane:6+k*2.2,off:k*5,mesh,S,eyes});}}
-function ponyStep(dt){PONIES.forEach(p=>{const t=PRE.t-p.off*.2;const sp=t<11?1.7:Math.min(7,1.7+(t-11)*2);p.cd+=sp*dt;const a=pathAt(FIN-246+p.cd,p.lane),b=pathAt(FIN-246+p.cd+.5,p.lane);p.g.position.set(a.x,0,a.z);p.g.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
+    PONIES.push({g,mixer,act,cd:-k*5.5,lane:3.6,off:0,mesh,S,eyes});}}
+function ponyStep(dt){PONIES.forEach(p=>{const t=PRE.t-p.off*.2;const sp=t<11?1.7:Math.min(9.5,1.7+(t-11)*2.4);p.cd+=sp*dt;const a=pathAt(FIN-246+p.cd,p.lane),b=pathAt(FIN-246+p.cd+.5,p.lane);p.g.position.set(a.x,0,a.z);p.g.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);
   p.act.timeScale=t<11?.95:1.8;p.mixer.update(dt);if(t<11){const inf=p.g.children[0].morphTargetInfluences;if(inf)for(let k=0;k<inf.length;k++)inf[k]*=.62;}p.g.visible=p.cd<400;if(p.g.visible&&p.eyes)p.eyes.forEach(o=>{morphedVertex(p,o.k,_tv);o.e.position.set(_tv.x/p.S+o.n.x*.6,_tv.y/p.S+o.n.y*.6,_tv.z/p.S+o.n.z*.6);});});}
 function preStep(dt){PRE.t+=dt;if(PONIES.length)ponyStep(dt);
   if(PRE.stage==='canter'){RUN.forEach(r=>prePose(r,dt));if(MODE==='race'&&PRE.t>RUN.length*2.2+12){RUN.forEach(r=>r.g.visible=true);if(BIG){PRE.stage='starter';PRE.t=0;say('スターターが台に上がります');}else{PRE.stage=null;beginLoading();if(IN&&IN.fanG&&!IN.shot){try{parent.postMessage({type:'race3d-fanfare'},'*');}catch(e){}say('ファンファーレが鳴り響きます。各馬、ゲートインが始まりました');}else say('各馬、ゲートインが始まりました');}}}
@@ -1175,7 +1175,7 @@ function preStep(dt){PRE.t+=dt;if(PONIES.length)ponyStep(dt);
 const CM={said:{},lastLead:null,leadT:0};const LEN=2.4;
 const nm=r=>r.name,lenTxt=m=>{const L=m/LEN;if(L<.15)return 'ハナ差';if(L<.3)return 'アタマ差';if(L<.5)return 'クビ差';if(L<.8)return '半馬身';if(L<1.25)return '1馬身';if(L<1.75)return '1馬身半';if(L<2.5)return '2馬身';if(L<10)return `${Math.round(L)}馬身`;return '大差';};
 const jk=r=>r.jn||'鞍上';
-const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};
+const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};const PK=a=>a[Math.floor(Math.random()*a.length)];
 function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[2],last=byD[byD.length-1],me=RUN.find(r=>r.mine),pm=byD.indexOf(me)+1,gap=(a,b)=>a.d-b.d;
   {const lt=RUN.find(r=>IN&&IN.field[r.i]&&IN.field[r.i].late);if(lt)once('s',()=>`${lt.no}番${nm(lt)}、出遅れました！`);}
   RUN.forEach(r=>{const f0=IN&&IN.field[r.i];if(f0&&f0.stop&&tau>.52)once('stop'+r.no,()=>{r.g.visible=false;r.gone=1;return `${r.no}番${nm(r)}、競走中止！ ${jk(r)}は落馬した模様です`;});});
@@ -1184,7 +1184,7 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
     if(x<.32&&slow.early>20)return P([`${nm(slow)}はいつも通り、後方からの競馬`,`${slow.no}番${nm(slow)}、無理をせず最後方に控えます`,`${nm(slow)}は今日も後ろから。じっくり構えます`]);
     if(x<.52)return P([`好スタートは${fast.no}番${nm(fast)}`,`${fast.no}番${nm(fast)}、いいスタートを切りました`,`ポンと出たのは${nm(fast)}`]);
     return P(['各馬そろった、きれいなスタートです','まずまず揃ったスタート','横一線のスタート。さあ、何が行くか','ほぼ揃ったスタートを切りました','きれいに揃いました。各馬、ポジション争い']);});
-  if(d>180)once('lead',()=>`ハナを切ったのは${L.no}番${nm(L)}、鞍上${jk(L)}。2番手に${nm(S2)}、その外${nm(S3)}`);
+  if(d>180)once('lead',()=>PK([`ハナを切ったのは${L.no}番${nm(L)}、鞍上${jk(L)}。2番手に${nm(S2)}、その外${nm(S3)}`,`${L.no}番${nm(L)}が先手を取りました。${nm(S2)}、${nm(S3)}が続きます`,`先頭は${nm(L)}。${jk(L)}、迷わず行きました。2番手${nm(S2)}`,`行ったのは${nm(L)}！ 内から${nm(S2)}、外から${nm(S3)}`]));
   if(d>270)once('look',()=>{L.look=1.4;return `${jk(L)}、後ろを振り返って隊列を確認します`;});
   if(d>300)once('pos',()=>{const fr=byD.slice(0,4);if(gap(fr[0],fr[1])<1.2*LEN)CM.settle=fr[1];return gap(fr[0],fr[1])<1.2*LEN?`${nm(fr[1])}の${jk(fr[1])}、無理には競りかけず、2番手で折り合いをつけます`:`先行争い。内から${nm(fr[1])}、外から${nm(fr[2])}も行く気を見せます`;});
   if(d>420)once('me1',()=>`${nm(me)}、鞍上${jk(me)}は${pm}番手、${pm<=4?'好位につけました':pm>=RUN.length-3?'後方からの競馬':'中団で脚をためます'}`);
@@ -1196,12 +1196,18 @@ function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[
   if(rem<470)once('still',()=>L.drv<.35&&CM.mover!==L?(L.look=1.4,`${jk(L)}はまだ持ったまま！ 後ろを振り返る余裕があります`):`${jk(L)}、もう追い出している！ 押して押して${nm(L)}`);
   if(rem<410)once('out',()=>{const c=byD.slice(1,7).sort((a,b)=>laneOf(b,Math.min(tau,1))-laneOf(a,Math.min(tau,1)))[0];return `${jk(c)}、${nm(c)}を外に持ち出した！`;});
   if(d>1200)once('len',()=>{const sp=gap(L,last)/LEN;return `先頭から最後方まで、およそ${Math.round(sp)}馬身。${sp>14?'縦長の隊列':'一団の馬群'}です`;});
-  if(rem<760)once('3c',()=>`3コーナーカーブ。先頭は${nm(L)}、リードは${lenTxt(gap(L,S2))}。${pm>6?nm(me)+'もじわっと進出！':'後続も差を詰めにかかる'}`);
-  if(rem<520)once('4c',()=>`4コーナーを回って直線！ ${nm(L)}が先頭、${nm(S2)}が外から並びかける！`);
+  if(rem<760)once('3c',()=>PK([`3コーナーカーブ。先頭は${nm(L)}、リードは${lenTxt(gap(L,S2))}。${pm>6?nm(me)+'もじわっと進出！':'後続も差を詰めにかかる'}`,`勝負どころの3コーナー！ ${nm(L)}のリードは${lenTxt(gap(L,S2))}、馬群がぐっと詰まってきた`,`3コーナーから4コーナーへ。${nm(L)}、${nm(S2)}、${nm(S3)}。${pm>6?nm(me)+'は外を回って上がっていく':'各馬の手が動き始めた'}`]));
+  if(rem<520)once('4c',()=>PK([`4コーナーを回って直線！ ${nm(L)}が先頭、${nm(S2)}が外から並びかける！`,`さあ直線コースに向いた！ 先頭${nm(L)}、外に${nm(S2)}、内に${nm(S3)}！`,`直線！ ${nm(L)}が粘りこみを図る、後ろからは${nm(S2)}！`,`最後の直線！ 横に広がった！ 先頭はまだ${nm(L)}！`]));
+  /* 展開を読む実況（ゲームから届く: 馬場の傾向・流れ・まくり・内ラチ） */
+  {const FL=(IN&&IN.flow)||{},byNo=n=>RUN.find(r=>r.no===n);
+   if(FL.bias&&d>D*.38)once('bias',()=>FL.bias==='内'?PK(['今日の馬場、内がよく伸びています。前の馬は止まらないか','内ラチ沿いの芝が生きています。内を通る馬が有利']):PK(['馬場の外目が伸びる傾向。差し馬には追い風か','今日は外差しが決まっている馬場。後ろの馬にもチャンス']));
+   if(FL.tempo&&d>D*.55&&D>=1400)once('tempo',()=>FL.tempo==='消耗戦'?PK(['前半から息の入らない流れ。これは消耗戦だ','緩みのないラップが続いています。最後はスタミナ勝負か']):PK(['ペースは落ち着いたまま。直線のよーいドンになりそうです','各馬じっと我慢。最後は瞬発力勝負か']));
+   const mk=FL.makuri&&byNo(FL.makuri);if(mk&&rem<(D>=2400?820:660))once('makuri',()=>{mk.drv=Math.max(mk.drv||0,.5);return PK([`${nm(mk)}が外から一気にまくって上がっていく！`,`おっと、${nm(mk)}が早めに動いた！ 外からまくり気味に進出！`,`${jk(mk)}、${nm(mk)}を3コーナー手前から押し上げる！ ロングスパートだ！`]);});
+   const rl=FL.rail&&byNo(FL.rail);if(rl&&rem<300)once('rail',()=>PK([`内ラチ沿い、${nm(rl)}がぴったり突いてくる！`,`最内から${nm(rl)}！ ロスなく回って伸びてくる！`,`内をすくって${nm(rl)}！ 経済コースを通ってきた！`]));}
   // leader changes in the straight
   if(tau>.2){if(CM.lastLead&&CM.lastLead!==L&&tau-CM.leadT>.02&&rem<500&&rem>30){CM.leadT=tau;say(`${nm(L)}が先頭に代わった！ ${nm(CM.lastLead)}は苦しいか！`);}CM.lastLead=L;}
-  if(rem<330)once('400',()=>`残り300！ 先頭は${nm(L)}、リード${lenTxt(gap(L,S2))}。${nm(S2)}、${nm(S3)}が迫る！`);
-  if(rem<170)once('200',()=>{const g=gap(L,S2);return g<1.5*LEN?`${nm(L)}か！ ${nm(S2)}か！ 並んでゴールへ！`:`${nm(L)}、抜け出した！ これは強い！`;});
+  if(rem<330)once('400',()=>PK([`残り300！ 先頭は${nm(L)}、リード${lenTxt(gap(L,S2))}。${nm(S2)}、${nm(S3)}が迫る！`,`あと300！ ${nm(L)}、${lenTxt(gap(L,S2))}のリード！ ${nm(S2)}が懸命に追う！`,`残り300を切った！ ${nm(L)}か、${nm(S2)}か、それとも${nm(S3)}か！`]));
+  if(rem<170)once('200',()=>{const g=gap(L,S2);return g<1.5*LEN?PK([`${nm(L)}か！ ${nm(S2)}か！ 並んでゴールへ！`,`${nm(L)}、${nm(S2)}、壮絶な叩き合い！`,`2頭並んだ！ ${nm(L)}と${nm(S2)}、どちらも譲らない！`]):g>4*LEN?PK([`${nm(L)}、独走！ 後続は離されている！`,`${nm(L)}、まったく危なげない！ これは強い！`]):PK([`${nm(L)}、抜け出した！ これは強い！`,`${nm(L)}、ひと伸び！ リードを広げる！`,`${nm(L)}が突き放す！ ${nm(S2)}は届かないか！`]);});
   if(rem<70&&me!==L&&pm<=3)once('me2',()=>`${nm(me)}も来ている！ ${nm(me)}も来ている！`);
   if(tau>=1)once('goal',()=>{const w=byD[0];RUN.forEach(r=>r.won=r===w);return `${nm(w)}、ゴールイン！ 鞍上${jk(w)}、ガッツポーズ！ 2着${nm(byD[1])}、着差は${mgSpoken(offMg(byD[1]))||lenTxt(gap(byD[0],byD[1]))}${w.mine?'。やりました、あの勝負服が先頭でゴール！':''}`;});}
 /* ---------- loop ---------- */
