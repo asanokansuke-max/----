@@ -1317,6 +1317,10 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
   if(SPL.on){R3.setScissorTest(true);const hb=Math.round(H*.75);cam.aspect=W/hb;cam.updateProjectionMatrix();R3.setViewport(0,0,W,hb);R3.setScissor(0,0,W,hb);R3.render(scene,cam);
     cam2.aspect=W/(H-hb);cam2.updateProjectionMatrix();R3.setViewport(0,hb,W,H-hb);R3.setScissor(0,hb,W,H-hb);R3.clear();R3.render(scene,cam2);R3.setScissorTest(false);R3.setViewport(0,0,W,H);cam.aspect=W/H;cam.updateProjectionMatrix();}
   else R3.render(scene,cam);
+  /* the warm-up picture: when the TV is on your horse cantering past, one frame is kept (the month's picture uses it) */
+  try{if(PRE.stage==='canter'&&camName==='canter'&&!SPL.on&&!window.__sceneShot){const act=RUN.filter(r=>r.g.visible&&PRE.t-r.cs>0);const f=MODE==='warmup'?RUN.find(r=>r.mine&&r.g.visible&&PRE.t-r.cs>0&&PRE.t-r.cs<15):act[act.length-1];
+    if(f&&f.mine&&PRE.t-f.cs>2.6&&PRE.t-f.cs<9){const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=400,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
+      o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.82);if(url&&url.length>8000){window.__sceneShot=1;parent.postMessage({type:'race3d-scene',img:url,no:f.no},'*');}}}}catch(e){}
   /* the result card's picture: your horse at the line (or, if it won, a beat later with the rider's fist in the air), from a close camera beside it */
   /* the finish photo, as the slit camera makes it: from the stand side, a little above, square to the line; the background is the
      line itself smeared sideways (horizontal streaks), the horses keyed over it, all in that lavender-grey with the placings tagged */
