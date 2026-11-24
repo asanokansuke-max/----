@@ -229,8 +229,11 @@ var MONG=null;function buildMonument(p,yaw){const g=new THREE.Group();MONG=g;g.p
 }
 /* =================== the racecourse: grandstand, apron, infield screen, signage =================== */
 const STX=20,STZ=-RAD-30-XO,SLEN=LS+80;   // stand runs along the home straight; its front edge sits ~30m outside the outer rail
+/* the crowd's faces: a white sheet with two small eyes and a mouth, tinted by each head's skin colour; the face looks toward the person's front (-z) */
+const CROWD_FACE=canvasTex(256,128,(g,w,h)=>{g.fillStyle='#fff';g.fillRect(0,0,w,h);g.fillStyle='#2a1d16';[-1,1].forEach(sd=>{g.beginPath();g.ellipse(w*(.75+sd*.03),h*.47,2.2,2.8,0,0,7);g.fill();});g.strokeStyle='rgba(120,60,50,.7)';g.lineWidth=1.4;g.beginPath();g.arc(w*.75,h*.54,4,.2*Math.PI,.8*Math.PI);g.stroke();});
+CROWD_FACE.wrapS=CROWD_FACE.wrapT=THREE.ClampToEdgeWrapping;
 function crowdMesh(N){const legs=new THREE.InstancedMesh((()=>{const g=new THREE.CylinderGeometry(.13,.1,.85,6);g.scale(1.25,1,.75);return g;})(),new THREE.MeshStandardMaterial({color:'#2a2b30',roughness:.9}),N),
-   coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh((()=>{const g=new THREE.SphereGeometry(.112,12,9);g.scale(1,1.14,1.02);return g;})(),new THREE.MeshStandardMaterial({roughness:.75}),N),
+   coat=new THREE.InstancedMesh(torsoGeo(.74),new THREE.MeshStandardMaterial({roughness:.85}),N),head=new THREE.InstancedMesh((()=>{const g=new THREE.SphereGeometry(.112,12,9);g.scale(1,1.14,1.02);return g;})(),new THREE.MeshStandardMaterial({roughness:.75,map:CROWD_FACE}),N),
    hair=new THREE.InstancedMesh((()=>{const g=new THREE.SphereGeometry(.121,12,8,0,Math.PI*2,0,Math.PI*.56);g.scale(1,1.12,1.04);return g;})(),new THREE.MeshStandardMaterial({roughness:.95}),N),
    hat=new THREE.InstancedMesh(new THREE.CylinderGeometry(.13,.14,.08,8),new THREE.MeshStandardMaterial({roughness:.7}),N);
   const m=new THREE.Matrix4(),q=new THREE.Quaternion(),hq=new THREE.Quaternion(),XAX=new THREE.Vector3(1,0,0),e=new THREE.Euler(),v=new THREE.Vector3(),sc=new THREE.Vector3(),c=new THREE.Color();let n=0;
@@ -1174,7 +1177,7 @@ function preStep(dt){PRE.t+=dt;if(PONIES.length)ponyStep(dt);
 /* ---------- live commentary: built from the running order, the gaps and the clock ---------- */
 const CM={said:{},lastLead:null,leadT:0};const LEN=2.4;
 const nm=r=>r.name,lenTxt=m=>{const L=m/LEN;if(L<.15)return 'ハナ差';if(L<.3)return 'アタマ差';if(L<.5)return 'クビ差';if(L<.8)return '半馬身';if(L<1.25)return '1馬身';if(L<1.75)return '1馬身半';if(L<2.5)return '2馬身';if(L<10)return `${Math.round(L)}馬身`;return '大差';};
-const jk=r=>r.jn||'鞍上';
+const jk=r=>{const n=r.jn||'';return !n?'鞍上':/厩舎所属/.test(n)?'若手騎手':n;};
 const once=(k,fn)=>{if(!CM.said[k]){CM.said[k]=1;const t=fn();if(t)say(t);}};const PK=a=>a[Math.floor(Math.random()*a.length)];
 function commentary(byD,tau){const d=byD[0].d,rem=D-d,L=byD[0],S2=byD[1],S3=byD[2],last=byD[byD.length-1],me=RUN.find(r=>r.mine),pm=byD.indexOf(me)+1,gap=(a,b)=>a.d-b.d;
   {const lt=RUN.find(r=>IN&&IN.field[r.i]&&IN.field[r.i].late);if(lt)once('s',()=>`${lt.no}番${nm(lt)}、出遅れました！`);}
@@ -1325,8 +1328,10 @@ let DTS=1/60,DONE=false;const MSHOT={done:false,cam:null};function frame(){const
   else R3.render(scene,cam);
   /* the warm-up picture: when the TV is on your horse cantering past, one frame is kept (the month's picture uses it) */
   try{if(PRE.stage==='canter'&&camName==='canter'&&!SPL.on&&!window.__sceneShot){const act=RUN.filter(r=>r.g.visible&&PRE.t-r.cs>0);const f=MODE==='warmup'?RUN.find(r=>r.mine&&r.g.visible&&PRE.t-r.cs>0&&PRE.t-r.cs<15):act[act.length-1];
-    if(f&&f.mine&&PRE.t-f.cs>2.6&&PRE.t-f.cs<9){const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=400,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
-      o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);const url=o.toDataURL('image/jpeg',.82);if(url&&url.length>8000){window.__sceneShot=1;parent.postMessage({type:'race3d-scene',img:url,no:f.no},'*');}}}}catch(e){}
+    if(f&&f.mine&&PRE.t-f.cs>2.6&&PRE.t-f.cs<9){/* for the picture, the camera turns onto the horse itself and draws back a touch (the TV shot leads it, so it sits off-centre) */
+      const fov0=cam.fov,q0=cam.quaternion.clone(),hp=f.g.position;cam.lookAt(hp.x,1.25,hp.z);cam.fov=fov0*1.35;cam.updateProjectionMatrix();R3.render(scene,cam);
+      const W=R3.domElement.width,H=R3.domElement.height,OW=640,OH=400,cw=Math.min(W,H*OW/OH),ch=cw*OH/OW,o=document.createElement('canvas');o.width=OW;o.height=OH;
+      o.getContext('2d').drawImage(R3.domElement,(W-cw)/2,(H-ch)/2,cw,ch,0,0,OW,OH);cam.fov=fov0;cam.quaternion.copy(q0);cam.updateProjectionMatrix();R3.render(scene,cam);const url=o.toDataURL('image/jpeg',.82);if(url&&url.length>8000){window.__sceneShot=1;parent.postMessage({type:'race3d-scene',img:url,no:f.no},'*');}}}}catch(e){}
   /* the result card's picture: your horse at the line (or, if it won, a beat later with the rider's fist in the air), from a close camera beside it */
   /* the finish photo, as the slit camera makes it: from the stand side, a little above, square to the line; the background is the
      line itself smeared sideways (horizontal streaks), the horses keyed over it, all in that lavender-grey with the placings tagged */
