@@ -97,7 +97,7 @@ ACT.evc=(o=>function(d){const before=new Set(S?S.horses.map(h=>h.id):[]);const r
 function nameDialog(h){const sug=[...new Set([h.nameHint,makeName(S.kanmei),makeName(S.kanmei),makeName()].filter(n=>n&&n.length<=9))].slice(0,4);
   const blood=h.sire&&ST(h.sire)?`父 ${esc(ST(h.sire).n)}${h.damName?`／母 ${esc(h.damName)}`:''}`:'';
   openModal(`<div class="from-line">新しい仲間</div><h2>名前を付ける</h2>
-   <div class="row" style="gap:12px">${horseSVG(h,64)}<div><b>${h.sex||''}${ageOf(h)}歳・${esc(h.coat||'')}</b><div class="muted" style="font-size:12.5px">${blood}</div><div class="muted" style="font-size:12.5px">${h.trainer&&P(h.trainer)?esc(P(h.trainer).n.split(' ')[0])+'厩舎':h.status==='繁殖'?'繁殖牝馬':''}</div></div></div>
+   <div class="row" style="gap:12px">${horseSVG(h,64)}<div><b>${h.sex||''}${ageOf(h)?ageOf(h)+'歳':'・当歳'}・${esc(h.coat||'')}</b><div class="muted" style="font-size:12.5px">${blood}</div><div class="muted" style="font-size:12.5px">${h.trainer&&P(h.trainer)?esc(P(h.trainer).n.split(' ')[0])+'厩舎':h.status==='繁殖'?'繁殖牝馬':''}</div></div></div>
    <div class="field"><label for="nm2">馬名（9文字まで。冠名「${esc(S.kanmei)}」を付けるのもおすすめ）</label><input type="text" id="nm2" maxlength="9" value="${esc(h.nameHint||sug[1]||sug[0]||S.kanmei)}" autocomplete="off"></div>
    <div class="row" style="flex-wrap:wrap;gap:6px">${sug.map(n=>`<button class="btn sm" data-act="nmPick" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>
    <div class="row"><span class="sp"></span><button class="btn pri" data-act="nmOk" data-hid="${h.id}">この名前にする</button></div>`,{lock:true});}
