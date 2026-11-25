@@ -10205,6 +10205,12 @@ storyTriggers=(o=>function(first){const r=o.apply(this,arguments);try{if(first||
   const tj=new Set(S.horses.filter(h=>h.owner==='me'&&h.trainer).map(h=>TR(h.trainer)&&TR(h.trainer).jk).filter(Boolean));
   const L=S.flags.jq.filter(id=>!(P(id)&&P(id).met));S.flags.jq=L;if(!L.length)return r;const id=L.find(x=>tj.has(x))||L[0];S.flags.jq=L.filter(x=>x!==id);S.flags.jqT=S.t;
   JQ_RELEASE=true;try{pushEv('jIntro',{id});}finally{JQ_RELEASE=false;}}catch(e){console.error('jq',e);}return r;})(storyTriggers);
+/* ---------- 実況の読み上げ: 読み間違えやすい漢字は、読み上げるときだけひらがなに（画面の字幕はそのまま） ---------- */
+const READ_FIX=[[/行った/g,'いった'],[/行って/g,'いって'],[/行き/g,'いき'],[/行く/g,'いく'],[/行か/g,'いか'],[/行け/g,'いけ'],[/最内/g,'さいうち'],[/内ラチ/g,'うちラチ'],[/内を/g,'うちを'],[/内から/g,'うちから'],[/内で/g,'うちで'],
+  [/大外/g,'おおそと'],[/外から/g,'そとから'],[/外を/g,'そとを'],[/外に/g,'そとに'],[/鞍上/g,'あんじょう'],[/出負け/g,'でまけ'],[/手応え/g,'てごたえ'],[/逃げ脚/g,'にげあし'],[/脚色/g,'あしいろ'],[/末脚/g,'すえあし'],
+  [/一杯/g,'いっぱい'],[/上がり/g,'あがり'],[/後続/g,'こうぞく'],[/馬群/g,'ばぐん'],[/叩き合い/g,'たたきあい'],[/淀/g,'よど'],[/府中/g,'ふちゅう'],[/仁川/g,'にがわ'],[/人気薄/g,'にんきうす'],[/番手/g,'ばんて'],
+  [/単騎/g,'たんき'],[/大逃げ/g,'おおにげ'],[/捲/g,'まく'],[/経済コース/g,'けいざいコース'],[/重馬場/g,'おもばば'],[/稍重/g,'ややおも'],[/不良/g,'ふりょう'],[/牝馬/g,'ひんば'],[/牡馬/g,'ぼば'],[/本馬場/g,'ほんばば'],[/返し馬/g,'かえしうま']];
+speak=(o=>function(t,fast){let s=String(t||'');try{READ_FIX.forEach(([a,b])=>{s=s.replace(a,b);});}catch(e){}return o.call(this,s,fast);})(speak);
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */
