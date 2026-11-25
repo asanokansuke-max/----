@@ -47,7 +47,7 @@ EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭'
 EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags.fhPrice=price;
   return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`…九条さんには断りを入れる。1600万。それ以上はいらん。`:k===1?`九条さんには断る。あの話を黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`こいつが選んだんだ。600万でいい。…大事にしてやってくれ。`)+`\n\n預ける厩舎は、あんたが決めてくれ。\n戸川（美浦・大きいところを狙う）か、早瀬（栗東・数を使って鍛える）か。`,
   ch:[`戸川厩舎に預ける（${price}万円）`,`早瀬厩舎に預ける（${price}万円）`]};},
-  f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
+  f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:80,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
     h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.needName=1;h.nameHint=h.name;h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
     S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
     return `中原は、芦毛の首をぽんと叩いた。「名前は、あんたが付けてやってくれ」\n\n${who(h.trainer).split(" ")[0]}厩舎に入ることになった。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};

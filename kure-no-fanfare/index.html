@@ -1651,7 +1651,7 @@ function storyTriggers(first){
 const EV={
  prologue:{r:()=>({p:'mikuni',from:'三國 透',title:'はじめまして',body:`はじめまして。三國 透と申します。今日から${fName()}さんの馬のことを、すべてお手伝いさせていただきます。\n\n会社を一代で大きくされた${fName()}さんが、なぜ今になって馬主に──と、正直に申し上げると、不思議に思っていました。\n\n「子どもの頃、親父に連れられて暮れの中山へ行った。あの直線を、いつか自分の勝負服が先頭で駆け抜ける」\n\n面接の日にそう伺って、腹が決まりました。お供します。\n\n毎月、まず厩舎の馬たちに指示を出していただきます。それから、月にお一人だけ、誰かに会いに行けます。人とのご縁は、馬と同じくらい大事な財産です。`,ch:['よろしく頼む']}),f:()=>'三國は手帳を開いた。「まずは日高の中原さんの牧場へ。お見せしたい馬がいるそうです」'},
  firstHorse:{r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`遠いところをよく来なさった。中原です。\n\nうちは繁殖牝馬が四頭の、小さな牧場でね。大きいところのセリには、なかなか出せん。\n\nこいつを見てほしい。芦毛の2歳。母はうちで生まれて、うちで死んだ。気が強くて、セリでは誰も手を挙げなかった。\n\nだが、わしはこいつの目が好きでね。…800万でいい。どこの厩舎に預けるかは、あんたが決めてくれ。\n\n戸川さん（美浦のベテラン。無理をさせず大きいところを狙う）か、早瀬さん（栗東の若手。数を使って経験を積ませる）か。`,ch:['戸川厩舎に預ける（800万円）','早瀬厩舎に預ける（800万円）']}),
-   f:(d,i)=>{const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
+   f:(d,i)=>{const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:80,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
      h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=5;S.horses.push(h);S.money-=800;
      S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
      return `「${h.name}。いい名前だ」中原は目を細めた。\n\n${h.name}は${who(h.trainer)}厩舎に入った。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}},
@@ -7350,7 +7350,7 @@ EV.firstHorse={r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭'
 EV.firstHorse2={r:()=>{const k=S.flags.fh,price=k===0?1600:k===1?800:600;S.flags.fhPrice=price;
   return {p:'nakahara',from:'中原 修造',title:'譲る',body:(k===0?`…九条さんには断りを入れる。1600万。それ以上はいらん。`:k===1?`九条さんには断る。あの話を黙って聞いてくれたのは、あんたが初めてだ。800万でいい。`:`こいつが選んだんだ。600万でいい。…大事にしてやってくれ。`)+`\n\n預ける厩舎は、あんたが決めてくれ。\n戸川（美浦・大きいところを狙う）か、早瀬（栗東・数を使って鍛える）か。`,
   ch:[`戸川厩舎に預ける（${price}万円）`,`早瀬厩舎に預ける（${price}万円）`]};},
-  f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
+  f:(d,i)=>{const price=S.flags.fhPrice||800,k=S.flags.fh;const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:80,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
     h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.needName=1;h.nameHint=h.name;h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=k===2?18:k===1?10:5;S.horses.push(h);S.money-=price;
     S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
     return `中原は、芦毛の首をぽんと叩いた。「名前は、あんたが付けてやってくれ」\n\n${who(h.trainer).split(" ")[0]}厩舎に入ることになった。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}};
@@ -9980,7 +9980,7 @@ drawSeason=(o=>function(cv,m){const r=o.apply(this,arguments);try{const h=latest
   const g=c.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,W*.7);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.32)');c.fillStyle=g;c.fillRect(0,0,W,H);c.restore();});}catch(e){}return r;})(drawSeason);
 /* ---------- 出走登録で、空いている騎手 ---------- */
 drawReg=(o=>function(){const r=o.apply(this,arguments);try{const rg=UI.reg,h=rg&&HZ(rg.hid),race=h&&racesFor(h).find(x=>x.key===rg.key);const jl=document.querySelector('#sheet .jlist');
-  if(h&&race&&race.g&&jl){const known=new Set(jockeysAvail());const L=Object.keys(S.jockeys).filter(j=>!known.has(j)&&JK(j)&&!(JK(j).ban>S.t)&&!JK(j).retired&&!(typeof jockeyAway==='function'&&jockeyAway(j))&&!(j==='washio'&&S.part===2)&&!(j==='hinata'&&S.br&&S.br.hinataLeft)&&!jBookedElsewhere(j,h,race)).sort((a,b)=>JK(b).sk-JK(a).sk).slice(0,5);
+  if(h&&race&&jl){const known=new Set(jockeysAvail());const L=Object.keys(S.jockeys).filter(j=>!known.has(j)&&JK(j)&&!(JK(j).ban>S.t)&&!JK(j).retired&&!(typeof jockeyAway==='function'&&jockeyAway(j))&&!(j==='washio'&&S.part===2)&&!(j==='hinata'&&S.br&&S.br.hinataLeft)&&!jBookedElsewhere(j,h,race)).sort((a,b)=>JK(b).sk-JK(a).sk).slice(0,5);
     if(L.length){const rows=L.map(jid=>{const key=h.id+'-'+jid+'-'+race.key,res=S.month.asked&&S.month.asked[key];
       return `<div class="jrow ${rg.j===jid?'on':''}">${avatar(jid,30)}<div class="jinfo"><b>${esc(JNAME(jid))}</b><span class="jmeta">${jTier(jid)}・${esc(JK(jid).tag||'')}　<span class="chip" style="font-size:10px">面識なし・調教師から声をかける</span></span></div>
         <div class="jact">${rg.j===jid?'<span class="chip good">騎乗決定</span>':res?'<span class="chip bad">断られた</span>':`<button class="btn sm" data-act="askJ" data-jid="${jid}">依頼する</button>`}</div></div>`;}).join('');
@@ -10134,6 +10134,10 @@ beginMonth=(o=>function(first){const r=o.apply(this,arguments);try{if(first)retu
     const age=3+Math.floor(R()*2),wins=1+Math.floor(R()*2),starts=wins+3+Math.floor(R()*6),pot=Math.round(64+R()*14),price=Math.round(((pot-50)*(pot-50)*1.4+wins*600)/10)*10;
     pushEv('ownerSell',{o:Math.floor(R()*OWNERS2.length),name:makeName(),sex:R()<.5?'牡':'牝',age,wins,starts,pot,style:pick(['逃げ','先行','差し','追込']),price,tr:pick(tl)});}}}catch(e){console.error('owners',e);}return r;})(beginMonth);
 applyRace=(o=>function(RC){const r=o.apply(this,arguments);try{const w=RC&&RC.order&&RC.order[0];if(w&&w.mine&&RC.race.grade==='G1'&&R()<.6)pushEv('ownerCongrats',{o:Math.floor(R()*OWNERS2.length),horse:w.h.name,race:RC.race.name});}catch(e){}return r;})(applyRace);
+/* 厩舎の画面に「地方に預けている馬」の欄 */
+render=(o=>function(){const r=o.apply(this,arguments);try{if(S&&UI.tab==='stable'){const L=mine().filter(h=>h.status==='地方'&&h.local);const main=document.querySelector('#main')||document.querySelector('main');
+  if(L.length&&main&&!main.querySelector('.localsec')){main.insertAdjacentHTML('beforeend',`<section class="sec localsec"><h2>地方に預けている馬<small>2勝すれば中央の1勝クラスに戻せる</small></h2><div class="panel">${L.map(h=>{const x=h.local;
+      return `<div class="row" style="gap:10px;padding:6px 0;border-bottom:1px dashed var(--line)">${horseSVG(h,40)}<div style="flex:1;min-width:0"><b>${esc(h.name)}</b><div class="muted" style="font-size:12.5px">${esc(x.trk)}競馬・${x.n}戦${x.w}勝${x.last?`・前走${x.last}着`:''}（預けて${S.t-x.t}か月）</div></div><span class="chip ${x.w>=1?'good':''}">中央まであと${Math.max(0,2-x.w)}勝</span></div>`;}).join('')}</div></section>`);}}}catch(e){console.error('localsec',e);}return r;})(render);
 /* =========================================================
    生産を本物に近く:
    ・種付けしても、必ず受胎するとは限らない（若い牝馬で8割台、年を取るほど下がる）。

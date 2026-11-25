@@ -63,7 +63,7 @@ function storyTriggers(first){
 const EV={
  prologue:{r:()=>({p:'mikuni',from:'三國 透',title:'はじめまして',body:`はじめまして。三國 透と申します。今日から${fName()}さんの馬のことを、すべてお手伝いさせていただきます。\n\n会社を一代で大きくされた${fName()}さんが、なぜ今になって馬主に──と、正直に申し上げると、不思議に思っていました。\n\n「子どもの頃、親父に連れられて暮れの中山へ行った。あの直線を、いつか自分の勝負服が先頭で駆け抜ける」\n\n面接の日にそう伺って、腹が決まりました。お供します。\n\n毎月、まず厩舎の馬たちに指示を出していただきます。それから、月にお一人だけ、誰かに会いに行けます。人とのご縁は、馬と同じくらい大事な財産です。`,ch:['よろしく頼む']}),f:()=>'三國は手帳を開いた。「まずは日高の中原さんの牧場へ。お見せしたい馬がいるそうです」'},
  firstHorse:{r:()=>({p:'nakahara',from:'中原 修造',title:'最初の一頭',body:`遠いところをよく来なさった。中原です。\n\nうちは繁殖牝馬が四頭の、小さな牧場でね。大きいところのセリには、なかなか出せん。\n\nこいつを見てほしい。芦毛の2歳。母はうちで生まれて、うちで死んだ。気が強くて、セリでは誰も手を挙げなかった。\n\nだが、わしはこいつの目が好きでね。…800万でいい。どこの厩舎に預けるかは、あんたが決めてくれ。\n\n戸川さん（美浦のベテラン。無理をさせず大きいところを狙う）か、早瀬さん（栗東の若手。数を使って経験を積ませる）か。`,ch:['戸川厩舎に預ける（800万円）','早瀬厩舎に預ける（800万円）']}),
-   f:(d,i)=>{const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:83,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
+   f:(d,i)=>{const h=genHorse({by:Y(S.t)-2,sire:'echo',pot:80,dist:2400,surf:'芝',growth:'晩成',temper:'気難しい',style:'差し',coat:'芦毛',breeder:'中原',sex:'牡',status:'現役',owner:'me'});
      h.id=S.nid++;h.name=S.kanmei+'ハツユキ';if(usedName(h.name)||h.name.length>9)h.name=makeName(S.kanmei);h.silks=S.silks;h.trainer=i===0?'togawa':'hayase';h.first=true;h.bond=5;S.horses.push(h);S.money-=800;
      S.people[h.trainer].met=true;trust(h.trainer,5);trust('nakahara',5);log(`最初の一頭、${h.name}を中原牧場から迎える`);
      return `「${h.name}。いい名前だ」中原は目を細めた。\n\n${h.name}は${who(h.trainer)}厩舎に入った。デビューは6月から。\n厩舎タブの「会いに行く」で、馬と触れ合える。`;}},
