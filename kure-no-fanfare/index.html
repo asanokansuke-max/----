@@ -9563,7 +9563,7 @@ function kuchiMount(RC,photo){try{if(typeof R3D_HTML!=='string'||window.__noShot
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-kuchiready')return;const f=document.getElementById('kuchif');if(!f||f.contentWindow!==e.source)return;UI.kuchiOk3d=1;f.style.opacity=1;document.querySelectorAll('.kprep').forEach(x=>x.textContent='撮影中…');});
 ACT.kuchi=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&UI.kuchi)kuchiMount(RC,UI.kuchi);}catch(e){}return r;})(ACT.kuchi);
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-kuchi'||typeof d.img!=='string'||d.img.length<4000)return;const photo=UI.kuchiWait;if(!photo)return;
-  picShrink(d.img,640,.8).then(u=>{if(!u)return;photo.img=u;/* already in the album (the shutter was pressed first): the album copy gets it too */
+  picShrink(d.img,520,.72).then(u=>{if(!u)return;photo.img=u;/* already in the album (the shutter was pressed first): the album copy gets it too */
     (S.album||[]).forEach(a=>{if(!a.img&&a.y===photo.y&&a.m===photo.m&&a.race===photo.race&&a.name===photo.name)a.img=u;});try{save();}catch(x){}
     picLoad(u).then(im=>{const cv=document.getElementById('kcv');if(im&&cv){const c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;c.save();c.setTransform(dpr,0,0,dpr,0,0);picCover(c,im,0,0,cv.width/dpr,cv.height/dpr);c.restore();}
       const f=document.getElementById('kuchif');if(f)f.remove();document.querySelectorAll('.kprep').forEach(x=>x.remove());document.querySelectorAll('.bc.kuchi.w3d').forEach(x=>x.classList.remove('w3d'));});});});
@@ -10220,6 +10220,29 @@ const READ_FIX=[[/行った/g,'いった'],[/行って/g,'いって'],[/行き/g
   [/一杯/g,'いっぱい'],[/上がり/g,'あがり'],[/後続/g,'こうぞく'],[/馬群/g,'ばぐん'],[/叩き合い/g,'たたきあい'],[/淀/g,'よど'],[/府中/g,'ふちゅう'],[/仁川/g,'にがわ'],[/人気薄/g,'にんきうす'],[/番手/g,'ばんて'],
   [/単騎/g,'たんき'],[/大逃げ/g,'おおにげ'],[/捲/g,'まく'],[/経済コース/g,'けいざいコース'],[/重馬場/g,'おもばば'],[/稍重/g,'ややおも'],[/不良/g,'ふりょう'],[/牝馬/g,'ひんば'],[/牡馬/g,'ぼば'],[/本馬場/g,'ほんばば'],[/返し馬/g,'かえしうま']];
 speak=(o=>function(t,fast){let s=String(t||'');try{READ_FIX.forEach(([a,b])=>{s=s.replace(a,b);});}catch(e){}return o.call(this,s,fast);})(speak);
+/* =========================================================
+   セーブデータを保存容量に収める: 写真（3D）がたまりすぎないように
+   ・返し馬の写真（月替わりの絵）は、新しい2枚だけ残す。走るのをやめた馬（引退・売却・移籍・繁殖・功労馬など）のレースの写真（引退記念カードに使う）は、
+     重賞を勝った馬と最近の12頭だけ残す
+   ・アルバムの口取り写真は、新しい24枚まで写真を残す（それより前は絵で表示）
+   ・それでも保存できなかったら、もっと減らしてもう一度。だめなら画面で知らせる
+   ========================================================= */
+const ACTIVE_ST=['現役','放牧','休養','育成','1歳','当歳','地方'];
+function savePrune(hard){try{const gone=S.horses.filter(h=>h.owner==='me'&&!ACTIVE_ST.includes(h.status));
+    gone.forEach(h=>{if(h.scenePic)delete h.scenePic;});
+    const keep=new Set(gone.filter(h=>h.pic).sort((a,b)=>(b.picT||0)-(a.picT||0)).filter((h,i)=>(h.gw&&h.gw.length&&!hard)||i<(hard?4:12)).map(h=>h.id));
+    gone.forEach(h=>{if(h.pic&&!keep.has(h.id))delete h.pic;});
+    /* other people's horses never need a photo */
+    S.horses.forEach(h=>{if(h.owner!=='me'){if(h.pic)delete h.pic;if(h.scenePic)delete h.scenePic;}});
+    const A=S.album||[],lim=hard?10:24;let n=0;for(let i=A.length-1;i>=0;i--){if(A[i]&&A[i].img){n++;if(n>lim)delete A[i].img;}}
+    /* the warm-up photo is only for the month's picture: the newest two are enough */
+    S.horses.filter(h=>h.scenePic).sort((a,b)=>(b.sceneT||0)-(a.sceneT||0)).forEach((h,i)=>{if(i>=(hard?1:2))delete h.scenePic;});}catch(e){}}
+save=function(){if(!S)return;savePrune(false);let data;try{data=JSON.stringify(S);localStorage.setItem(SAVE_KEY,data);S.__saveFail=0;return;}catch(e){}
+  savePrune(true);try{localStorage.setItem(SAVE_KEY,JSON.stringify(S));S.__saveFail=0;return;}catch(e){}
+  try{S.horses.forEach(h=>{delete h.scenePic;if(h.status!=='現役')delete h.pic;});(S.album||[]).forEach(a=>{delete a.img;});localStorage.setItem(SAVE_KEY,JSON.stringify(S));S.__saveFail=0;return;}catch(e){}
+  /* last resort: the progress matters more than the pictures */
+  try{S.horses.forEach(h=>{delete h.pic;delete h.scenePic;});localStorage.setItem(SAVE_KEY,JSON.stringify(S));S.__saveFail=0;return;}catch(e){}
+  if(!S.__saveFail){S.__saveFail=1;try{toastLong('保存できませんでした（端末の保存容量がいっぱいです）。このまま続けると、次に開いたときに進行が戻ってしまうかもしれません',6000);}catch(x){}}};
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */

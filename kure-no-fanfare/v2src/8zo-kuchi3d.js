@@ -15,7 +15,7 @@ function kuchiMount(RC,photo){try{if(typeof R3D_HTML!=='string'||window.__noShot
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-kuchiready')return;const f=document.getElementById('kuchif');if(!f||f.contentWindow!==e.source)return;UI.kuchiOk3d=1;f.style.opacity=1;document.querySelectorAll('.kprep').forEach(x=>x.textContent='撮影中…');});
 ACT.kuchi=(o=>function(){const r=o.apply(this,arguments);try{const RC=UI.race;if(RC&&UI.kuchi)kuchiMount(RC,UI.kuchi);}catch(e){}return r;})(ACT.kuchi);
 addEventListener('message',e=>{const d=e.data||{};if(d.type!=='race3d-kuchi'||typeof d.img!=='string'||d.img.length<4000)return;const photo=UI.kuchiWait;if(!photo)return;
-  picShrink(d.img,640,.8).then(u=>{if(!u)return;photo.img=u;/* already in the album (the shutter was pressed first): the album copy gets it too */
+  picShrink(d.img,520,.72).then(u=>{if(!u)return;photo.img=u;/* already in the album (the shutter was pressed first): the album copy gets it too */
     (S.album||[]).forEach(a=>{if(!a.img&&a.y===photo.y&&a.m===photo.m&&a.race===photo.race&&a.name===photo.name)a.img=u;});try{save();}catch(x){}
     picLoad(u).then(im=>{const cv=document.getElementById('kcv');if(im&&cv){const c=cv.getContext('2d'),dpr=window.devicePixelRatio||1;c.save();c.setTransform(dpr,0,0,dpr,0,0);picCover(c,im,0,0,cv.width/dpr,cv.height/dpr);c.restore();}
       const f=document.getElementById('kuchif');if(f)f.remove();document.querySelectorAll('.kprep').forEach(x=>x.remove());document.querySelectorAll('.bc.kuchi.w3d').forEach(x=>x.classList.remove('w3d'));});});});
