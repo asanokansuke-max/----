@@ -10202,10 +10202,13 @@ ACT.evc=(o=>function(d){let head='',picked='';try{const sh=document.getElementBy
 let JQ_RELEASE=false;
 pushEv=(o=>function(type,data){try{if(type==='jIntro'&&data&&!JQ_RELEASE&&S&&S.flags){S.flags.jq=S.flags.jq||[];if(!S.flags.jq.includes(data.id)&&!(P(data.id)&&P(data.id).met))S.flags.jq.push(data.id);return;}}catch(e){}return o.apply(this,arguments);})(pushEv);
 storyTriggers=(o=>function(first){const r=o.apply(this,arguments);try{if(first||!S.flags.jq||!S.flags.jq.length)return r;
-  const raced=S.horses.some(h=>h.owner==='me'&&h.starts>0);if(!raced)return r;if(S.flags.jqT!=null&&S.t-S.flags.jqT<3)return r;if(S.inbox.some(e=>e.type==='jIntro'))return r;
+  const raced=S.horses.some(h=>h.owner==='me'&&h.starts>0);if(!raced)return r;if(S.inbox.some(e=>e.type==='jIntro'))return r;
+  /* a jockey who is only here for a season is met while he is here, whatever the spacing */
+  const inSeason=id=>{const j=JK(id);return !(j&&j.season)||j.season.includes(M(S.t));};const seasonal=S.flags.jq.find(id=>JK(id)&&JK(id).season&&inSeason(id)&&!(P(id)&&P(id).met));
+  if(!seasonal&&S.flags.jqT!=null&&S.t-S.flags.jqT<3)return r;
   /* the jockeys of your own trainers' stables first (you'd meet them at the yard), then the rest in the order they came along */
   const tj=new Set(S.horses.filter(h=>h.owner==='me'&&h.trainer).map(h=>TR(h.trainer)&&TR(h.trainer).jk).filter(Boolean));
-  const L=S.flags.jq.filter(id=>!(P(id)&&P(id).met));S.flags.jq=L;if(!L.length)return r;const id=L.find(x=>tj.has(x))||L[0];S.flags.jq=L.filter(x=>x!==id);S.flags.jqT=S.t;
+  const L=S.flags.jq.filter(id=>!(P(id)&&P(id).met));S.flags.jq=L;const ok=L.filter(inSeason);if(!ok.length)return r;const id=seasonal||ok.find(x=>tj.has(x))||ok[0];S.flags.jq=L.filter(x=>x!==id);S.flags.jqT=S.t;
   JQ_RELEASE=true;try{pushEv('jIntro',{id});}finally{JQ_RELEASE=false;}}catch(e){console.error('jq',e);}return r;})(storyTriggers);
 /* ---------- 実況の読み上げ: 読み間違えやすい漢字は、読み上げるときだけひらがなに（画面の字幕はそのまま） ---------- */
 const READ_FIX=[[/行った/g,'いった'],[/行って/g,'いって'],[/行き/g,'いき'],[/行く/g,'いく'],[/行か/g,'いか'],[/行け/g,'いけ'],[/最内/g,'さいうち'],[/内ラチ/g,'うちラチ'],[/内を/g,'うちを'],[/内から/g,'うちから'],[/内で/g,'うちで'],
