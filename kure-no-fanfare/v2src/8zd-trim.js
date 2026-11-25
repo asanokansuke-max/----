@@ -11,7 +11,7 @@ showReport=(o=>function(rep){try{const L=rep&&(rep.lines||[]),other=L?L.filter(l
   setTimeout(()=>{try{ACT.repOk();}catch(e){console.error(e);}},0);return;}}catch(e){}return o.apply(this,arguments);})(showReport);
 ACT.evc=(o=>function(d){const om=openModal;let caught=null;
   openModal=function(html){const m=/^<div class="letter">([\s\S]*?)<\/div><div class="row"><span class="sp"><\/span><button class="btn pri" data-act="evnext">/.exec(html||'');
-    if(m&&caught==null){const t=document.createElement('div');t.innerHTML=m[1];const txt=t.textContent||'';if(txt.length<=60&&!/\n/.test(txt)){caught=txt;return;}}return om.apply(this,arguments);};
+    if(m&&caught==null){const t=document.createElement('div');t.innerHTML=m[1];const txt=t.textContent||'';if(false&&txt.length<=60&&!/\n/.test(txt)){caught=txt;return;}/* (no longer: the result now shows in the same window as the choice) */}return om.apply(this,arguments);};
   try{return o.apply(this,arguments);}finally{openModal=om;if(caught!=null){toastLong(caught);openNextEvent();}}})(ACT.evc);
 if(EV.horseshoe){const h=EV.horseshoe;EV.horseshoe={...h,r:d=>S.flags.shoeDone?null:h.r(d),f:(d,i)=>{S.flags.shoeDone=1;return h.f(d,i);}};}
 if(EV.farmNews){const h=EV.farmNews;EV.farmNews={...h,r:d=>S.flags.fnT!=null&&S.t-S.flags.fnT<6?null:h.r(d),f:(d,i)=>{S.flags.fnT=S.t;return h.f(d,i);}};}
