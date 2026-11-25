@@ -7662,8 +7662,10 @@ fanVoteEvent=function(){const y=Y(S.t);
   const ok=racing().filter(h=>ageOf(h)>=3&&(h.fans>=40000||h.earn>=20000||h.g1>0));
   const why=h=>{const m=all.find(x=>x.me&&x.n===h.name),rk=m?m.rank:999,oku=(h.earn/10000).toFixed(1).replace(/\.0$/,'');
     if(rk<=10)return `ファン投票${rk}位。上位10頭の優先出走権で選出`;
-    if(h.g1>0)return `ファン投票は${rk}位。G1馬で獲得賞金が上位のため、賞金順の出走枠で選出`;
-    if(h.earn>=20000)return `ファン投票は${rk}位。獲得賞金${oku}億円が上位のため、賞金順の出走枠で選出`;
+    const gw=(h.gw||[]).filter(n=>GR.some(g=>g.n===n&&g.gr==='G1')),net=yen(Math.round(h.earn*.8));
+    if(h.g1>0&&h.earn<20000)return `ファン投票は${rk}位。投票上位10頭のほかは賞金の多い順に枠が決まり、G1（${gw.join('・')||'G1'}）を勝っている馬はその上位に入るので選出。獲得賞金は${yen(h.earn)}（馬主の手取りは8割の${net}）`;
+    if(h.earn>=20000)return `ファン投票は${rk}位。投票上位10頭のほかは賞金の多い順に枠が決まり、獲得賞金${yen(h.earn)}が上位のため選出（賞金は総額。馬主の手取りは8割の${net}で、残りは調教師・騎手・厩務員へ）`;
+    if(h.g1>0)return `ファン投票は${rk}位。G1（${gw.join('・')||'G1'}）を勝っているので、賞金順の枠で選出。獲得賞金は${yen(h.earn)}（手取り${net}）`;
     return `ファン投票は${rk}位。上位馬の回避が続き、繰り上がりで出走枠に`;};
   pushEv('fanVote',{list,mine:mine0,ok:ok.map(h=>h.name),okWhy:ok.map(h=>({n:h.name,w:why(h)}))});};
 EV.fanVote.r=d=>({p:'mikuni',from:'有馬記念 ファン投票',title:`${Y(S.t)}年 有馬記念 ファン投票`,
