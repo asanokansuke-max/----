@@ -9693,7 +9693,7 @@ beginRaces=(o=>function(){const out=[];try{for(const [hid,od] of Object.entries(
   EXQ=()=>o.apply(this,[]);
   const lines=out.map(x=>x.why==='除外'?`・${x.h.name}（${x.race.name}）…出走希望が多く、除外。${(x.h.exN||0)>=2?'次は必ず出られる。':'次は優先して出られる。'}`:`・${x.h.name}（${x.race.name}）…収得賞金が足りず抽選になり、外れた。`);
   const tn=(()=>{const h=out[0].h;return P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師';})();
-  openModal(`<div class="from-line">出馬投票の結果　${dstr(S.t)}</div><h2>今月は出られない馬がいる</h2><div class="letter">${esc(lines.join('\n'))}\n\n${esc(tn)}「${esc(vpk('exq'+S.t,['仕方ありません。この時期はどこも馬が多くて。','残念ですが、次は優先されます。仕上がりは落とさずにいきます。','除外も競馬のうちです。調教で一本、いいのを入れておきます。']))}」\n\n出られなかった馬は、今月は調教にあてる。</div>
+  openModal(`<div class="from-line">出馬投票の結果　${dstr(S.t)}</div><h2>今月は出られない馬がいる</h2><div class="letter">${esc(lines.join('\n'))}\n\n${esc(tn)}「${esc(TQ(out[0].h.trainer,'excl'))}」\n\n出られなかった馬は、今月は調教にあてる。</div>
     <div class="row"><span class="sp"></span><button class="btn pri" data-act="exGo">わかった</button></div>`,{lock:true});
   return undefined;})(beginRaces);
 ACT.exGo=()=>{closeModal();const f=EXQ;EXQ=null;if(f)f();};
@@ -9712,11 +9712,11 @@ racesFor=(o=>function(h){if(GATE_BYPASS||!h||h.owner!=='me')return o.apply(this,
   return o.apply(this,arguments);})(racesFor);
 EV.gateFail={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役'||h.gateOk)return null;const tr=h.trainer,tn=P(tr)?P(tr).n.split(' ')[0]:'調教師';
   const why=vpk(h.id+'gf'+S.t,[`ゲートの中でじっとしていられず、暴れてしまいました。`,`ゲートは出たのですが、出が遅くて合格の基準に届きませんでした。`,`枠入りを嫌がって、なかなか入ってくれませんでした。`,`中で立ち上がってしまって…。怪我はありません。`]);
-  return{p:tr,from:who(tr),title:`${h.name}、ゲート試験は不合格`,body:`${tn}です。\n\n${h.name}のゲート試験、今回は落ちてしまいました。${why}\n\n${(h.gateFail||0)>=2?'少し時間がかかっていますが、練習のたびに良くなっています。':'珍しいことではありません。'}もう一度練習して、来月受け直します。`,ch:['「焦らず、もう一度」']};},
+  return{p:tr,from:who(tr),title:`${h.name}、ゲート試験は不合格`,body:TQ(tr,'gate',{h:h.name,why:TQ(tr,'gwhy')}),ch:['「焦らず、もう一度」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(h&&h.trainer)trust(h.trainer,1);return '来月、もう一度ゲート試験を受ける。';}};
 /* ---------- 未勝利戦の終わり ---------- */
 EV.misho={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役'||h.wins>0||h.mslDone)return null;const tr=h.trainer,tn=P(tr)?P(tr).n.split(' ')[0]:'調教師';
-  return{p:tr,from:who(tr),title:`${h.name}の、これから`,body:`${tn}です。\n\n3歳の未勝利戦が、先月で終わりました。${h.name}は${h.starts?`${h.starts}戦して、勝てずじまいでした。`:'結局、一度も走れませんでした。'}\n\n道は三つです。\n・1勝クラスに格上挑戦する（出られても相手は強く、除外も多い）\n・地方競馬へ移籍させる（向こうで2勝すれば、中央に戻ってこられます）\n・ここで引退させる\n\nオーナーが決めてください。`,
+  return{p:tr,from:who(tr),title:`${h.name}の、これから`,body:TQ(tr,'misho',{rec:`${h.name}は${h.starts?`${h.starts}戦して、勝てずじまい。`:'結局、一度も走れなかった。'}`,opts:'\n・1勝クラスに格上挑戦する（出られても相手は強く、除外も多い）\n・地方競馬へ移籍させる（向こうで2勝すれば、中央に戻ってこられる）\n・ここで引退させる'}),
     ch:['「1勝クラスに挑戦させる」','「地方へ移籍させる」','「引退させる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.mslDone=1;
     if(i===0){h.kakuage=1;return `${h.name}は1勝クラスへの格上挑戦を続ける。除外されやすいが、出られれば勝つチャンスはある。`;}
@@ -9738,9 +9738,9 @@ function stallRoom(id){const cap=(STALLS[id]||3)+((S.fame||0)>=40?1:0),n=mine().
    Only one over the limit — when it is already one over, even that runs out. */
 function stallFavor(id){if(stallRoom(id)!==0)return '';const tn=P(id)?P(id).n.split(' ')[0]:'調教師',own=S.part===1?S.parent.name:(S.child&&S.child.name)||'オーナー';
   const g1=mine().concat(S.horses.filter(h=>h.owner==='me')).filter((h,k,a)=>a.indexOf(h)===k&&h.trainer===id).reduce((a,h)=>a+(h.g1||0),0);
-  if(g1>0)return `${tn}「${own}さんの馬で、G1を勝たせてもらいました。その${own}さんの頼みを断ったら、罰が当たります。一頭分、なんとかしましょう」`;
-  if(P(id)&&P(id).trust>=75)return `${tn}「長いお付き合いですから。…馬房はいっぱいですが、ほかでもない${own}さんの頼みです。なんとか空けます」`;
-  if((S.fame||0)>=60)return `${tn}「正直いっぱいいっぱいですが、${own}さんの馬となれば話は別です。預からせてください」`;
+  if(g1>0)return `${tn}「${TQ(id,'favG1',{o:own})}」`;
+  if(P(id)&&P(id).trust>=75)return `${tn}「${TQ(id,'favTrust',{o:own})}」`;
+  if((S.fame||0)>=60)return `${tn}「${TQ(id,'favFame',{o:own})}」`;
   return '';}
 if(EV.nyukyu){const n0=EV.nyukyu;EV.nyukyu={...n0,r:d=>{const v=n0.r(d);if(!v)return v;const tl=trainersAvail();const fav={};tl.forEach(id=>{const f=stallFavor(id);if(f)fav[id]=f;});
     let ok=tl.filter(id=>stallRoom(id)>0||fav[id]);if(!ok.length)ok=[tl.slice().sort((a,b)=>stallRoom(b)-stallRoom(a))[0]];d.tl=ok;
@@ -9768,8 +9768,8 @@ if(EV.retireTalk){const r0=EV.retireTalk.r,f0=EV.retireTalk.f;
   EV.retireTalk.r=d=>{if(d.unraced)return null;const v=r0(d);if(!v)return v;const h=HZ(d.hid);if(!h||h.status!=='現役'&&h.status!=='放牧')return v;const b=lrBest(h);d.lrb=b?{n:b.n,m:b.m,k:b.k}:null;
     return{...v,ch:[v.ch[0],...(b?[`「${b.n}」（${b.m}月）をラストランにして引退`]:[]),'次のレースを最後に引退',...v.ch.slice(1)]};};
   EV.retireTalk.f=(d,i)=>{const h=HZ(d.hid);if(i===0||!h)return f0(d,0);const nb=d.lrb?1:0;
-    if(d.lrb&&i===1){lrSet(h,d.lrb);return `${h.name}のラストランは${d.lrb.n}に決まった。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「最高の状態で送り出します」`;}
-    if(i===1+nb){lrSet(h,null);return `${h.name}は、次のレースを最後に引退する。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「わかりました。悔いのないように仕上げます」`;}
+    if(d.lrb&&i===1){lrSet(h,d.lrb);return `${h.name}のラストランは${d.lrb.n}に決まった。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrSet')}」`;}
+    if(i===1+nb){lrSet(h,null);return `${h.name}は、次のレースを最後に引退する。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrNext')}」`;}
     return f0(d,i-1-nb);};}
 /* 自分で引退させるとき */
 ACT.retire=(o=>function(d){const r=o.apply(this,arguments);try{const h=HZ(d.hid);if(h&&['現役','放牧'].includes(h.status)&&!h.lastRun){const row=document.querySelector('#sheet .row');if(row)row.insertAdjacentHTML('beforebegin',`<p class="muted" style="font-size:13px">すぐにやめず、最後のレースを決めてから引退させることもできる。</p><div class="row" style="margin-bottom:8px"><button class="btn" data-act="lrPick" data-hid="${h.id}">ラストランを決める</button></div>`);}}catch(e){}return r;})(ACT.retire);
@@ -9785,7 +9785,7 @@ applyRace=(o=>function(RC){const L=(RC&&RC.order||[]).filter(f=>f.mine&&f.h&&f.h
   try{L.forEach(f=>{const h=f.h;if(h.lastRun.n&&h.lastRun.n!==RC.race.name)return;h.lastRunDone={race:RC.race.name,pos:f.pos};pushEv('lastRunDone',{hid:h.id});});}catch(e){}return r;})(applyRace);
 racesFor=(o=>function(h){if(h&&h.lastRunDone)return [];return o.apply(this,arguments);})(racesFor);
 EV.lastRunDone={r:d=>{const h=HZ(d.hid);if(!h||!h.lastRunDone||!['現役','放牧','休養'].includes(h.status))return null;const x=h.lastRunDone;
-  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、ラストラン`,body:`${x.race}、${x.pos}着。${x.pos===1?'最後の最後に、勝って終わった。':x.pos<=3?'最後まで、しっかり走り切った。':'結果はともかく、最後まで無事に走り切った。'}\n\n通算${h.starts}戦${h.wins}勝。これで${h.name}の競走生活は終わる。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「…ありがとうございました。いい馬でした」`,
+  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、ラストラン`,body:`${x.race}、${x.pos}着。${x.pos===1?'最後の最後に、勝って終わった。':x.pos<=3?'最後まで、しっかり走り切った。':'結果はともかく、最後まで無事に走り切った。'}\n\n通算${h.starts}戦${h.wins}勝。これで${h.name}の競走生活は終わる。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrDone')}」`,
     ch:['引退式をして送り出す','そのまま送り出す']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.lastRun=null;let t=retireHorse(h);if(i===0){h.fans=(h.fans||0)+3000;S.fame+=1;t=`最終レースのあと、${h.name}の引退式が行われた。ゼッケンをつけた${h.name}がターフに戻ると、スタンドに残った大勢のファンが名前を呼んだ。\n\n`+t;}return t;}};
 EV.lastRunMiss={r:d=>{const h=HZ(d.hid);if(!h||!h.lastRun||h.lastRunDone||['引退','繁殖','種牡馬','功労馬','売却','移籍'].includes(h.status))return null;
@@ -9803,8 +9803,8 @@ beginMonth=(o=>function(first){const r=o.apply(this,arguments);try{if(!first)min
    ========================================================= */
 function r2Block(h){const o=S.month.orders[h.id],tr=TR(h.trainer),tn=P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師';
   if(!o||o.type!=='race')return 'まず今月の1戦目を決めてください。';
-  if((h.fat||0)>40)return `${tn}「疲れが抜けきっていません。今月もう1戦は無理です」`;
-  if(tr&&tr.policy==='spaced'&&(P(h.trainer).trust||0)<70)return `${tn}「間隔が詰まりすぎます。うちのやり方では、この馬のためになりません」`;
+  if((h.fat||0)>40)return `${tn}「${TQ(h.trainer,'r2tired')}」`;
+  if(tr&&tr.policy==='spaced'&&(P(h.trainer).trust||0)<70)return `${tn}「${TQ(h.trainer,'r2no')}」`;
   return '';}
 function r2Races(h){const o=S.month.orders[h.id],taken=new Set(Object.values(S.month.orders).filter(x=>x&&x.type==='race'&&x.race).map(x=>x.race.key));
   return racesFor(h).filter(r=>r.key!==(o&&o.race&&o.race.key)&&!taken.has(r.key)&&entryStatus(h,r).st!=='不可');}
@@ -9816,7 +9816,7 @@ ACT.race2=d=>{const h=HZ(+d.hid);if(!h)return;const blk=r2Block(h);const tn=P(h.
   if(blk){openModal(`<div class="from-line">同じ月にもう1戦</div><h2>${esc(h.name)}</h2><div class="letter">${esc(blk)}</div><div class="row"><span class="sp"></span><button class="btn" data-act="close">わかった</button></div>`);return;}
   const L=r2Races(h);const tr=TR(h.trainer);
   openModal(`<div class="from-line">同じ月にもう1戦（中2週）</div><h2>${esc(h.name)}の2戦目</h2>
-    <div class="letter">${esc(tr&&tr.policy==='spaced'?`${tn}「本当は間隔をあけたいところですが…オーナーがそう言うなら。疲れが残るのは覚悟してください」`:`${tn}「使って良くなるタイプなら、ありです。ただ、1戦目の疲れは残りますし、脚元のリスクも上がります」`)}</div>
+    <div class="letter">${esc(`${tn}「${TQ(h.trainer,'r2ok')}」`)}</div>
     <p class="muted" style="font-size:12px">1戦目の疲れが残ったまま走る。走ったあとは調子を落としやすく、故障もしやすい。</p>
     <div class="choices">${L.length?L.map(r=>{const st=entryStatus(h,r);return `<button class="btn" data-act="race2Set" data-hid="${h.id}" data-key="${esc(r.key)}">${gradeBadge(r.grade)} ${esc(r.name)}<small class="muted">　${r.course} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m${st.why?'・'+esc(st.why):''}</small></button>`;}).join(''):'<p class="muted">今月、ほかに出られるレースがない。</p>'}</div>
     <div class="row"><button class="btn" data-act="close">やめる</button></div>`);};
@@ -10103,7 +10103,7 @@ EV.localBack={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='地方')return null;con
     ch:['「中央に戻そう」','「このまま地方で走らせる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===1)return `${h.name}は、もうしばらく${h.local.trk}で走ることになった。`;
     h.status='現役';h.wins=Math.max(1,h.wins||0);h.cls=Math.max(2,h.cls||0);h.kakuage=0;h.fat=20;h.ev=evalHorse(h);h.localWins=(h.localWins||0)+h.local.w;const trk=h.local.trk;h.local=null;log(`${h.name}が地方から中央へ戻る`);
-    if(h.trainer)trust(h.trainer,3);return `${h.name}が、中央の${P(h.trainer)?P(h.trainer).n.split(' ')[0]+'厩舎':'厩舎'}に戻ってきた。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${trk}で、たくましくなって帰ってきましたね。1勝クラスから、もう一度やりましょう」`;}};
+    if(h.trainer)trust(h.trainer,3);return `${h.name}が、中央の${P(h.trainer)?P(h.trainer).n.split(' ')[0]+'厩舎':'厩舎'}に戻ってきた。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'back',{trk})}」`;}};
 EV.localEnd={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='地方')return null;const L=h.local;
   return{p:'mikuni',from:`${L.trk}競馬の厩舎`,title:`${h.name}のこれから`,body:`${L.trk}の厩舎から連絡があった。\n\n「${h.name}、${L.n}戦${L.w}勝です。よく頑張っていますが、中央に戻るのは難しいかもしれません」`,ch:['「引退させる」','「もう少し走らせる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===0){h.local=null;return retireHorse(h);}h.local.t=S.t;h.local.endAsked=0;return `${h.name}は、もう少し${h.local.trk}で走る。`;}};
@@ -10158,12 +10158,12 @@ beginMonth=(o=>function(first){try{if(S&&!first){
     mine().filter(h=>h.status==='繁殖'&&!h.preg&&ageOf(h)>=20&&!h.oldAsked).forEach(mr=>{mr.oldAsked=1;pushEv('mareOld',{hid:mr.id});});}}catch(e){console.error('breed2',e);}
   return o.apply(this,arguments);})(beginMonth);
 const farmer=()=>S.part===2&&S.br&&S.br.farm==='support'?'mio':'nakahara';
-EV.nonPreg={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}、不受胎`,body:`${mr.name}の検査の結果が出た。\n\n${farmer()==='mio'?'澪':'中原'}「…残念だが、${d.sire}の仔は宿っとらんかった。種付け料（${yen(d.fee)}）は戻ってくる」\n\n${d.again?'まだ春のうちだ。もう一度、種付けの相談をしよう。':'今年はもう時期を過ぎた。来年、また考えよう。'}`,ch:['わかった']};},f:()=>''};
-EV.foalLoss={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}のこと`,body:`牧場から、静かな声で電話があった。\n\n「${mr.name}の仔（父 ${d.sire}）…産まれてはきたが、立ち上がれなかった。母馬は無事だ。…すまん」\n\nこういうことも、生産の世界にはある。`,ch:['「母馬を、よろしく頼む」']};},
+EV.nonPreg={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}、不受胎`,body:farmer()==='mio'?`${mr.name}の検査の結果が出た。\n\n澪「…残念だけど、${d.sire}の仔は宿っていませんでした。種付け料（${yen(d.fee)}）は戻ってきます」\n\n${d.again?'まだ春のうちです。もう一度、種付けの相談をしましょう。':'今年はもう時期を過ぎちゃいました。来年、また考えましょう。'}`:`${mr.name}の検査の結果が出た。\n\n中原「…残念だが、${d.sire}の仔は宿っとらんかった。種付け料（${yen(d.fee)}）は戻ってくる」\n\n${d.again?'まだ春のうちだ。もう一度、種付けの相談をしよう。':'今年はもう時期を過ぎた。来年、また考えよう。'}`,ch:['わかった']};},f:()=>''};
+EV.foalLoss={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}のこと`,body:`牧場から、静かな声で電話があった。\n\n${farmer()==='mio'?`澪「${mr.name}の仔（父 ${d.sire}）…産まれてはきたんですけど、立ち上がれなくて。お母さんは無事です。…ごめんなさい」`:`中原「${mr.name}の仔（父 ${d.sire}）…産まれてはきたが、立ち上がれなかった。母馬は無事だ。…すまん」`}\n\nこういうことも、生産の世界にはある。`,ch:['「母馬を、よろしく頼む」']};},
   f:d=>{const mr=HZ(d.hid);if(mr)mr.bond=Math.min(100,(mr.bond||0)+5);trust(farmer(),2);return '来年の春、また種付けの相談が来る。';}};
-EV.mareOld={r:d=>{const mr=HZ(d.hid);if(!mr||mr.status!=='繁殖')return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}も、もう${ageOf(mr)}歳`,body:`${mr.name}も、もう${ageOf(mr)}歳になった。\n\n「受胎もしにくくなってきた。そろそろ繁殖からは上げて、ゆっくりさせてやったらどうだ」`,
+EV.mareOld={r:d=>{const mr=HZ(d.hid);if(!mr||mr.status!=='繁殖')return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}も、もう${ageOf(mr)}歳`,body:`${mr.name}も、もう${ageOf(mr)}歳になった。\n\n${farmer()==='mio'?'澪「受胎もしにくくなってきました。そろそろ繁殖からは上げて、ゆっくりさせてあげませんか」':'中原「受胎もしにくくなってきた。そろそろ繁殖からは上げて、ゆっくりさせてやったらどうだ」'}`,
   ch:['繁殖から引退させ、牧場で余生を（毎月10万円）','もう少し続ける']};},
-  f:(d,i)=>{const mr=HZ(d.hid);if(!mr)return '';if(i===0){mr.status='功労馬';log(`${mr.name}が繁殖を引退`);return `${mr.name}は繁殖から引退した。牧場の一番いい放牧地で、のんびり過ごす。`;}return '「わかった。体と相談しながらな」';}};
+  f:(d,i)=>{const mr=HZ(d.hid);if(!mr)return '';if(i===0){mr.status='功労馬';log(`${mr.name}が繁殖を引退`);return `${mr.name}は繁殖から引退した。牧場の一番いい放牧地で、のんびり過ごす。`;}return farmer()==='mio'?'澪「わかりました。体と相談しながら、ですね」':'中原「わかった。体と相談しながらな」';}};
 /* 生まれたら、すぐ名前を付けられる */
 if(EV.birth){const r0=EV.birth.r,f0=EV.birth.f;EV.birth.r=d=>{const v=r0(d);if(!v)return v;return{...v,ch:['名前を付ける','名前はあとで考える']};};
   EV.birth.f=(d,i)=>{const t=f0(d,0);const h=HZ(d.hid);if(i===0&&h){h.needName=1;h.nameHint=makeName(S.kanmei);}return t;};}
@@ -10185,8 +10185,8 @@ injuryRoll=(o=>function(h,mult){return o.call(this,h,(mult==null?1:mult)*(1+Math
 planOmakase=(o=>function(only){const r=o.apply(this,arguments);try{for(const h of (only||racing()).filter(h=>h.mode==='omakase'&&h.status==='現役')){const od=S.month.orders[h.id];
     if((h.wear||0)>=4&&!(od&&od.type==='race'&&od.race&&od.race.grade==='G1')){S.month.orders[h.id]={type:'rest',by:'trainer'};if(S.month.orders2)delete S.month.orders2[h.id];}}}catch(e){}return r;})(planOmakase);
 EV.wearWarn={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役')return null;const tn=P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師';
-  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、連戦の疲れ`,body:`${tn}です。\n\n${h.name}、ここまで休みなく使ってきて、さすがに疲れがたまってきました。ひと月で抜ける疲れではありません。\n\nこのまま使うと、走りが重くなるうえに、脚元のリスクも上がります。一度、放牧に出しませんか。`,ch:['「放牧に出そう」','「次のレースまでは使う」']};},
-  f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===0){S.month.orders[h.id]={type:'rest'};if(S.month.orders2)delete S.month.orders2[h.id];trust(h.trainer,2);return `${h.name}は、今月は放牧に出る。`;}trust(h.trainer,-1);return '「…わかりました。様子は見ておきます」';}};
+  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、連戦の疲れ`,body:TQ(h.trainer,'wear',{h:h.name}),ch:['「放牧に出そう」','「次のレースまでは使う」']};},
+  f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===0){S.month.orders[h.id]={type:'rest'};if(S.month.orders2)delete S.month.orders2[h.id];trust(h.trainer,2);return `「${TQ(h.trainer,'wearYes')}」\n\n${h.name}は、今月は放牧に出る。`;}trust(h.trainer,-1);return `「${TQ(h.trainer,'wearNo')}」`;}};
 hCard=(o=>function(h){let s=o.apply(this,arguments);try{if(h.status==='現役'&&(h.wear||0)>=3){s=s.replace('<div class="row" style="gap:6px;margin-top:4px">',`<div class="row" style="gap:6px;margin-top:4px"><span class="chip ${h.wear>=4?'bad':'warn'}">連戦の疲れ${h.wear>=4?'・大':''}</span>`);}}catch(e){}return s;})(hCard);
 /* セリ: the lowest estimate is never below a few hundred */
 makeSale=(o=>function(kind){const s=o.apply(this,arguments);try{s.lots.forEach(l=>{const fl=kind==='セレクトセール'?600:200;if(!(l.lo>=fl))l.lo=fl;if(!(l.hi>l.lo))l.hi=roundInc(l.lo*1.8)||l.lo*2;});}catch(e){}return s;})(makeSale);
@@ -10243,6 +10243,72 @@ save=function(){if(!S)return;savePrune(false);let data;try{data=JSON.stringify(S
   /* last resort: the progress matters more than the pictures */
   try{S.horses.forEach(h=>{delete h.pic;delete h.scenePic;});localStorage.setItem(SAVE_KEY,JSON.stringify(S));S.__saveFail=0;return;}catch(e){}
   if(!S.__saveFail){S.__saveFail=1;try{toastLong('保存できませんでした（端末の保存容量がいっぱいです）。このまま続けると、次に開いたときに進行が戻ってしまうかもしれません',6000);}catch(x){}}};
+/* =========================================================
+   調教師の口調をそろえる: あとから足した手紙（ゲート試験・除外・未勝利戦の終わり・中2週・ラストラン・地方からの復帰・連戦の疲れ）を、
+   調教師ごとの話し方で。戸川（ぶっきらぼうな年配）・早瀬（明るい敬語）・小柳（控えめな僕）・鷲尾（口が悪い）・柴原（気さくな親分肌）・北見（簡潔な敬語）
+   ========================================================= */
+const TQV={
+ _:{gwhy:['ゲートの中でじっとしていられず、暴れてしまいました。','ゲートは出たのですが、出が遅くて基準に届きませんでした。','枠入りを嫌がって、なかなか入ってくれませんでした。'],favG1:'{o}さんの馬で、G1を勝たせてもらいました。その頼みを断ったら罰が当たります。一頭分、なんとかしましょう',favTrust:'長いお付き合いですから。…馬房はいっぱいですが、ほかでもない{o}さんの頼みです。なんとか空けます',favFame:'正直いっぱいいっぱいですが、{o}さんの馬となれば話は別です。預からせてください',gate:'{h}のゲート試験、今回は落ちてしまいました。{why}\n\n珍しいことではありません。もう一度練習して、来月受け直します。',
+   excl:['仕方ありません。この時期はどこも馬が多くて。','残念ですが、次は優先されます。仕上がりは落とさずにいきます。'],
+   misho:'3歳の未勝利戦が、先月で終わりました。{rec}\n\n道は三つです。{opts}\n\nオーナーが決めてください。',
+   r2tired:'疲れが抜けきっていません。今月もう1戦は無理です',r2no:'間隔が詰まりすぎます。うちのやり方では、この馬のためになりません',
+   r2ok:'1戦目の疲れは残りますし、脚元のリスクも上がります。それでもよければ',
+   lrSet:'最高の状態で送り出します',lrNext:'わかりました。悔いのないように仕上げます',lrDone:'…ありがとうございました。いい馬でした',
+   back:'{trk}で、たくましくなって帰ってきましたね。1勝クラスから、もう一度やりましょう',
+   wear:'{h}、ここまで休みなく使ってきて、さすがに疲れがたまってきました。ひと月で抜ける疲れではありません。\n\nこのまま使うと、走りが重くなるうえに、脚元のリスクも上がります。一度、放牧に出しませんか。',
+   wearNo:'…わかりました。様子は見ておきます',wearYes:'それがいいと思います'},
+ togawa:{gwhy:['ゲートの中でじっとしておれんで、暴れた。','出たには出たが、出が遅い。基準に届かん。','枠入りを嫌がって、なかなか入らんかった。'],favG1:'あんたの馬でG1を獲らせてもらった。その頼みを断れるか。一頭分、なんとかする',favTrust:'長い付き合いだ。…馬房はいっぱいだが、あんたの頼みなら空ける',favFame:'正直いっぱいだ。だが、あんたの馬なら話は別だ。預かる',gate:'{h}のゲート試験は落ちた。{why}\n\nよくあることだ。もう一回練習させて、来月受け直す。',
+   excl:['除外だ。この時期はどこも頭数が多い。焦るな。','次は優先で出られる。仕上げは落とさん。'],
+   misho:'未勝利戦は、先月で終わった。{rec}\n\n道は三つだ。{opts}\n\n…あんたが決めてくれ。',
+   r2tired:'疲れが抜けとらん。今月もう一戦は無理だ',r2no:'間隔が詰まりすぎだ。うちは、そういう使い方はせん',
+   r2ok:'疲れは残る。脚元も危なくなる。それでもいいなら、やる',
+   lrSet:'最後だ。最高のデキで出す',lrNext:'わかった。悔いの残らんように仕上げる',lrDone:'…よう走った。いい馬だった',
+   back:'{trk}で鍛えられて帰ってきたか。1勝クラスから、もう一度だ',
+   wear:'{h}は休みなく使ってきた。疲れがたまっとる。ひと月で抜ける疲れじゃない。\n\nこのまま使えば走りは重くなるし、脚元も危ない。一度、放牧に出すぞ。いいな。',
+   wearNo:'…そうか。わかった。様子は見ておく',wearYes:'それでいい'},
+ hayase:{gwhy:['ゲートの中でじっとしていられなくて、暴れちゃって…。','ゲートは出たんですけど、出が遅くて基準に届かなくて。','枠入りを嫌がって、なかなか入ってくれなかったんです。'],favG1:'{o}さんの馬で、G1を勝たせてもらったんですもん！ 断ったら罰が当たります。一頭分、なんとかします！',favTrust:'長いお付き合いですから！ 馬房はいっぱいですけど、{o}さんの頼みなら空けます',favFame:'正直いっぱいいっぱいですけど、{o}さんの馬なら話は別です！ 預からせてください',gate:'{h}のゲート試験、今回はダメでした…。{why}\n\nでも、珍しいことじゃないです！ もう一回練習して、来月リベンジします！',
+   excl:['除外でした…。この時期はどこも馬が多くて。','くやしいけど、次は優先で出られます！ 仕上がりはキープします！'],
+   misho:'3歳の未勝利戦、先月で終わっちゃいました。{rec}\n\n道は三つあります。{opts}\n\n{o}さん、決めてください。',
+   r2tired:'疲れがまだ抜けてないです。今月もう1戦はやめましょう',r2no:'さすがに間隔が詰まりすぎです。この子のためになりません',
+   r2ok:'使って良くなるタイプなら、ありです！ ただ、疲れは残りますし、脚元のリスクも上がります',
+   lrSet:'最高の状態で送り出します！ 絶対に！',lrNext:'わかりました。悔いのないように仕上げます',lrDone:'…ありがとうございました。本当に、いい子でした',
+   back:'{trk}で、たくましくなって帰ってきましたね！ 1勝クラスから、もう一回いきましょう！',
+   wear:'{h}、ここまで休みなく走ってきて、さすがに疲れがたまってます。ひと月じゃ抜けない疲れです。\n\nこのまま使うと走りが重くなるし、脚元も心配です。一回、放牧に出しませんか？',
+   wearNo:'…わかりました。様子、しっかり見ておきます',wearYes:'よかった！ リフレッシュさせてきます'},
+ koyanagi:{gwhy:['ゲートの中でじっとしていられなくて、暴れてしまって…。','出たんですが、出が遅くて、基準に届きませんでした。','枠入りを嫌がって、なかなか入ってくれませんでした。'],favG1:'{o}さんの馬で、G1を勝たせてもらいました。…断れません。一頭分、なんとかします',favTrust:'ずっとお世話になってますから。馬房はいっぱいですが、なんとか空けてみます',favFame:'正直いっぱいなんですが…{o}さんの馬なら、預からせてください',gate:'{h}のゲート試験、落ちてしまいました。{why}\n\n…僕の練習の仕方も、見直します。来月、もう一度受けます。',
+   excl:['除外でした。すみません、この時期はどこも多くて…。','次は優先されるはずです。仕上がりは落とさないようにします。'],
+   misho:'3歳の未勝利戦が、先月で終わりました。{rec}\n\n道は三つだと思います。{opts}\n\n…{o}さんに決めてもらえますか。',
+   r2tired:'疲れが抜けきっていないと思います。今月もう1戦は…',r2no:'間隔が詰まりすぎかと…。先生なら、たぶん止めると思います',
+   r2ok:'本当は間隔をあけたいんですが…。疲れが残るのは覚悟してください',
+   lrSet:'できることは全部やって、送り出します',lrNext:'わかりました。悔いのないように、やってみます',lrDone:'…ありがとうございました。僕には、忘れられない馬です',
+   back:'{trk}で、たくましくなって帰ってきてくれました。1勝クラスから、もう一度やりましょう',
+   wear:'{h}、ずっと休みなく使ってきて、疲れがたまってきたと思います。ひと月で抜ける疲れじゃなさそうです。\n\nこのままだと走りが重くなるし、脚元も心配で…。一度、放牧に出したほうがいいと思うんですが。',
+   wearNo:'…わかりました。気をつけて見ておきます',wearYes:'ありがとうございます。そのほうが安心です'},
+ washio_t:{gwhy:['中で暴れやがった。','出が遅え。基準に届かねえ。','枠に入りたがらねえ。'],favG1:'あんたの馬でG1を獲った。断る理由がねえ。一頭分、空けてやる',favTrust:'付き合いは長え。…空けてやる',favFame:'いっぱいだが、あんたの馬なら預かってやる',gate:'{h}、ゲート試験は落ちた。{why}\n\n別に珍しくもねえ。来月、また受けさせる。',
+   excl:['除外だ。頭数が多すぎる。','次は優先で出られる。それだけだ。'],
+   misho:'未勝利戦は終わった。{rec}\n\n道は三つだ。{opts}\n\n決めるのはあんただ。',
+   r2tired:'疲れが抜けてねえ。無理だ',r2no:'詰めすぎだ。俺は使わねえ',r2ok:'疲れは残るぞ。脚元も知らねえ。それでもいいならな',
+   lrSet:'最後だ。仕上げてやる',lrNext:'…わかった',lrDone:'…いい馬だった',
+   back:'{trk}で揉まれて帰ってきたか。悪くねえ顔だ。1勝クラスからだ',
+   wear:'{h}は使いすぎだ。疲れがたまってる。ひと月じゃ抜けねえ。\n\nこのまま使えば脚をやる。放牧に出す。いいな。',wearNo:'…勝手にしろ。見てはおく',wearYes:'それでいい'},
+ shibahara:{gwhy:['ゲートの中で暴れちまってな。','出たには出たが、出遅れてな。基準に届かなかった。','枠入りを嫌がって、なかなか入らなかった。'],favG1:'{o}さんの馬でG1を獲らせてもらったんだ。断ったら罰が当たる。一頭分、なんとかしよう',favTrust:'長い付き合いだからな。馬房はいっぱいだが、なんとか空けるぞ',favFame:'正直いっぱいいっぱいだが、{o}さんの馬なら話は別だ。預かろう',gate:'{h}のゲート試験、今回はダメだった。{why}\n\nなに、よくあることだ。来月また受けさせるぞ。',
+   excl:['除外だ。この時期は頭数が多くてな。','次は優先で出られる。仕上げは任せとけ。'],
+   misho:'未勝利戦は先月で終わりだ。{rec}\n\n道は三つある。{opts}\n\n{o}さん、どうする。',
+   r2tired:'疲れが残ってる。今月もう一戦はやめとこう',r2no:'さすがに詰まりすぎだ。やめとこう',
+   r2ok:'使って良くなる馬なら、ありだ。ただ疲れは残るし、脚元のリスクも上がるぞ',
+   lrSet:'最後に、最高のデキで送り出してやる',lrNext:'わかった。悔いの残らんように仕上げる',lrDone:'…よう頑張った。いい馬だったぞ',
+   back:'{trk}でたくましくなって帰ってきたな。1勝クラスから、もう一丁いくぞ',
+   wear:'{h}、休みなく使ってきたから、だいぶ疲れがたまってる。ひと月じゃ抜けんぞ。\n\nこのまま使うと走りも重いし、脚元も怖い。一回、放牧に出そう。',wearNo:'…わかった。様子は見とく',wearYes:'よし、それがいい'},
+ kitami:{gwhy:['ゲート内で落ち着かず、暴れました。','発馬が遅く、基準に達しませんでした。','枠入りを嫌い、入れるのに時間がかかりました。'],favG1:'{o}さんの馬でG1をいただきました。お断りする理由はありません。一頭分、調整します',favTrust:'長いお付き合いですので。満房ですが、調整します',favFame:'満房ですが、{o}さんの馬でしたら、お預かりします',gate:'{h}のゲート試験は不合格でした。{why}\n\n想定の範囲です。来月、再受験させます。',
+   excl:['除外です。この時期は頭数が多いので。','次走は優先出走になります。仕上がりは維持します。'],
+   misho:'3歳の未勝利戦は先月で終了しました。{rec}\n\n選択肢は三つです。{opts}\n\nご判断をお願いします。',
+   r2tired:'疲労が残っています。今月の2戦目はお勧めしません',r2no:'間隔が詰まりすぎです。当厩舎の方針に合いません',
+   r2ok:'疲労は残り、脚元のリスクも上がります。承知の上でしたら',
+   lrSet:'最高の状態で送り出します',lrNext:'承知しました。悔いのない仕上げにします',lrDone:'…ありがとうございました。良い馬でした',
+   back:'{trk}で力をつけて戻ってきました。1勝クラスから、改めて',
+   wear:'{h}は休みなく使ってきたため、疲労が蓄積しています。ひと月では抜けません。\n\nこのままでは走りが重くなり、故障のリスクも上がります。放牧をお勧めします。',wearNo:'…承知しました。経過は見ておきます',wearYes:'賢明です'}};
+function TQ(tr,key,vars){const v=TQV[TV(tr||'')]||TQV[tr]||TQV._;let x=v[key]!=null?v[key]:TQV._[key];if(Array.isArray(x))x=pick(x);
+  return String(x||'').replace(/\{(\w+)\}/g,(m,k)=>vars&&vars[k]!=null?vars[k]:(k==='o'&&S?ownerName():m));}
 /* =========================================================
    scroll lock: the page behind a sheet / race / call never scrolls
    ========================================================= */

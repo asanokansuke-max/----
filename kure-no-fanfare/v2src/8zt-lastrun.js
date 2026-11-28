@@ -17,8 +17,8 @@ if(EV.retireTalk){const r0=EV.retireTalk.r,f0=EV.retireTalk.f;
   EV.retireTalk.r=d=>{if(d.unraced)return null;const v=r0(d);if(!v)return v;const h=HZ(d.hid);if(!h||h.status!=='現役'&&h.status!=='放牧')return v;const b=lrBest(h);d.lrb=b?{n:b.n,m:b.m,k:b.k}:null;
     return{...v,ch:[v.ch[0],...(b?[`「${b.n}」（${b.m}月）をラストランにして引退`]:[]),'次のレースを最後に引退',...v.ch.slice(1)]};};
   EV.retireTalk.f=(d,i)=>{const h=HZ(d.hid);if(i===0||!h)return f0(d,0);const nb=d.lrb?1:0;
-    if(d.lrb&&i===1){lrSet(h,d.lrb);return `${h.name}のラストランは${d.lrb.n}に決まった。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「最高の状態で送り出します」`;}
-    if(i===1+nb){lrSet(h,null);return `${h.name}は、次のレースを最後に引退する。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「わかりました。悔いのないように仕上げます」`;}
+    if(d.lrb&&i===1){lrSet(h,d.lrb);return `${h.name}のラストランは${d.lrb.n}に決まった。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrSet')}」`;}
+    if(i===1+nb){lrSet(h,null);return `${h.name}は、次のレースを最後に引退する。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrNext')}」`;}
     return f0(d,i-1-nb);};}
 /* 自分で引退させるとき */
 ACT.retire=(o=>function(d){const r=o.apply(this,arguments);try{const h=HZ(d.hid);if(h&&['現役','放牧'].includes(h.status)&&!h.lastRun){const row=document.querySelector('#sheet .row');if(row)row.insertAdjacentHTML('beforebegin',`<p class="muted" style="font-size:13px">すぐにやめず、最後のレースを決めてから引退させることもできる。</p><div class="row" style="margin-bottom:8px"><button class="btn" data-act="lrPick" data-hid="${h.id}">ラストランを決める</button></div>`);}}catch(e){}return r;})(ACT.retire);
@@ -34,7 +34,7 @@ applyRace=(o=>function(RC){const L=(RC&&RC.order||[]).filter(f=>f.mine&&f.h&&f.h
   try{L.forEach(f=>{const h=f.h;if(h.lastRun.n&&h.lastRun.n!==RC.race.name)return;h.lastRunDone={race:RC.race.name,pos:f.pos};pushEv('lastRunDone',{hid:h.id});});}catch(e){}return r;})(applyRace);
 racesFor=(o=>function(h){if(h&&h.lastRunDone)return [];return o.apply(this,arguments);})(racesFor);
 EV.lastRunDone={r:d=>{const h=HZ(d.hid);if(!h||!h.lastRunDone||!['現役','放牧','休養'].includes(h.status))return null;const x=h.lastRunDone;
-  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、ラストラン`,body:`${x.race}、${x.pos}着。${x.pos===1?'最後の最後に、勝って終わった。':x.pos<=3?'最後まで、しっかり走り切った。':'結果はともかく、最後まで無事に走り切った。'}\n\n通算${h.starts}戦${h.wins}勝。これで${h.name}の競走生活は終わる。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「…ありがとうございました。いい馬でした」`,
+  return{p:h.trainer,from:who(h.trainer),title:`${h.name}、ラストラン`,body:`${x.race}、${x.pos}着。${x.pos===1?'最後の最後に、勝って終わった。':x.pos<=3?'最後まで、しっかり走り切った。':'結果はともかく、最後まで無事に走り切った。'}\n\n通算${h.starts}戦${h.wins}勝。これで${h.name}の競走生活は終わる。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'lrDone')}」`,
     ch:['引退式をして送り出す','そのまま送り出す']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.lastRun=null;let t=retireHorse(h);if(i===0){h.fans=(h.fans||0)+3000;S.fame+=1;t=`最終レースのあと、${h.name}の引退式が行われた。ゼッケンをつけた${h.name}がターフに戻ると、スタンドに残った大勢のファンが名前を呼んだ。\n\n`+t;}return t;}};
 EV.lastRunMiss={r:d=>{const h=HZ(d.hid);if(!h||!h.lastRun||h.lastRunDone||['引退','繁殖','種牡馬','功労馬','売却','移籍'].includes(h.status))return null;

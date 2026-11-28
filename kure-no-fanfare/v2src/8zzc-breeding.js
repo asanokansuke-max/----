@@ -18,12 +18,12 @@ beginMonth=(o=>function(first){try{if(S&&!first){
     mine().filter(h=>h.status==='繁殖'&&!h.preg&&ageOf(h)>=20&&!h.oldAsked).forEach(mr=>{mr.oldAsked=1;pushEv('mareOld',{hid:mr.id});});}}catch(e){console.error('breed2',e);}
   return o.apply(this,arguments);})(beginMonth);
 const farmer=()=>S.part===2&&S.br&&S.br.farm==='support'?'mio':'nakahara';
-EV.nonPreg={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}、不受胎`,body:`${mr.name}の検査の結果が出た。\n\n${farmer()==='mio'?'澪':'中原'}「…残念だが、${d.sire}の仔は宿っとらんかった。種付け料（${yen(d.fee)}）は戻ってくる」\n\n${d.again?'まだ春のうちだ。もう一度、種付けの相談をしよう。':'今年はもう時期を過ぎた。来年、また考えよう。'}`,ch:['わかった']};},f:()=>''};
-EV.foalLoss={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}のこと`,body:`牧場から、静かな声で電話があった。\n\n「${mr.name}の仔（父 ${d.sire}）…産まれてはきたが、立ち上がれなかった。母馬は無事だ。…すまん」\n\nこういうことも、生産の世界にはある。`,ch:['「母馬を、よろしく頼む」']};},
+EV.nonPreg={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}、不受胎`,body:farmer()==='mio'?`${mr.name}の検査の結果が出た。\n\n澪「…残念だけど、${d.sire}の仔は宿っていませんでした。種付け料（${yen(d.fee)}）は戻ってきます」\n\n${d.again?'まだ春のうちです。もう一度、種付けの相談をしましょう。':'今年はもう時期を過ぎちゃいました。来年、また考えましょう。'}`:`${mr.name}の検査の結果が出た。\n\n中原「…残念だが、${d.sire}の仔は宿っとらんかった。種付け料（${yen(d.fee)}）は戻ってくる」\n\n${d.again?'まだ春のうちだ。もう一度、種付けの相談をしよう。':'今年はもう時期を過ぎた。来年、また考えよう。'}`,ch:['わかった']};},f:()=>''};
+EV.foalLoss={r:d=>{const mr=HZ(d.hid);if(!mr)return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}のこと`,body:`牧場から、静かな声で電話があった。\n\n${farmer()==='mio'?`澪「${mr.name}の仔（父 ${d.sire}）…産まれてはきたんですけど、立ち上がれなくて。お母さんは無事です。…ごめんなさい」`:`中原「${mr.name}の仔（父 ${d.sire}）…産まれてはきたが、立ち上がれなかった。母馬は無事だ。…すまん」`}\n\nこういうことも、生産の世界にはある。`,ch:['「母馬を、よろしく頼む」']};},
   f:d=>{const mr=HZ(d.hid);if(mr)mr.bond=Math.min(100,(mr.bond||0)+5);trust(farmer(),2);return '来年の春、また種付けの相談が来る。';}};
-EV.mareOld={r:d=>{const mr=HZ(d.hid);if(!mr||mr.status!=='繁殖')return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}も、もう${ageOf(mr)}歳`,body:`${mr.name}も、もう${ageOf(mr)}歳になった。\n\n「受胎もしにくくなってきた。そろそろ繁殖からは上げて、ゆっくりさせてやったらどうだ」`,
+EV.mareOld={r:d=>{const mr=HZ(d.hid);if(!mr||mr.status!=='繁殖')return null;return{p:farmer(),from:who(farmer()),title:`${mr.name}も、もう${ageOf(mr)}歳`,body:`${mr.name}も、もう${ageOf(mr)}歳になった。\n\n${farmer()==='mio'?'澪「受胎もしにくくなってきました。そろそろ繁殖からは上げて、ゆっくりさせてあげませんか」':'中原「受胎もしにくくなってきた。そろそろ繁殖からは上げて、ゆっくりさせてやったらどうだ」'}`,
   ch:['繁殖から引退させ、牧場で余生を（毎月10万円）','もう少し続ける']};},
-  f:(d,i)=>{const mr=HZ(d.hid);if(!mr)return '';if(i===0){mr.status='功労馬';log(`${mr.name}が繁殖を引退`);return `${mr.name}は繁殖から引退した。牧場の一番いい放牧地で、のんびり過ごす。`;}return '「わかった。体と相談しながらな」';}};
+  f:(d,i)=>{const mr=HZ(d.hid);if(!mr)return '';if(i===0){mr.status='功労馬';log(`${mr.name}が繁殖を引退`);return `${mr.name}は繁殖から引退した。牧場の一番いい放牧地で、のんびり過ごす。`;}return farmer()==='mio'?'澪「わかりました。体と相談しながら、ですね」':'中原「わかった。体と相談しながらな」';}};
 /* 生まれたら、すぐ名前を付けられる */
 if(EV.birth){const r0=EV.birth.r,f0=EV.birth.f;EV.birth.r=d=>{const v=r0(d);if(!v)return v;return{...v,ch:['名前を付ける','名前はあとで考える']};};
   EV.birth.f=(d,i)=>{const t=f0(d,0);const h=HZ(d.hid);if(i===0&&h){h.needName=1;h.nameHint=makeName(S.kanmei);}return t;};}

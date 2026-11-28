@@ -34,7 +34,7 @@ beginRaces=(o=>function(){const out=[];try{for(const [hid,od] of Object.entries(
   EXQ=()=>o.apply(this,[]);
   const lines=out.map(x=>x.why==='除外'?`・${x.h.name}（${x.race.name}）…出走希望が多く、除外。${(x.h.exN||0)>=2?'次は必ず出られる。':'次は優先して出られる。'}`:`・${x.h.name}（${x.race.name}）…収得賞金が足りず抽選になり、外れた。`);
   const tn=(()=>{const h=out[0].h;return P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師';})();
-  openModal(`<div class="from-line">出馬投票の結果　${dstr(S.t)}</div><h2>今月は出られない馬がいる</h2><div class="letter">${esc(lines.join('\n'))}\n\n${esc(tn)}「${esc(vpk('exq'+S.t,['仕方ありません。この時期はどこも馬が多くて。','残念ですが、次は優先されます。仕上がりは落とさずにいきます。','除外も競馬のうちです。調教で一本、いいのを入れておきます。']))}」\n\n出られなかった馬は、今月は調教にあてる。</div>
+  openModal(`<div class="from-line">出馬投票の結果　${dstr(S.t)}</div><h2>今月は出られない馬がいる</h2><div class="letter">${esc(lines.join('\n'))}\n\n${esc(tn)}「${esc(TQ(out[0].h.trainer,'excl'))}」\n\n出られなかった馬は、今月は調教にあてる。</div>
     <div class="row"><span class="sp"></span><button class="btn pri" data-act="exGo">わかった</button></div>`,{lock:true});
   return undefined;})(beginRaces);
 ACT.exGo=()=>{closeModal();const f=EXQ;EXQ=null;if(f)f();};
@@ -53,11 +53,11 @@ racesFor=(o=>function(h){if(GATE_BYPASS||!h||h.owner!=='me')return o.apply(this,
   return o.apply(this,arguments);})(racesFor);
 EV.gateFail={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役'||h.gateOk)return null;const tr=h.trainer,tn=P(tr)?P(tr).n.split(' ')[0]:'調教師';
   const why=vpk(h.id+'gf'+S.t,[`ゲートの中でじっとしていられず、暴れてしまいました。`,`ゲートは出たのですが、出が遅くて合格の基準に届きませんでした。`,`枠入りを嫌がって、なかなか入ってくれませんでした。`,`中で立ち上がってしまって…。怪我はありません。`]);
-  return{p:tr,from:who(tr),title:`${h.name}、ゲート試験は不合格`,body:`${tn}です。\n\n${h.name}のゲート試験、今回は落ちてしまいました。${why}\n\n${(h.gateFail||0)>=2?'少し時間がかかっていますが、練習のたびに良くなっています。':'珍しいことではありません。'}もう一度練習して、来月受け直します。`,ch:['「焦らず、もう一度」']};},
+  return{p:tr,from:who(tr),title:`${h.name}、ゲート試験は不合格`,body:TQ(tr,'gate',{h:h.name,why:TQ(tr,'gwhy')}),ch:['「焦らず、もう一度」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(h&&h.trainer)trust(h.trainer,1);return '来月、もう一度ゲート試験を受ける。';}};
 /* ---------- 未勝利戦の終わり ---------- */
 EV.misho={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='現役'||h.wins>0||h.mslDone)return null;const tr=h.trainer,tn=P(tr)?P(tr).n.split(' ')[0]:'調教師';
-  return{p:tr,from:who(tr),title:`${h.name}の、これから`,body:`${tn}です。\n\n3歳の未勝利戦が、先月で終わりました。${h.name}は${h.starts?`${h.starts}戦して、勝てずじまいでした。`:'結局、一度も走れませんでした。'}\n\n道は三つです。\n・1勝クラスに格上挑戦する（出られても相手は強く、除外も多い）\n・地方競馬へ移籍させる（向こうで2勝すれば、中央に戻ってこられます）\n・ここで引退させる\n\nオーナーが決めてください。`,
+  return{p:tr,from:who(tr),title:`${h.name}の、これから`,body:TQ(tr,'misho',{rec:`${h.name}は${h.starts?`${h.starts}戦して、勝てずじまい。`:'結局、一度も走れなかった。'}`,opts:'\n・1勝クラスに格上挑戦する（出られても相手は強く、除外も多い）\n・地方競馬へ移籍させる（向こうで2勝すれば、中央に戻ってこられる）\n・ここで引退させる'}),
     ch:['「1勝クラスに挑戦させる」','「地方へ移籍させる」','「引退させる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';h.mslDone=1;
     if(i===0){h.kakuage=1;return `${h.name}は1勝クラスへの格上挑戦を続ける。除外されやすいが、出られれば勝つチャンスはある。`;}
@@ -79,9 +79,9 @@ function stallRoom(id){const cap=(STALLS[id]||3)+((S.fame||0)>=40?1:0),n=mine().
    Only one over the limit — when it is already one over, even that runs out. */
 function stallFavor(id){if(stallRoom(id)!==0)return '';const tn=P(id)?P(id).n.split(' ')[0]:'調教師',own=S.part===1?S.parent.name:(S.child&&S.child.name)||'オーナー';
   const g1=mine().concat(S.horses.filter(h=>h.owner==='me')).filter((h,k,a)=>a.indexOf(h)===k&&h.trainer===id).reduce((a,h)=>a+(h.g1||0),0);
-  if(g1>0)return `${tn}「${own}さんの馬で、G1を勝たせてもらいました。その${own}さんの頼みを断ったら、罰が当たります。一頭分、なんとかしましょう」`;
-  if(P(id)&&P(id).trust>=75)return `${tn}「長いお付き合いですから。…馬房はいっぱいですが、ほかでもない${own}さんの頼みです。なんとか空けます」`;
-  if((S.fame||0)>=60)return `${tn}「正直いっぱいいっぱいですが、${own}さんの馬となれば話は別です。預からせてください」`;
+  if(g1>0)return `${tn}「${TQ(id,'favG1',{o:own})}」`;
+  if(P(id)&&P(id).trust>=75)return `${tn}「${TQ(id,'favTrust',{o:own})}」`;
+  if((S.fame||0)>=60)return `${tn}「${TQ(id,'favFame',{o:own})}」`;
   return '';}
 if(EV.nyukyu){const n0=EV.nyukyu;EV.nyukyu={...n0,r:d=>{const v=n0.r(d);if(!v)return v;const tl=trainersAvail();const fav={};tl.forEach(id=>{const f=stallFavor(id);if(f)fav[id]=f;});
     let ok=tl.filter(id=>stallRoom(id)>0||fav[id]);if(!ok.length)ok=[tl.slice().sort((a,b)=>stallRoom(b)-stallRoom(a))[0]];d.tl=ok;

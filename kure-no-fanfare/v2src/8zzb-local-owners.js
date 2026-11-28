@@ -19,7 +19,7 @@ EV.localBack={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='地方')return null;con
     ch:['「中央に戻そう」','「このまま地方で走らせる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===1)return `${h.name}は、もうしばらく${h.local.trk}で走ることになった。`;
     h.status='現役';h.wins=Math.max(1,h.wins||0);h.cls=Math.max(2,h.cls||0);h.kakuage=0;h.fat=20;h.ev=evalHorse(h);h.localWins=(h.localWins||0)+h.local.w;const trk=h.local.trk;h.local=null;log(`${h.name}が地方から中央へ戻る`);
-    if(h.trainer)trust(h.trainer,3);return `${h.name}が、中央の${P(h.trainer)?P(h.trainer).n.split(' ')[0]+'厩舎':'厩舎'}に戻ってきた。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${trk}で、たくましくなって帰ってきましたね。1勝クラスから、もう一度やりましょう」`;}};
+    if(h.trainer)trust(h.trainer,3);return `${h.name}が、中央の${P(h.trainer)?P(h.trainer).n.split(' ')[0]+'厩舎':'厩舎'}に戻ってきた。\n\n${P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師'}「${TQ(h.trainer,'back',{trk})}」`;}};
 EV.localEnd={r:d=>{const h=HZ(d.hid);if(!h||h.status!=='地方')return null;const L=h.local;
   return{p:'mikuni',from:`${L.trk}競馬の厩舎`,title:`${h.name}のこれから`,body:`${L.trk}の厩舎から連絡があった。\n\n「${h.name}、${L.n}戦${L.w}勝です。よく頑張っていますが、中央に戻るのは難しいかもしれません」`,ch:['「引退させる」','「もう少し走らせる」']};},
   f:(d,i)=>{const h=HZ(d.hid);if(!h)return '';if(i===0){h.local=null;return retireHorse(h);}h.local.t=S.t;h.local.endAsked=0;return `${h.name}は、もう少し${h.local.trk}で走る。`;}};

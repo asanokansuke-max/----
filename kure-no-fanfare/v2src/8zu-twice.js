@@ -9,8 +9,8 @@
    ========================================================= */
 function r2Block(h){const o=S.month.orders[h.id],tr=TR(h.trainer),tn=P(h.trainer)?P(h.trainer).n.split(' ')[0]:'調教師';
   if(!o||o.type!=='race')return 'まず今月の1戦目を決めてください。';
-  if((h.fat||0)>40)return `${tn}「疲れが抜けきっていません。今月もう1戦は無理です」`;
-  if(tr&&tr.policy==='spaced'&&(P(h.trainer).trust||0)<70)return `${tn}「間隔が詰まりすぎます。うちのやり方では、この馬のためになりません」`;
+  if((h.fat||0)>40)return `${tn}「${TQ(h.trainer,'r2tired')}」`;
+  if(tr&&tr.policy==='spaced'&&(P(h.trainer).trust||0)<70)return `${tn}「${TQ(h.trainer,'r2no')}」`;
   return '';}
 function r2Races(h){const o=S.month.orders[h.id],taken=new Set(Object.values(S.month.orders).filter(x=>x&&x.type==='race'&&x.race).map(x=>x.race.key));
   return racesFor(h).filter(r=>r.key!==(o&&o.race&&o.race.key)&&!taken.has(r.key)&&entryStatus(h,r).st!=='不可');}
@@ -22,7 +22,7 @@ ACT.race2=d=>{const h=HZ(+d.hid);if(!h)return;const blk=r2Block(h);const tn=P(h.
   if(blk){openModal(`<div class="from-line">同じ月にもう1戦</div><h2>${esc(h.name)}</h2><div class="letter">${esc(blk)}</div><div class="row"><span class="sp"></span><button class="btn" data-act="close">わかった</button></div>`);return;}
   const L=r2Races(h);const tr=TR(h.trainer);
   openModal(`<div class="from-line">同じ月にもう1戦（中2週）</div><h2>${esc(h.name)}の2戦目</h2>
-    <div class="letter">${esc(tr&&tr.policy==='spaced'?`${tn}「本当は間隔をあけたいところですが…オーナーがそう言うなら。疲れが残るのは覚悟してください」`:`${tn}「使って良くなるタイプなら、ありです。ただ、1戦目の疲れは残りますし、脚元のリスクも上がります」`)}</div>
+    <div class="letter">${esc(`${tn}「${TQ(h.trainer,'r2ok')}」`)}</div>
     <p class="muted" style="font-size:12px">1戦目の疲れが残ったまま走る。走ったあとは調子を落としやすく、故障もしやすい。</p>
     <div class="choices">${L.length?L.map(r=>{const st=entryStatus(h,r);return `<button class="btn" data-act="race2Set" data-hid="${h.id}" data-key="${esc(r.key)}">${gradeBadge(r.grade)} ${esc(r.name)}<small class="muted">　${r.course} ${r.surf==='ダ'?'ダ':'芝'}${r.dist}m${st.why?'・'+esc(st.why):''}</small></button>`;}).join(''):'<p class="muted">今月、ほかに出られるレースがない。</p>'}</div>
     <div class="row"><button class="btn" data-act="close">やめる</button></div>`);};
